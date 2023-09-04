@@ -1,5 +1,4 @@
 const { ObjectId } = require('mongodb');
-const puppeteer = require('puppeteer');
 const ytdl = require('ytdl-core');
 const { saveData, updateSameElements } = require('../services/tools')
 const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000;
