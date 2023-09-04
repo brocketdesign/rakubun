@@ -1,4 +1,3 @@
-const puppeteer = require('puppeteer');
 const { ObjectId, GoogleApis } = require('mongodb');
 
 const searchYoutube = async (query, url, mode, nsfw, page) => {
@@ -31,63 +30,11 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
   return result;
 }
 
-const scrapeWebsite = (query, mode, nsfw, url, pageNum) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if(url){
-        url = url.includes('http') ? url : `${process.env.DEFAULT_URL}/s/${url}/${pageNum}/?o=all`;
-      }else{
-        url = process.env.DEFAULT_URL;
-      }
-
-      const browser = await puppeteer.launch({
-        headless: false,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-      });
-
-      const page = await browser.newPage();
-      await page.goto(url, { waitUntil: 'networkidle2' });
-
-      const scrapedData = await page.evaluate((url, query, mode, nsfw) => {
-        const items = Array.from(document.querySelectorAll('#container .video-list .video-item'));
-        const data = items.map(item => {
-          try {
-            const thumb = item.querySelector('.thumb');
-            const coverImg = thumb.querySelector('picture img.cover');
-            const link = thumb.getAttribute('href');
-            const video_id = item.getAttribute("data-id");
-            const imageUrl = coverImg ? coverImg.getAttribute('data-src') : '';
-            const alt = coverImg ? coverImg.getAttribute('alt') : '';
-            const currentPage = url;
-  
-            return { video_id, imageUrl, alt, link ,currentPage, query, mode, nsfw };
-          } catch (error) {
-            console.log(error)
-          }
-        });
-
-        return data;
-      }, url, query, mode, nsfw);
-
-      await browser.close();
-
-      resolve(scrapedData);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
 
 async function scrapeMode1(url, mode, nsfw, page) {
   query = url 
   try {
-    if(nsfw!='undefined' && !nsfw){
-      console.log('Operating a safe search');
-      return await searchYoutube(query, url, mode, nsfw, page);
-    }
-    console.log('Operating a NSFW search');
-    const data = await scrapeWebsite(query, mode, nsfw, url, page);
-    return data;
+    return await searchYoutube(query, url, mode, nsfw, page);
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);
     return [];
