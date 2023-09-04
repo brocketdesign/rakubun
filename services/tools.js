@@ -1,6 +1,5 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const OpenAI = require('openai');
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios'); // You'll need to install axios: npm install axios
@@ -102,58 +101,6 @@ async function translateText(text,lang) {
   });
   
   return gptResponse.choices[0].text.trim();
-}
-async function fetchMediaUrls(url) {
-  //console.log('Starting to fetch media URLs from:', url); // Log start
-  const browser = await puppeteer.launch({
-    headless: false,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-  });
-  const page = await browser.newPage();
-
-  const images = [];
-
-  // Listen to all requests
-  page.on('request', request => {
-    const resourceType = request.resourceType();
-    const requestUrl = request.url();
-
-    if (resourceType === 'image') {
-      images.push({ source_url: requestUrl });
-    }
-  });
-
-  await page.goto(url, { waitUntil: 'networkidle2' });
-
-  // Scroll to the bottom of the page
-  let previousHeight;
-  let maxScrollAttempts = 10; // Adjust this value based on your needs
-  let attempts = 0;
-
-  while (attempts < maxScrollAttempts) {
-    previousHeight = await page.evaluate('document.body.scrollHeight');
-    await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
-
-    try {
-      await page.waitForFunction(`document.body.scrollHeight > ${previousHeight}`, { timeout: 3000 }); // 3 seconds timeout
-    } catch (error) {
-      console.log('Reached the end of scrolling, or an error occurred' ); // Log error or end of scrolling
-      break;
-    }
-
-    const newHeight = await page.evaluate('document.body.scrollHeight');
-    if (newHeight === previousHeight) {
-      console.log('No new content loaded, breaking the loop.'); // Log if no new content is loaded
-      break;
-    }
-
-    attempts++;
-  }
-
-  await browser.close();
-
-  //console.log('Finished fetching media URLs.'); // Log finish
-  return images;
 }
 
 async function findDataInMedias(userId, query, categoryId = null) {
@@ -349,7 +296,6 @@ module.exports = {
   formatDateToDDMMYYHHMMSS, 
   saveData ,
   translateText ,
-  fetchMediaUrls, 
   findDataInMedias,
   sanitizeData,
   updateSameElements,
