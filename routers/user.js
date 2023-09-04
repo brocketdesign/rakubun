@@ -86,10 +86,10 @@ router.post('/updateProfile', upload.fields([{ name: 'profileImage' }, { name: '
         await global.db.collection('users').updateOne({ resetToken : req.body.resetToken },{$set:{resetToken:false,validityToken:false}});
       }
       
-      res.json({ status: 'success', message: 'Profile updated successfully' });
+      res.json({ status: 'success', message: 'プロフィールが更新されました。' });
   } catch (error) {
     console.log(error)
-      res.json({ status: 'error', message: 'An error occurred while updating the profile.' });
+      res.json({ status: 'error', message: 'プロフィールを更新する際にエラーが発生しました。' });
   }
 });
 

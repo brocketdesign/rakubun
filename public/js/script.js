@@ -5,6 +5,15 @@ const YOUR_LARGE_SCREEN_BREAKPOINT = 992
 const checkFormChange = (initialData, form) => {
     return Array.from(form.entries()).some(([name, value]) => value !== initialData.get(name));
 }
+const previewImage = (imageInput, imagePreview) => {
+    imageInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        $(imagePreview).show()
+        reader.onload = () => imagePreview.src = reader.result;
+        reader.readAsDataURL(file);
+    });
+}
 
 const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
@@ -1174,7 +1183,7 @@ const handleUserProfile = () => {
 
     inputs.change(() => formChanged = true);
     form.on('submit', () => formChanged = false);
-    window.onbeforeunload = () => formChanged ? "You have unsaved changes. Are you sure you want to leave this page?" : undefined;
+    window.onbeforeunload = () => formChanged ? "保存されていない変更があります。このページを離れてもよろしいですか？" : undefined;
     // Form submission handling
     form.on('submit', function(e) {
         e.preventDefault();

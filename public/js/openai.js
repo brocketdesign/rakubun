@@ -187,7 +187,10 @@ const handleOpenaiForm = () => {
         const input1 = $('#input1').val()
         const input2 = $('#input2').val()
         const data = {input1, input2}
-        
+        if(!input1 || !input2){
+            handleFormResult(false,'内容を入力してください。')
+            return
+        }
         const $buttonContainer = $(this).find('button[type="submit"]')
         const $spinner = showSpinner($buttonContainer,generateRandomID())
 
@@ -195,8 +198,8 @@ const handleOpenaiForm = () => {
         // Constructing the GPT-3 prompt using the collected data
         const gpt3Prompt = `
         Compare the following inputs :
-        input1:  ${input1}. \n\n
-        input2: "${input2}"
+        input1: ${input1}\n\n
+        input2: ${input2}
         Tell me what is the difference ?
         Note: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.
         `;        
