@@ -50,18 +50,4 @@ block dynamicContent
       a.btn.btn-dark.bordert(type="button", class=scrapInfo&&scrapInfo.page==page?'d-none':'',href=`/dashboard/app/${mode}?page=${scrapInfo?scrapInfo.page:'1'}&searchTerm=${searchTerm}`)        
         | Last Page
         i.fas.fa-angle-right.ms-3
-  #slickModal.modal.fade(tabindex='-1')
-    .modal-dialog.modal-dialog-centered.modal-xl
-      .modal-content.rounded-0(style="background:#000;")
-        #slickCarousel.slick-carousel
-        .position-absolute.d-flex.justify-content-end.py-3.w-100(style="z-index: 3;")
-          button.btn#closeSlickModal.mx-3.text-white(type="button")
-            i.fas.fa-times
-        #slickCarousel-tool-bar.info-container.d-flex.flex-column.justify-content-center.position-absolute(style="z-index: 3;top:0;bottom: 0;")
-          button.btn.slider-delete-button.p-3.text-white(type="button")
-              i.fas.fa-trash-alt
-          button.btn.download-button.p-3.text-white(type="button")
-            i.fas.fa-heart
-          a.source.p-3.text-white(target="_blank" href="#")
-              i.fas.fa-link
   script(src="/js/slider.js")

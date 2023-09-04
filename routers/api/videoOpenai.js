@@ -5,16 +5,7 @@ const upload = multer();
 
 const summarizeVideo = require('../../modules/youtube-summary')
 const { 
-  formatDateToDDMMYYHHMMSS, 
-  saveData ,
-  translateText ,
-  fetchMediaUrls, 
-  findDataInMedias,
-  sanitizeData,
-  updateSameElements,
-  getOpenaiTypeForUser,
   fetchOpenAICompletion,
-  initCategories,
   saveDataSummarize
 } = require('../../services/tools')
 const { MongoClient, ObjectId } = require('mongodb');

@@ -1,18 +1,18 @@
 extends ../dashboard/base
 
 block mainContent
-  h1.display-5.mb-4.fw-bold Compare two text
+  h1.display-5.mb-4.fw-bold テキスト比較
   .row.row-cols-1.row-cols-md-2.pe-0
     .col.bg-white.p-3
       h6 入力
       hr.mb-4
       form#compare.default
         .form-group.my-3
-          label(for='input1') Input 1
-          textarea#input1.form-control(placeholder='Enter first value')
+          label(for='input1') テキスト 1
+          textarea#input1.form-control(placeholder='最初の値を入力してください。')
         .form-group.my-3
-          label(for='input2') Input 2
-          textarea#input2.form-control(placeholder='Enter second value')
+          label(for='input2') テキスト 2
+          textarea#input2.form-control(placeholder='二つ目の値を入力してください。')
         .my-3
           button.btn.btn-primary.w-100(type='submit') 
             i.fas.fa-paper-plane.me-3

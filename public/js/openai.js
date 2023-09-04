@@ -1,3 +1,4 @@
+let sourceInstances = {}
 
 $(document).ready(function() {
     handleOpenaiForm();
@@ -290,128 +291,71 @@ const handleComparePDF = () => {
 
 }
 const handleVideoForm = () => {
-    let sourceInstance = null
-    $('#video-summarize').submit(function(event) {
+    handleOpenaiFormSubmission('#video-summarize','summarize')
+    handleOpenaiFormSubmission('#video-snsContent','snsContent')
+    handleOpenaiFormSubmission('#video-qa','qa')
+    handleOpenaiFormSubmission('#video-important','important')   
+}
+function handleOpenaiFormSubmission(formSelector, apiEndpoint, additionalCallback) {
+    $(formSelector).submit(function(event) {
         event.preventDefault();
         const formData = new FormData(this);
+        let postCount = parseInt(formData.get('postCount')) || 1
         const videoId = $('#video-holder').data('id')
         const $buttonContainer = $(this).find('button[type="submit"]')
         const $spinner = showSpinner($buttonContainer,'summarize')
 
-        if (shouldPreventSubmission($buttonContainer,$spinner,sourceInstance)) { 
+        if (shouldPreventSubmission($buttonContainer,$spinner,sourceInstances)) { 
             return; 
         }
     
-        // Mark the card as done to avoid processing it again
         $buttonContainer.addClass('done');
     
         $.ajax({
-            url: '/api/openai-video/summarize?videoId='+videoId, // replace with your endpoint
+            url: `/api/openai-video/${apiEndpoint}?videoId=${videoId}`,
             method: 'POST',
             data: formData,
             processData: false, // Tell jQuery not to process data
             contentType: false, // Tell jQuery not to set contentType
             success: function(response) {
-    
-                let containerID
-                sourceInstance = handleStream(response, function(message) {
-    
-                    containerID = `card-${response.insertedId}`;
-                    const item = message; // Replace with the appropriate value for "item"
-                    const doc = response; // Replace with the appropriate value for "doc"
-                
-                    if($('#' + containerID).length == 0) {
-                        const initialCardHtml = designCard(containerID,doc,item)
-                        
-                        $('#result-summarize').prepend(initialCardHtml);
-                        
-                        if($('#result-summarize-temp').length == 0){
-                            $('#result-summarize').after('<div id="result-summarize-temp" class="d-none"></div>')
-                        }
-    
-                        updateMoments();
-                        console.log(`Initial card created with id: card-${containerID}`);
-                    }
-                
-                    $(`#result-summarize-temp`).append(message);
-                    $(`#${containerID} .card-body p`).append(message);
-    
-                },function(endMessage){
-                    console.log(endMessage)
-                    watchAndConvertMarkdown(`#result-summarize-temp`, `#${containerID} .card-body p`); 
-                    resetButton($spinner,$buttonContainer)
-                    $('#result-summarize-temp').remove()
-                });
-    
-            },
-            error: function(error) {
-                console.error(error);
-                resetButton($spinner,$buttonContainer)
-            },
-            finally: function(error) {
-                console.error(error);
-                resetButton($spinner,$buttonContainer)
-            }
-        });
-    });
-    
-    $('#video-snsContent').submit(function(event) {
-        event.preventDefault();
-    
-        const formData = new FormData(this);
-        console.log(formData)
-    
-        const videoId = $('#video-holder').data('id')
-        console.log(videoId)
-    
-        const $buttonContainer = $(this).find('button[type="submit"]')
-        const $spinner = showSpinner($buttonContainer,'summary')
-        if (shouldPreventSubmission($buttonContainer,$spinner)) { return; }
-    
-        // Mark the card as done to avoid processing it again
-        $buttonContainer.addClass('done');
-    
-        const postCount = parseInt(formData.get('postCount'));
-        console.log(`Generating ${postCount} post(s)`)
-    
-        $.ajax({
-            url: '/api/openai-video/snsContent?videoId='+videoId, // replace with your endpoint
-            method: 'POST',
-            data: formData,
-            processData: false, // Tell jQuery not to process data
-            contentType: false, // Tell jQuery not to set contentType
-            success: function(response) {
-                let sourceInstances = {};
-                let containerID
-    
+        
                 for(let i = 1; i <= postCount; i++) {
                     (function(index) {
-                        let source =  handleStream(response, function(message) {
-                            containerID = `card-${response.insertedId}-${index}`;
-                            const item = message; // Replace with the appropriate value for "item"
-                            const doc = response; // Replace with the appropriate value for "doc"
-                        
-                            if($('#' + containerID).length == 0) {
-                                const initialCardHtml = designCard(containerID,doc,item)
-                                
-                            $('#result-snsContent').prepend(initialCardHtml);
+                        let containerID = `card${response.insertedId}${generateRandomID()}`;
+                        console.log(`Loop ${index}/${postCount}`)
+                        containerID = `card${response.insertedId}${generateRandomID()}`;
+
+                        const resultContainer = $(formSelector).find('.result')
+                        const tempResultContainer = $(formSelector).find('.result-temp')
+                    
+                        if($('#' + containerID).length == 0) {
+                            const initialCardHtml = designCard(containerID,response)
+                            const initialCardHtmlTemp = designCard(containerID+'temp',response)
+
+                            resultContainer.prepend(initialCardHtml);
+                            tempResultContainer.prepend(initialCardHtmlTemp);
+        
                             updateMoments();
                             console.log(`Initial card created with id: card-${containerID}`);
-                            }
-                        
-                            $(`#${containerID} .card-body p`).append(message);
-                            },function(endMessage){
-                                console.log(endMessage)
+                        }
+                    
+                        let source =  handleStream(response, function(message) {
+   
+                            $(`#${containerID}temp .card-body p`).append(message);
+                            //$(`#${containerID} .card-body p`).append(message);
+                            watchAndConvertMarkdown(`#${containerID}temp .card-body p`, `#${containerID} .card-body p` ); 
+                            if (additionalCallback) additionalCallback(response, message);
+                        },function(endMessage){
+                            if(index<=1){
                                 resetButton($spinner,$buttonContainer)
-                            });
-                                
+                            }
+                        });
                         // Store the source instance for this generation
-                        sourceInstances[`source-${index}`] = source;
+                        sourceInstances[generateRandomID()] = source
                     })(i);
     
                 }
     
-                handleGenerationStop(sourceInstances,$spinner, $buttonContainer)
             },
             error: function(error) {
                 console.error(error);
@@ -423,152 +367,17 @@ const handleVideoForm = () => {
             }
         });
     });
-    
-    $('#video-qa').submit(function(event) {
-        event.preventDefault();
-    
-        const formData = new FormData(this);
-        console.log(formData)
-    
-        const videoId = $('#video-holder').data('id')
-        console.log(videoId)
-    
-        const $buttonContainer = $(this).find('button[type="submit"]')
-        const $spinner = showSpinner($buttonContainer,'qa')
-        if (shouldPreventSubmission($buttonContainer,$spinner)) { return; }
-    
-        // Mark the card as done to avoid processing it again
-        $buttonContainer.addClass('done');
-    
-        $.ajax({
-            url: '/api/openai-video/qa?videoId='+videoId, // replace with your endpoint
-            method: 'POST',
-            data: formData,
-            processData: false, // Tell jQuery not to process data
-            contentType: false, // Tell jQuery not to set contentType
-            success: function(response) {
-                let containerID
-                const sourceInstance = handleStream(response, function(message) {
-    
-                    containerID = `card-${response.insertedId}`;
-                    const item = message; // Replace with the appropriate value for "item"
-                    const doc = response; // Replace with the appropriate value for "doc"
-                
-                    if($('#' + containerID).length == 0) {
-                    const initialCardHtml = designCard(containerID,doc,item)
-                        
-                        $('#result-qa').prepend(initialCardHtml);
-                        
-                        if($('#result-qa-temp').length == 0){
-                            $('#result-qa').after('<div id="result-qa-temp" class="d-none"></div>')
-                        }
-    
-                        updateMoments();
-                        console.log(`Initial card created with id: card-${containerID}`);
-                    }
-                
-                    $(`#result-qa-temp`).append(message);
-                    $(`#${containerID} .card-body p`).append(message);
-    
-                },function(endMessage){
-                    console.log(endMessage)
-                    watchAndConvertMarkdown(`#result-qa-temp`, `#${containerID} .card-body p`); 
-                    resetButton($spinner,$buttonContainer)
-                    $('#result-qa-temp').remove()
-                });
-    
-                handleGenerationStop(sourceInstance,$spinner,$buttonContainer)
-            },
-            error: function(error) {
-                console.error(error);
-                resetButton($spinner,$buttonContainer)
-            },
-            finally: function(error) {
-                console.error(error);
-                resetButton($spinner,$buttonContainer)
-            }
-        });
-    });
-    
-    $('#video-important').submit(function(event) {
-            event.preventDefault();
-    
-            const formData = new FormData(this);
-            console.log(formData)
-    
-            const videoId = $('#video-holder').data('id')
-            console.log(videoId)
-    
-            const $buttonContainer = $(this).find('button[type="submit"]')
-            const $spinner = showSpinner($buttonContainer,'important')
-            if (shouldPreventSubmission($buttonContainer,$spinner)) { return; }
-    
-            // Mark the card as done to avoid processing it again
-            $buttonContainer.addClass('done');
-    
-            $.ajax({
-                url: '/api/openai-video/important?videoId='+videoId, // replace with your endpoint
-                method: 'POST',
-                data: formData,
-                processData: false, // Tell jQuery not to process data
-                contentType: false, // Tell jQuery not to set contentType
-                success: function(response) {
-                    let containerID
-                    const sourceInstance = handleStream(response, function(message) {
-    
-                        containerID = `card-${response.insertedId}`;
-                        const item = message; // Replace with the appropriate value for "item"
-                        const doc = response; // Replace with the appropriate value for "doc"
-                    
-                        if($('#' + containerID).length == 0) {
-                        const initialCardHtml = designCard(containerID,doc,item)
-                            
-                            $('#result-important').prepend(initialCardHtml);
-                            
-                            if($('#result-important-temp').length == 0){
-                                $('#result-important').after('<div id="result-important-temp" class="d-none"></div>')
-                            }
-    
-                            updateMoments();
-                            console.log(`Initial card created with id: card-${containerID}`);
-                        }
-                    
-                        $(`#result-important-temp`).append(message);
-                        $(`#${containerID} .card-body p`).append(message);
-    
-                    },function(endMessage){
-                        console.log(endMessage)
-                        watchAndConvertMarkdown(`#result-important-temp`, `#${containerID} .card-body p`); 
-                        resetButton($spinner,$buttonContainer)
-                        $('#result-important-temp').remove()
-                    });
-                    handleGenerationStop(sourceInstance,$spinner,$buttonContainer)
-    
-                },
-                error: function(error) {
-                    console.error(error);
-                    resetButton($spinner,$buttonContainer)
-                },
-                finally: function(error) {
-                    console.error(error);
-                    resetButton($spinner,$buttonContainer)
-                }
-            });
-    });  
 }
-
 function resetButton($spinner,$buttonContainer){
     $spinner.hide()
     $buttonContainer.find('i').show();
     $buttonContainer.removeClass('done bg-danger stop')
     $buttonContainer.find('.content').text('生成する')
-    console.log('Button is reset')
-    console.log($buttonContainer.attr('class'))
 }
-function shouldPreventSubmission($buttonContainer,$spinner,sourceInstance) {
+function shouldPreventSubmission($buttonContainer,$spinner,sourceInstances) {
     if ($buttonContainer.hasClass('stop')) {
-        if(sourceInstance){
-            stopStreams(sourceInstance)
+        if(!isEmpty(sourceInstances)){
+            stopStreams(sourceInstances)
         }
         resetButton($spinner,$buttonContainer)
         return true;
@@ -577,8 +386,8 @@ function shouldPreventSubmission($buttonContainer,$spinner,sourceInstance) {
     $buttonContainer.find('.content').text('生成停止')
     return false;
 }
-function designCard(containerID,doc,item){
-return `<div class="card mb-3" id="${containerID}" data-id="${doc._id}"><div class="card-top p-3 d-flex align-items-center justify-content-between"><div class="tools d-flex align-items-center"><a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア"><i class="fas fa-share-alt"></i></a><badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー"><i class="fas fa-copy"></i></badge></div><div class="text-end text-sm text-muted" style="font-size:12px"><div class="custom-date" data-value="${new Date()}"></div></div></div><div class="card-body py-0"><p>${item}</p></div></div>`;
+function designCard(containerID,doc){
+    return `<div class="card mb-3" id="${containerID}" data-id="${doc.insertedId}"><div class="card-top p-3 d-flex align-items-center justify-content-between"><div class="tools d-flex align-items-center"><a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア"><i class="fas fa-share-alt"></i></a><badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー"><i class="fas fa-copy"></i></badge></div><div class="text-end text-sm text-muted" style="font-size:12px"><div class="custom-date" data-value="${new Date()}"></div></div></div><div class="card-body py-0"><p></p></div></div>`;
 }
 function generateRandomID() {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -620,4 +429,6 @@ function generateCard(response,index=1) {
     }
     return containerID
 }
-         
+function isEmpty(obj) {
+    return JSON.stringify(obj) === '{}';
+}

@@ -51,8 +51,8 @@ block mainContent
                           button.btn.btn-primary.w-100(type='submit') 
                             i.fas.fa-paper-plane.me-3
                             | 生成する
-                      #result-summarize
-                  // Your "Summarize" form content here
+                        .result
+                        .result-temp.d-none
             
             // SNS Post Section
             .accordion-item
@@ -97,7 +97,8 @@ block mainContent
                           button.btn.btn-primary.w-100(type='submit') 
                             i.fas.fa-paper-plane.me-3
                             | 生成する
-                      #result-snsContent
+                        .result
+                        .result-temp.d-none
             
             // Q&A Section
             .accordion-item
@@ -123,7 +124,8 @@ block mainContent
                           button.btn.btn-primary.w-100(type='submit') 
                             i.fas.fa-paper-plane.me-3
                             | 生成する
-                      #result-qa
+                        .result
+                        .result-temp.d-none
             
             // Importants Section
             .accordion-item
@@ -149,9 +151,9 @@ block mainContent
                           button.btn.btn-primary.w-100(type='submit') 
                             i.fas.fa-paper-plane.me-3
                             | 生成する
-                      #result-important
+                        .result
+                        .result-temp.d-none
 
-    //#mobile-toolbar.mb-3.d-block.d-md-none
     //block dynamicContent
   else 
     block dynamicContent
