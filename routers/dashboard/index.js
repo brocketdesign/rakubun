@@ -57,8 +57,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
 
   try {
       const { mode } = req.params; // Get the 'mode' parameter from the route URL
-      let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
-      nsfw = req.user.nsfw === 'true'?true:false
+      let { searchTerm, page } = req.query; // Get the search term from the query parameter
       page = parseInt(page) || 1
     
       console.log(`Dashboard mode ${mode} requested`);
@@ -71,7 +70,7 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
       const currentMode = mode || req.session.mode || '1';
     
       await initCategories(req.user._id)
-      let scrapedData = await ManageScraper(searchTerm,nsfw,mode,req.user, page);
+      let scrapedData = await ManageScraper(searchTerm,mode,req.user, page);
 
       let scrapInfo  
       try {
@@ -93,8 +92,7 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
 
   console.log('Dashboard page requested');
   const { mode } = req.params; // Get the 'mode' parameter from the route URL
-  let { searchTerm, nsfw, page } = req.query; // Get the search term from the query parameter
-  nsfw = req.user.nsfw === 'true'?true:false
+  let { searchTerm, page } = req.query; // Get the search term from the query parameter
   page = parseInt(page) || 1
 
   // If 'mode' is not provided, use the mode from the session (default to '1')
@@ -106,14 +104,11 @@ router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, r
         $regex: searchTerm,
       },
       mode:mode,
-      nsfw:nsfw,
       isdl:true,
     }
     if(!searchTerm){
-      console.log('Should see all')
       query_obj = {
         mode:mode,
-        nsfw:nsfw,
         isdl:true,
       }
     }
@@ -140,13 +135,11 @@ router.get('/app/:mode/history', ensureAuthenticated, ensureMembership, async (r
   const currentMode = mode || req.session.mode || '1';
   const userId = new ObjectId(req.user._id);
 
-  const nsfw = req.user.nsfw === 'true'
 
   try{
 
     const medias = await findDataInMedias(userId, {
       mode: mode,
-      nsfw: nsfw,
       hide_query: { $exists: false },
     }, categoryId);
 

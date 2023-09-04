@@ -2,7 +2,7 @@ extends base
 
 block mainContent
   a.display-4(href=`/dashboard/app/${mode}`) Home
-  form#search(action=`/dashboard/app/${mode}`, method="GET", data-mode=mode, data-page=page, data-nsfw= user.nsfw)
+  form#search(action=`/dashboard/app/${mode}`, method="GET", data-mode=mode, data-page=page)
     .input-group.mb-3
       input(type="hidden" name="page" id="page" value=page)
       if mode == 4
@@ -22,7 +22,7 @@ block mainContent
           #video-holder.sticky-video.px-0.bg-transparent
         .col.order-3.order-sm-3.my-3
           block dynamicContent
-        .col.order-2.order-sm-2.my-3(class=user.nsfw=='true'?'d-none nsfw':'sfw')
+        .col.order-2.order-sm-2.my-3
           #result.d-none
           #summary(style="display:none")
             .content
