@@ -1,6 +1,6 @@
 const { ObjectId, GoogleApis } = require('mongodb');
 
-const searchYoutube = async (query, url, mode, nsfw, page) => {
+const searchYoutube = async (query, url, mode, page) => {
   const { google } = require('googleapis');
 
   const youtube = google.youtube({
@@ -24,17 +24,17 @@ const searchYoutube = async (query, url, mode, nsfw, page) => {
     const alt = title;
     const currentPage = url;
 
-    return { video_id: videoId, imageUrl, title, alt, link, currentPage, query, mode, nsfw };
+    return { video_id: videoId, imageUrl, title, alt, link, currentPage, query, mode };
   });
 
   return result;
 }
 
 
-async function scrapeMode1(url, mode, nsfw, page) {
+async function scrapeMode1(url, mode, page) {
   query = url 
   try {
-    return await searchYoutube(query, url, mode, nsfw, page);
+    return await searchYoutube(query, url, mode, page);
   } catch (error) {
     console.log('Error occurred while scraping and saving data:', error);
     return [];

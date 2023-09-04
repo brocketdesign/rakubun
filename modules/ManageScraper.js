@@ -12,7 +12,6 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
 }
 
 async function ManageScraper(url, mode, user, page) {
-  console.log('Manage Scraper:' ,{url, mode, page})
   const scrapeMode = require(`./scraper/scrapeMode1`);
   const userId = new ObjectId(user._id);
 
