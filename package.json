@@ -1,0 +1,45 @@
+{
+  "name": "rakubun",
+  "version": "1.0.0",
+  "description": "Use AI to create SEO content",
+  "main": "app.js",
+  "scripts": {
+    "test": "npm test",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brocketdesign/rakubun.git"
+  },
+  "author": "Hato.Ltd",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/brocketdesign/rakubun/issues"
+  },
+  "homepage": "https://github.com/brocketdesign/rakubun#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "compression": "^1.7.4",
+    "connect-flash": "^0.1.1",
+    "connect-mongodb-session": "^3.1.1",
+    "dotenv": "^16.3.1",
+    "email-templates": "^11.1.1",
+    "eventsource-parser": "^1.0.0",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "fluent-ffmpeg": "^2.1.2",
+    "handlebars": "^4.7.8",
+    "kuromoji": "^0.1.2",
+    "mongodb": "^6.0.0",
+    "multer": "^1.4.5-lts.1",
+    "natural": "^6.7.0",
+    "openai": "^4.0.0",
+    "passport": "^0.6.0",
+    "passport-local": "^1.0.0",
+    "pdf-parse": "^1.1.1",
+    "stable-diffusion-api": "^0.0.7",
+    "stripe": "^13.4.0",
+    "wordpress": "^1.4.2",
+    "youtube-transcript": "^1.0.6"
+  }
+}

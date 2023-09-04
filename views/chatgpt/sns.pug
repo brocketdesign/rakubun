@@ -1,0 +1,81 @@
+extends ../dashboard/base
+
+block mainContent
+  h1.display-5.mb-4.fw-bold SNS投稿生成
+  if !contentId
+    .row.row-cols-1.row-cols-md-2.pe-0
+      .col.p-3
+        .d-flex.justify-content-between
+          h6 入力
+          button.btn.btn-warning.badge.py-0(onclick="location.reload()")
+            | リセットする
+        hr.mb-4
+        form.row#snsContent.default.bg-white
+          .row
+            .form-group.col-6.my-3
+              label.fw-bold.my-2(for='language') 言語
+              select#language.form-control(name='language',required)
+                option(value='japanese')
+                  i.faw.faw-flag-jp
+                  |  Japanese
+                option(value='english')
+                  i.faw.faw-flag-us
+                  |  English
+            .form-group.col-6.my-3
+              label.fw-bold.my-2(for='postCount') 投稿数
+              select#postCount.form-control(name='postCount', required)
+                  option(value='1') 1 投稿
+                  option(value='2') 2 投稿
+                  option(value='3') 3 投稿
+                  option(value='4') 4 投稿
+                  option(value='5') 5 投稿
+          .form-group.col-6.my-3
+            label.fw-bold.my-2(for='snsChoice') SNS選択
+            select#snsChoice.form-control(name='snsChoice', required)
+              option(value='twitter')
+                |  Twitter
+              option(value='instagram')
+                |  Instagram
+              option(value='facebook')
+                |  Facebook
+              option(value='linkedin')
+                |  LinkedIn
+          .form-group.col-12.my-3
+            div.keywords-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                  | キーワード
+                  button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")   
+                    i.fas.fa-plus
+                div.input-group.mb-3
+                    div.keyword-inputs.row.row-cols-1.row-cols-md-3
+                      .col.p-1
+                        input.form-control(type='text', name="keyword[]", placeholder='プログラミング', id='keyword-1', required)
+          .form-group.col-12.my-3
+            label.fw-bold.my-2(for='message') メッセージ
+            textarea#message.form-control(name='message', placeholder='今日のコードリビューで学んだこと...', required).rows
+          .my-3
+            button.btn.btn-primary.w-100(type='submit') 
+              i.fas.fa-paper-plane.me-3
+              | 生成する
+      .col.p-3
+        .d-flex.justify-content-between
+          h6 生成結果
+        hr.mb-4
+        #result
+          if userOpenaiDocs || userOpenaiDocs.length  > 0
+            for doc of userOpenaiDocs
+              if doc.completion
+                for item of doc.completion
+                  .card.mb-3(data-id=doc._id)
+                    .card-top.p-3.d-flex.align-items-center.justify-content-between
+                      .tools.d-flex.align-items-center
+                        a.btn.tool-button.mx-2(onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア")
+                         i.fas.fa-share-alt
+                        badge.btn.tool-button.tool-button-copy.mx-2(data-toggle="tooltip" title="コピー")
+                          i.fas.fa-copy
+                      .text-end.text-sm.text-muted(style="font-size:12px")
+                        .custom-date(data-value=doc.prompt_time)
+                    .card-body.py-0
+                      p #{item}
+
+

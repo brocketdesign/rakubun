@@ -1,0 +1,151 @@
+extends ../dashboard/base
+
+block mainContent
+  h1.display-5.mb-4.fw-bold Ebook生成
+  if !bookId
+    .row.row-cols-1.row-cols-md-3.pe-0
+      .col.p-3
+        h6 入力
+        hr.mb-4
+        form.row#ebook.default
+          .row.row-cols-1.bg-white
+            .form-group.col.my-3
+              div.keywords-container
+                label.fw-bold.my-2.d-flex.justify-content-between(for='keyword-1') 
+                  | キーワード
+                  button.badge.bg-primary.add-item(type="button" data-name="keyword" data-label="キーワード")   
+                          i.fas.fa-plus
+                div.input-group.mb-3
+                    div.keyword-inputs.row.row-cols-1.row-cols-md-3
+                      .col.p-1
+                        input.form-control(type='text', name="keyword[]", placeholder='20代', id='keyword-1', required)                        
+            .form-group.col.my-3
+              label.fw-bold.my-2(for='topic') タイトル
+              input#topic.form-control(type='text',name="topic" placeholder='20代でエンジニアに転職する方法とは？手順やおすすめ企業を解説', required)
+            .form-group.col.my-3
+              label.fw-bold.my-2(for='language') 言語
+              select#language.form-control(name='language',required)
+                option(value='japanese')
+                  i.faw.faw-flag-jp
+                  |  Japanese
+                option(value='english')
+                  i.faw.faw-flag-us
+                  |  English
+            .form-group.col.my-3
+              div.chapters-container
+                  label.fw-bold.my-2.d-flex.justify-content-between(for='chapters-1') 
+                    | 目次
+                    button.badge.bg-primary.add-item(type="button" data-name="chapters" data-label="目次")   
+                      i.fas.fa-plus
+                  .form-check
+                      input#aiCheckbox.form-check-input(type="checkbox", name="aiCheckbox")
+                      label.form-check-label(for="aiCheckbox") 目次をAIで生成しますか？
+                  div.input-group.mb-3
+                      div.chapters-inputs.row.row-cols-1.row-cols-md-2
+                        .col.p-1
+                          input.form-control(type='text', name="chapters[]", placeholder="20代で営業職に転職する難しさ", id='chapters-1', required)
+            .my-3
+              button.btn.btn-primary.w-100(type='submit') 
+                i.fas.fa-paper-plane.me-3
+                | 生成する
+      .col.p-3
+        h6 生成結果
+        hr.mb-4
+        #result
+      .col
+        if userOpenaiDocs && userOpenaiDocs.length > 0
+          .row.row-cols-1.my-3
+            each book in userOpenaiDocs 
+              .col
+                a.text-dark(href=`/dashboard/app/openai/ebook/${book._id}`)
+                  .card.btn.bg-white.mb-4
+                    .card-body
+                        h3.fw-normal.fs-6.text-capitalize=book.title
+                        if book.book_content && book.book_content[0] && book.book_content[0].content
+                          p.text-capitalize=book.book_content[0].content.slice(0,50)
+                              | ... 
+        else 
+          p Write a book
+  else 
+    #edit-book(data-id=book._id)
+      .position-fixed.tools.m-auto.p-3(style="bottom:0;z-index:2")
+        .card.p-0.shadow.rounded.border 
+          .card-body.py-2
+            button.btn.shadow-0#regen(type="button")
+              span Re-generate
+              i.ms-3.fas.fa-sync-alt
+      textarea.display-4(data-key='title')=book.title
+      h2.lead(style="display: block ruby;")
+          | Written by 
+          input(type='text' value=book.author.name data-key='author.name')
+
+      .card.mb-4
+          .card-body
+              p 
+                  b Genre: 
+                  input(type='text' value=book.genre data-key='genre')
+              p 
+                  b Description: 
+                  textarea(data-key='description')= book.description
+              p 
+                  b Author's Bio: 
+                  textarea(data-key='author.bio')= book.author.bio
+              p 
+                  b Author's Nationality: 
+                  input(type='text' value=book.author.nationality data-key='author.nationality')
+              p 
+                  b Writing Tone: 
+                  input(type='text' value=book.tone data-key='tone')
+
+      if book.book_content
+          each chapter, index in book.book_content
+              h1 
+                  input(type='text' value=`${index + 1 }.${chapter.title}` data-key=`book_content[${index}].title`)
+              p.card-text 
+                  textarea(data-key=`book_content[${index}].content`)= chapter.content
+
+              if chapter.sub_chapters_content
+                  each subChapter, subIndex in chapter.sub_chapters_content
+                      h2 
+                          input(type='text' value=`${index + 1 }.${subIndex + 1 }.${subChapter.title}` data-key=`book_content[${index}].sub_chapters_content[${subIndex}].title`)
+                      p.fw-bold 
+                          | Key points
+                      ul
+                        each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
+                            li 
+                                input(type='text' value=keyPoint data-key=`book_content[${index}].sub_chapters_content[${subIndex}].key_points[]`)
+                      p 
+                        textarea(data-key=`book_content[${index}].sub_chapters_content[${subIndex}].content`)= subChapter.content
+    #preview-book.d-none
+      h1.display-4 #{book.title}
+      h2.lead Written by #{book.author.name}
+
+      .card.mb-4
+        .card-body
+          p 
+            b Genre: 
+            | #{book.genre}
+          p 
+            b Description: 
+            | #{book.description}
+          p 
+            b Author's Bio: 
+            | #{book.author.bio}
+          p 
+            b Author's Nationality: 
+            | #{book.author.nationality}
+          p 
+            b Writing Tone: 
+            | #{book.tone}
+      if book.book_content
+        each chapter,index in book.book_content
+            h1= `${index + 1 }.${chapter.title}`
+            p.card-text= chapter.content
+            if chapter.sub_chapters_content
+              each subChapter, subIndex in chapter.sub_chapters_content
+                h2=  `${index + 1 }.${subIndex + 1 }.${subChapter.title}`
+                p.fw-bold Key points
+                ul
+                  each keyPoint in book.chapters[index].sub_chapters[subIndex].key_points
+                    li= keyPoint
+                p= subChapter.content
