@@ -29,7 +29,7 @@ console.log(foundElement)
       return foundElement.link; 
     }
 
-    return await searchVideo(foundElement, user, stream);
+    return await searchVideoYoutube(videoDocument, user, stream) 
   } catch (error) {
     console.log('Error occurred while getting the video URL:', error);
     return null;
@@ -54,58 +54,6 @@ function getVideoFilePathOrHighestQualityURL(videoDocument, stream) {
     }
   }
   return videoDocument.filePath ? videoDocument.filePath : videoDocument.highestQualityURL;
-}
-
-
-async function updateLastScraped(videoDocument) {
-  console.log('Mode 3: returning the URL');
-
-}
-
-async function searchVideo(videoDocument, user, stream) {
-  const videoLink = videoDocument.link; // Assuming 'link' field contains the video link
-  return videoLink.includes('youtube') ? 
-    await searchVideoYoutube(videoDocument, user, stream) : await searchVideoUrl(videoDocument, user);
-}
-
-async function findElementIndex( video_id){
-  const foundElement = AllData.find(item => item.video_id === video_id);
-  const elementIndex = AllData.findIndex(item => item.video_id === video_id);
-  return {elementIndex,foundElement};
-}
-
-async function searchVideoUrl( videoDocument, user) {
-
-  videoURL = videoDocument.link
-  if(!videoDocument.link.includes('http')){
-    videoURL = `${process.env.DEFAULT_URL}${videoDocument.link}`;
-  }
-  console.log('Video URL to scrape:', videoURL);
-
-  const browser = await puppeteer.launch({ headless: false });
-  const page = await browser.newPage();
-  await page.setRequestInterception(true);
-
-  const mp4Urls = [];
-
-  page.on('request', (request) => {
-    if (request.url().includes('.mp4')) {
-      mp4Urls.push(request.url());
-    }
-    request.continue();
-  });
-
-  await page.goto(videoURL, { waitUntil: 'networkidle2' });
-  await page.waitForTimeout(1000);
-
-  await browser.close();
-
-  const highestQualityURL = mp4Urls[0] || null;
-
-  updateSameElements(videoDocument, {highestQualityURL:highestQualityURL,last_scraped:new Date()})
-  
-  console.log('Highest Quality URL:', highestQualityURL);
-  return highestQualityURL;
 }
 
 async function searchVideoYoutube( videoDocument, user, stream){

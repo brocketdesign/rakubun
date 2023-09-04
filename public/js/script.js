@@ -11,6 +11,7 @@ const inputTrigger = (inputElement, triggerElement) => {
 }
 $(document).ready(function() {
     handleEvents()
+    handleGridRange();
     handleUserProfile();
 
     handleCopyButtons()

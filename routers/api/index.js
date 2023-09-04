@@ -188,7 +188,6 @@ router.get('/video', async (req, res) => {
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
     // Call the function to get the highest quality video URL for the provided id
     const url = await getHighestQualityVideoURL(videoId,req.user);
-    //const related = await scrapeMode1GetRelatedVideo(id,req.user,req.user.mode, req.user.nsfw)
 
     if (!url) {
       return res.status(404).json({ error: 'Video not found or no valid URL available.' });
@@ -620,7 +619,6 @@ try {
     // リクエストボディをコンソールにログ
 
     const data = { 
-      nsfw: req.user.nsfw == 'true',
       searchTerm: req.body.searchterm || req.body.searchTerm , 
       page: req.body.page ,
       mode: req.body.mode 
@@ -628,7 +626,6 @@ try {
     
     let scrapedData = await ManageScraper(
       data.searchTerm,
-      data.nsfw,
       data.mode,
       req.user, 
       parseInt(data.page)
