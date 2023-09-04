@@ -11,9 +11,9 @@ async function findAndUpdateUser(userId, newScrapedData = null) {
   return user;
 }
 
-async function ManageScraper(url, nsfw, mode, user, page) {
-  console.log('Manage Scraper:' ,{url, nsfw, mode, page})
-  const scrapeMode = require(`./scraper/scrapeMode${mode}`);
+async function ManageScraper(url, mode, user, page) {
+  console.log('Manage Scraper:' ,{url, mode, page})
+  const scrapeMode = require(`./scraper/scrapeMode1`);
   const userId = new ObjectId(user._id);
 
   let userInfo = await findAndUpdateUser(userId);
@@ -21,7 +21,6 @@ async function ManageScraper(url, nsfw, mode, user, page) {
   scrapedData = await findDataInMedias(userId, {
     query:url,
     mode: mode,
-    nsfw: nsfw,
     page:parseInt(page),
     hide_query: { $exists: false },
     hide: { $exists: false },
@@ -32,7 +31,7 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     return scrapedData
   }
   
-  scrapedData = await scrapeMode(url, mode, nsfw, page);
+  scrapedData = await scrapeMode(url, mode, page);
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
   const categories = await initCategories(userId)
@@ -41,7 +40,6 @@ async function ManageScraper(url, nsfw, mode, user, page) {
     ...data,
     query: url,
     mode: mode,
-    nsfw: nsfw,
     page:parseInt(page),
     userId: userId,
     categories:categories
@@ -81,7 +79,6 @@ if (scrapedData && scrapedData.length > 0) {
   scrapedData = await findDataInMedias(userId, {
     query:url,
     mode: mode,
-    nsfw: nsfw,
     page:parseInt(page),
     hide_query: { $exists: false },
     hide: { $exists: false },
