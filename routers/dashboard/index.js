@@ -48,7 +48,6 @@ router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
 router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
   //await global.db.collection('openai').deleteMany()
   const userOpenaiDocs = await getOpenaiTypeForUser(req.user._id, req.params.app);
-  console.log(userOpenaiDocs)
   res.render(`chatgpt/${req.params.app}.pug`, { user:req.user,userOpenaiDocs, title:'ChatGPT '+req.params.app });
 });
 

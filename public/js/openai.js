@@ -390,7 +390,13 @@ function shouldPreventSubmission($buttonContainer,$spinner,sourceInstances) {
     return false;
 }
 function designCard(containerID,doc){
-    return `<div class="card mb-3" id="${containerID}" data-id="${doc.insertedId}"><div class="card-top p-3 d-flex align-items-center justify-content-between"><div class="tools d-flex align-items-center"><a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア"><i class="fas fa-share-alt"></i></a><badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー"><i class="fas fa-copy"></i></badge></div><div class="text-end text-sm text-muted" style="font-size:12px"><div class="custom-date" data-value="${new Date()}"></div></div></div><div class="card-body py-0"><p></p></div></div>`;
+    return `<div class="card mb-3" id="${containerID}" data-id="${doc.insertedId}">
+    <div class="card-top p-3 d-flex align-items-center justify-content-between">
+    <div class="tools d-flex align-items-center">
+    <a class="btn tool-button share mx-2" onclick="handleShareButton(this)" data-toggle="tooltip" title="Twitterでシェア"><i class="fas fa-share-alt"></i></a>
+    <badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー"><i class="fas fa-copy"></i></badge>
+    <badge class="btn tool-button tool-button-post mx-2" data-toggle="tooltip" title="Post"><i class="fas fa-plane"></i></badge>
+    </div><div class="text-end text-sm text-muted" style="font-size:12px"><div class="custom-date" data-value="${new Date()}"></div></div></div><div class="card-body py-0"><p></p></div></div>`;
 }
 function generateRandomID() {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -415,6 +421,9 @@ function generateCard(response,index=1) {
                 </a>
                 <badge class="btn tool-button tool-button-copy mx-2" data-toggle="tooltip" title="コピー">
                 <i class="fas fa-copy"></i>
+                </badge>
+                <badge class="btn tool-button tool-button-post mx-2" data-toggle="tooltip" title="Post">
+                <i class="fas fa-plane"></i>
                 </badge>
             </div>
             <div class="text-end text-sm text-muted" style="font-size:12px">

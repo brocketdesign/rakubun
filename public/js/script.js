@@ -23,7 +23,9 @@ $(document).ready(function() {
     handleGridRange();
     handleUserProfile();
 
-    handleCopyButtons()
+    handleCopyButtons();
+    handlePostButtons() ;
+
     updateMoments();
     enableTrackScroll();
 
@@ -1138,6 +1140,46 @@ function handleCopyButtons() {
       }, 2000);
     });
 }
+function handlePostButtons() {
+    $(document).on('click', '.tool-button-post', function() {
+      let content = $(this).closest('.card').find(".card-body p").text().trim();
+      let title = $(this).closest('.card').find(".card-title").text().trim() || 'test'; // Assuming you have a card-title class for the title
+      console.log('Post content: ',{content, title})
+      // Make AJAX call to post the article
+      $.ajax({
+        url: '/api/postArticle',  // Replace with your actual API endpoint
+        method: 'POST',
+        dataType: 'json',
+        data: {
+          title: title,
+          content: content
+        },
+        success: function(response) {
+          // Handle success
+          if (response.status === 'success') {
+            handleFormResult(true,'記事が正常に投稿されました')
+            // Update the tooltip title to "記事が正常に投稿されました" and show it
+            $(this).attr('title', '記事が正常に投稿されました').tooltip('_fixTitle').tooltip('show');
+          } else {
+            handleFormResult(false,'記事の投稿に失敗しました')
+            // Handle the error based on the response message
+            $(this).attr('title', '記事の投稿に失敗しました').tooltip('_fixTitle').tooltip('show');
+          }
+        }.bind(this), // Make sure 'this' context is the clicked button in the success function
+        error: function() {
+            handleFormResult(false,'内部エラーが発生しました')
+          // Handle failure
+          $(this).attr('title', '内部エラーが発生しました').tooltip('_fixTitle').tooltip('show');
+        }.bind(this) // Make sure 'this' context is the clicked button in the error function
+      });
+  
+      // After 2 seconds, revert the tooltip title to "記事投稿"
+      setTimeout(() => {
+        $(this).attr('title', '記事投稿').tooltip('_fixTitle');
+      }, 2000);
+    });
+  }
+  
 
 function handleShareButton(e) {
     const tweetText = $(e).closest('.card').find(`.card-body p`).text();

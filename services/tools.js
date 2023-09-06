@@ -8,10 +8,9 @@ const fetch = require('node-fetch');
 
 
 // Initialize OpenAI with your API key
+let openai = null
 try {
-  
-
-  const openai = new OpenAI({
+    openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
   });
   console.log('Successfully initialized OpenAI API');
@@ -90,17 +89,20 @@ async function saveData(user, documentId, update){
    return false
 }
 
-async function translateText(text,lang) {
-  let summary = '';
-  
-  const gptResponse = await openai.completions.create({
-    model: "text-davinci-003",
-    prompt: `Translate the following text in ${lang} :${text} `,
-    max_tokens: 1000,
+async function askGPT(prompt) {
+  const messages = [
+    { role: 'system', content: 'You are a powerful japanese assistant' },
+    { role: 'user', content: prompt },
+];
+  const gptResponse = await openai.chat.completions.create({
+    model: "gpt-3.5-turbo",  // Updated to GPT-3 Turbo
+    messages,
+    max_tokens: 100,
     temperature: 0,
   });
-  
-  return gptResponse.choices[0].text.trim();
+  const content = gptResponse.choices[0].message.content.trim();
+
+  return content;
 }
 
 async function findDataInMedias(userId, query, categoryId = null) {
@@ -295,7 +297,7 @@ async function saveDataSummarize(videoId, format){
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
   saveData ,
-  translateText ,
+  askGPT,
   findDataInMedias,
   sanitizeData,
   updateSameElements,

@@ -6,8 +6,7 @@ const ensureAuthenticated = require('../../middleware/authMiddleware');
 const { 
   formatDateToDDMMYYHHMMSS, 
   saveData ,
-  translateText ,
-  fetchMediaUrls, 
+  askGPT , 
   findDataInMedias,
   sanitizeData,
   updateSameElements,
@@ -644,6 +643,50 @@ try {
   });
 }
 });
+
+router.post('/postArticle', async (req, res) => {
+  // Get user information and article details from request
+  const user = req.user;
+  const title = req.body.title;
+  const content = req.body.content;
+  const new_title = await askGPT(`Generate a SEO title for an article about : \n ${content} \n Your respose must be in japanese, without any comments.`)
+
+  try {
+    // Make sure the user exists and is valid
+    if (!user || !ObjectId.isValid(new ObjectId(user._id))) {
+      return res.json({
+        status: 'error',
+        message: 'ユーザーが無効です' // User is invalid
+      });
+    }
+
+    // Post the article to WordPress
+    const result = await postArticleToWordpress({ user, title:new_title, content });
+
+    // Check if posting was successful (this depends on what your function returns)
+    if (result) {
+      return res.json({
+        status: 'success',
+        message: '記事が正常に投稿されました' // Article successfully posted
+      });
+    } else {
+      return res.json({
+        status: 'error',
+        message: '記事の投稿に失敗しました' // Failed to post the article
+      });
+    }
+
+  } catch (error) {
+    // Handle any errors that occurred during the process
+    console.error("Error in posting article: ", error);
+    return res.json({
+      status: 'error',
+      message: '内部エラーが発生しました' // Internal error occurred
+    });
+  }
+});
+
+module.exports = router;
 
 async function saveImageToDB(db, userID, prompt, image) {
   const imageID = new ObjectId();
