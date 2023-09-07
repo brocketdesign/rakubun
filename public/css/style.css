@@ -15,7 +15,7 @@ main#dashboard {
 .done.download-button i {
   color:red !important;
 }
-.masonry-container .download-button i,.masonry-container .spinner-border  {
+.card.info-container .download-button i,.card.info-container .spinner-border  {
   color:white ;
 }
 .accordion-item h2 button {

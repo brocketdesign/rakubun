@@ -4,6 +4,7 @@ $(document).ready(function() {
     handleOpenaiForm();
     handleComparePDF();
     handleVideoForm();
+    //loopSearchResult();
 });
 
 const handleOpenaiForm = () => {
@@ -326,7 +327,6 @@ function handleOpenaiFormSubmission(formSelector, apiEndpoint, additionalCallbac
                     (function(index) {
                         let containerID = `card${response.insertedId}${generateRandomID()}`;
                         console.log(`Loop ${index}/${postCount}`)
-                        containerID = `card${response.insertedId}${generateRandomID()}`;
 
                         const resultContainer = $(formSelector).find('.result')
                         const tempResultContainer = $(formSelector).find('.result-temp')
@@ -369,6 +369,70 @@ function handleOpenaiFormSubmission(formSelector, apiEndpoint, additionalCallbac
                 resetButton($spinner,$buttonContainer)
             }
         });
+    });
+}
+function loopSearchResult(){
+    const containers = $('.info-container');
+    const postCount = 1;  // Process only the first two elements
+
+    for(let i = 0; i < postCount; i++) {
+        (function(index) {
+            const cardId = containers.eq(index).data('id');
+            $.get('/api/video?videoId='+cardId, function(response) {
+                console.log('Summarize: ', response.data._id);
+                handleAutoOpenai(cardId,response.data._id);
+            })
+        })(i);
+    }
+}
+
+function handleAutoOpenai(cardId,videoId,additionalCallback){
+    $.ajax({
+        url: `/api/openai-video/summarize?videoId=${videoId}`,
+        method: 'POST',
+        data: {language:'en'},
+        success: function(response) {
+    
+            let containerID = `card${response.insertedId}${generateRandomID()}`;
+            containerID = `card${response.insertedId}${generateRandomID()}`;
+
+            const resultContainer = $(`.summary[data-id=${cardId}]`)
+            const tempResultContainer = $(`.summary-temp[data-id=${cardId}]`)
+        
+            if($('#' + containerID).length == 0) {
+                const initialCardHtml = designCard(containerID,response)
+                const initialCardHtmlTemp = designCard(containerID+'temp',response)
+
+                resultContainer.prepend(initialCardHtml);
+                tempResultContainer.prepend(initialCardHtmlTemp);
+
+                updateMoments();
+                console.log(`Initial card created with id: card-${containerID}`);
+            }
+        
+            let source =  handleStream(response, function(message) {
+
+                $(`#${containerID}temp .card-body p`).append(message);
+                //$(`#${containerID} .card-body p`).append(message);
+                watchAndConvertMarkdown(`#${containerID}temp .card-body p`, `#${containerID} .card-body p` ); 
+                if (additionalCallback) additionalCallback(response, message);
+            },function(endMessage){
+                if(index<=1){
+                    resetButton($spinner,$buttonContainer)
+                }
+            });
+            // Store the source instance for this generation
+            sourceInstances[generateRandomID()] = source
+
+        },
+        error: function(error) {
+            console.error(error);
+            resetButton($spinner,$buttonContainer)
+        },
+        finally: function(error) {
+            console.error(error);
+            resetButton($spinner,$buttonContainer)
+        }
     });
 }
 function resetButton($spinner,$buttonContainer){

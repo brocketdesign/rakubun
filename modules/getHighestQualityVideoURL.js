@@ -22,22 +22,34 @@ async function getHighestQualityVideoURL(video_id, user, stream = true) {
   }
 }
 
-async function searchVideoYoutube( videoDocument, user, stream){
+async function searchVideoYoutube(videoDocument, user, stream) {
 
-  if(!stream){
-    return videoDocument.link
-  }
+    if (!stream) {
+        return videoDocument.link;
+    }
+console.log(videoDocument)
+    try {
+        const info = await ytdl.getInfo(videoDocument.video_id);
 
-  const info = await ytdl.getInfo(videoDocument.video_id);
-  
-  const format = ytdl.chooseFormat(info.formats, { 
-    filter: 'audioandvideo', 
-    quality: 'highestaudio'
-  });
-  updateSameElements(videoDocument, {streamingUrl:format.url,last_scraped:new Date()})
+        const format = ytdl.chooseFormat(info.formats, {
+            filter: 'audioandvideo',
+            quality: 'highestaudio'
+        });
 
-  //console.log('Format found!', format.url);
-  return format.url;
+        updateSameElements(videoDocument, { streamingUrl: format.url, last_scraped: new Date() });
+
+        //console.log('Format found!', format.url);
+        return format.url;
+
+    } catch (error) {
+        // Log the error for debugging purposes
+        console.error("Error fetching video details or choosing format:", error);
+
+        // Return a default or fallback URL or handle error accordingly
+        // For now, I'm returning the original videoDocument.link as a fallback
+        return videoDocument.link;
+    }
 }
+
 
 module.exports = getHighestQualityVideoURL;

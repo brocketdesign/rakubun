@@ -256,28 +256,44 @@ const fetchOpenAICompletion = async (messages, res) => {
 
 
 async function initCategories(userId) {
+  // Convert userId to ObjectId
+  const objectId = new ObjectId(userId);
+
   // Find the current user's data
-  const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
+  const user = await global.db.collection('users').findOne({ _id: objectId });
+  
+  // Utility function to check if a category exists and create if it doesn't
+  async function createCategoryIfNotExists(categoryName) {
+    const existingCategory = user.categories && user.categories.find(cat => cat.name === categoryName);
 
-  // Check if the category "All" already exists
-  const category = user.categories && user.categories.find(cat => cat.name === 'All');
+    // If category doesn't exist, create and return it
+    if (!existingCategory) {
+      const newCategory = { id: new ObjectId().toString(), name: categoryName };
+      await global.db.collection('users').updateOne(
+        { _id: objectId },
+        { $push: { categories: newCategory } }
+      );
+      return newCategory;
+    }
 
-  if (category) {
-    // If the category already exists, return its ID in an array
-    return [category.id.toString()];
-  } else {
-    // If the category does not exist, create it and add to the user's categories
-    const newCategory = { id: new ObjectId().toString() , name: 'All' };
- 
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(userId) },
-      { $push: { categories: newCategory } }
-    );
-
-    // Return the inserted ID in an array
-    return [newCategory.id];
+    // If it exists, return the existing one
+    return existingCategory;
   }
-} 
+
+  // Check and create "All" category if it doesn't exist
+  const allCategory = await createCategoryIfNotExists('All');
+
+  // Check and create "Favorites" category if it doesn't exist
+  await createCategoryIfNotExists('Favorites');
+
+  // Check and create "Delete" category if it doesn't exist
+  await createCategoryIfNotExists('Delete');
+
+  // Return the "All" category's ID in an array
+  return [allCategory.id];
+}
+
+
 async function saveDataSummarize(videoId, format){
   try {
     const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})

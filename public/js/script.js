@@ -507,7 +507,7 @@ function updategridlayout(value) {
         type: 'POST',
         data,
         success: function(response){
-            const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}}`
+            const url =`/dashboard/app/${data.mode}?page=${parseInt(data.page)}&searchTerm=${data.searchterm?data.searchterm:data.searchTerm}`
             console.log(url)
             if(callback){callback()}
            window.location=url
