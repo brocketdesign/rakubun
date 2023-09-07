@@ -101,7 +101,12 @@ router.get('/stream/:type', async (req, res) => {
                 'important': {
                 'jp': `以下の内容から重要なポイントを抽出してください。\n\n${chunks[i]}\n\n重要なポイントを箇条書きで明確にしてください。Markdown形式で回答してください。注: コメント、翻訳は明示的に要求されない限り不要です。`,
                 'en': `Please extract the important points from the following content:\n\n${chunks[i]}\n\nList the important points clearly in bullet points. Respond using markdown. Note: Provide the post content only—no comments, no translations unless explicitly requested.`
+                },
+                'short-summarize': {
+                  'en': `Please summarize the following content in one very short sentence :\n${chunks[i]}\n\n\nNote: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.`,
+                  'jp': `次の内容を非常に短い文で要約してください：\n${chunks[i]}\n\n\n注意: マークダウンを使用して返答し、要求されていない限りコメントや翻訳を含めずに投稿内容のみを提供してください。`
                 }
+                
                   
                   
             }

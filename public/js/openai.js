@@ -4,7 +4,7 @@ $(document).ready(function() {
     handleOpenaiForm();
     handleComparePDF();
     handleVideoForm();
-    //loopSearchResult();
+    loopSearchResult();
 });
 
 const handleOpenaiForm = () => {
@@ -373,7 +373,7 @@ function handleOpenaiFormSubmission(formSelector, apiEndpoint, additionalCallbac
 }
 function loopSearchResult(){
     const containers = $('.info-container');
-    const postCount = 1;  // Process only the first two elements
+    const postCount = 3;  // Process only the first two elements
 
     for(let i = 0; i < postCount; i++) {
         (function(index) {
@@ -388,9 +388,9 @@ function loopSearchResult(){
 
 function handleAutoOpenai(cardId,videoId,additionalCallback){
     $.ajax({
-        url: `/api/openai-video/summarize?videoId=${videoId}`,
+        url: `/api/openai-video/short-summarize?videoId=${videoId}`,
         method: 'POST',
-        data: {language:'en'},
+        data: {language:'jp'},
         success: function(response) {
     
             let containerID = `card${response.insertedId}${generateRandomID()}`;
@@ -417,21 +417,15 @@ function handleAutoOpenai(cardId,videoId,additionalCallback){
                 watchAndConvertMarkdown(`#${containerID}temp .card-body p`, `#${containerID} .card-body p` ); 
                 if (additionalCallback) additionalCallback(response, message);
             },function(endMessage){
-                if(index<=1){
-                    resetButton($spinner,$buttonContainer)
-                }
             });
             // Store the source instance for this generation
             sourceInstances[generateRandomID()] = source
-
         },
         error: function(error) {
             console.error(error);
-            resetButton($spinner,$buttonContainer)
         },
         finally: function(error) {
             console.error(error);
-            resetButton($spinner,$buttonContainer)
         }
     });
 }

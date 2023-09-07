@@ -860,7 +860,7 @@ function handleStream(response,callback,endCallback) {
 
     source.onerror = function(error) {
         console.error("EventSource failed:", error);
-        if (endCallback) endCallback(data);
+        if (endCallback) endCallback();
         source.close();
     };
 
