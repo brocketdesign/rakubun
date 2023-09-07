@@ -98,7 +98,11 @@ async function askGPT(prompt) {
     model: "gpt-3.5-turbo",  // Updated to GPT-3 Turbo
     messages,
     max_tokens: 100,
-    temperature: 0,
+    temperature: 0.75,
+    top_p: 0.95,
+    frequency_penalty: 0,
+    presence_penalty: 0,
+    max_tokens: 150,
   });
   const content = gptResponse.choices[0].message.content.trim();
 
@@ -261,7 +265,7 @@ async function initCategories(userId) {
 
   // Find the current user's data
   const user = await global.db.collection('users').findOne({ _id: objectId });
-  
+
   // Utility function to check if a category exists and create if it doesn't
   async function createCategoryIfNotExists(categoryName) {
     const existingCategory = user.categories && user.categories.find(cat => cat.name === categoryName);

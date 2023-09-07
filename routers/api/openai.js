@@ -6,7 +6,7 @@ const upload = multer();
 const { 
   formatDateToDDMMYYHHMMSS, 
   saveData ,
-  translateText ,
+  askGPT ,
   fetchMediaUrls, 
   findDataInMedias,
   sanitizeData,
@@ -24,6 +24,7 @@ const openai = new OpenAI({
 
 router.post('/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
   let { prompt, time, data } = req.body;
+  console.log({ prompt, time, data })
   const type = req.params.type;
 
   let isPDF = false
@@ -38,10 +39,10 @@ router.post('/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }])
       data = {pdf_content :input1}
       data.language= req.body.language
   
-      prompt = `
-      What is this content about ? 
-      Summarize this content in ${data.language} in a few lines : ${input1}
-      `
+      //prompt = `
+      // What is this content about ? 
+      // Summarize this content in ${data.language} in a few lines : ${input1}
+      //`
     }
 
   }catch(e){
@@ -53,7 +54,7 @@ router.post('/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }])
 
   try {
     const result = await global.db.collection('openai').insertOne({ 
-      userID:req.user._id, 
+      userID:req.user?req.user._id : '', 
       data:data,
       prompt: prompt, 
       prompt_time:time,
@@ -61,11 +62,12 @@ router.post('/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }])
     });
 
     const insertedId = result.insertedId;
-    
-    global.db.collection('users').updateOne(
-      { _id: new ObjectId(req.user._id) },
-      { $push: {[`openai_${type}`]: insertedId } }
-    );
+    if(req.user){
+      global.db.collection('users').updateOne(
+        { _id: new ObjectId(req.user._id) },
+        { $push: {[`openai_${type}`]: insertedId } }
+      );
+    }
 
     res.json({
       redirect: `/api/openai/stream/${type}?id=${insertedId}`,
@@ -127,7 +129,7 @@ router.get('/stream/:type', async (req, res) => {
   }
 });
 
-router.post('/openai/pdf/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
+router.post('/pdf/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
 
   let { input1, input2, time } = req.body;
   let isPDF = false
@@ -176,6 +178,16 @@ router.post('/openai/pdf/compare', upload.fields([{ name: 'pdf1' }, { name: 'pdf
   } catch (error) {
     console.error(error);
     res.status(500).send('Internal server error');
+  }
+});
+
+router.get('/ask-gpt', async (req, res) => {
+  try {
+      const prompt = req.query.prompt;
+      const response = await askGPT(prompt);
+      res.json({ answer: response });
+  } catch (error) {
+      res.status(500).json({ error: 'Server error' });
   }
 });
 

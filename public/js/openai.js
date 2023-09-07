@@ -372,17 +372,19 @@ function handleOpenaiFormSubmission(formSelector, apiEndpoint, additionalCallbac
     });
 }
 function loopSearchResult(){
-    const containers = $('.info-container');
-    const postCount = 3;  // Process only the first two elements
-
-    for(let i = 0; i < postCount; i++) {
-        (function(index) {
-            const cardId = containers.eq(index).data('id');
-            $.get('/api/video?videoId='+cardId, function(response) {
-                console.log('Summarize: ', response.data._id);
-                handleAutoOpenai(cardId,response.data._id);
-            })
-        })(i);
+    if(document.querySelector('.summary')){
+        const containers = $('.info-container');
+        const postCount = 3;  // Process only the first two elements
+    
+        for(let i = 0; i < postCount; i++) {
+            (function(index) {
+                const cardId = containers.eq(index).data('id');
+                $.get('/api/video?videoId='+cardId, function(response) {
+                    console.log('Summarize: ', response.data._id);
+                    handleAutoOpenai(cardId,response.data._id);
+                })
+            })(i);
+        }
     }
 }
 

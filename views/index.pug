@@ -5,22 +5,23 @@ block content
     div#intro.bg-image.shadow-1-strong
         div(style="background:linear-gradient(45deg, rgba(23, 88, 213, 0.7), rgba(14, 167, 214, 0.7) 100%);")
             div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
-                div.text-white.col-12.col-md-6.py-5
+                div.text-white.col-12.col-md-12.py-5
                     h1.mb-3.fw-bold.display-4
-                        span コンテンツ制作を
-                        p 10倍速に
+                        span RAKUBUN,
+                        span.generate-text(data-context="AIを宣伝する簡潔な見出しをつける。コメントはつけずに、見出しのみで返答すること。")
+                        span.generate-text-fail(style="display:none")
+                            span コンテンツ制作を10倍速に
                     h5 高品質な記事やSNS・広告文を数秒で作成
                     h5.mb-4 AIライティングアシスタント
                     a.btn.btn-warning.btn-lg.m-2(href="/user/signup", role="button", style="font-size:1em;") まずは無料で使ってみる
-                    .px-2
-                        if ngrok 
-                            a.text-white(href=ngrok) NGROK is available !
     div.container.pt-5(style="overflow-x:hidden;")
         //- Section: Features
         section 
             #icon-grid.container.px-4.py-5
-                h1.display-4.fw-bold ChatGPTよりも効率よく
-                h1.display-4.fw-bold コンテンツ作成を進めましょう
+                h1.display-4.fw-bold.generate-text(data-context="この見出しに代わる見出しを書いてほしい：ChatGPTよりも効率よくコンテンツ作成を進めましょう")
+                .generate-text-fail(style="display:none")
+                    h1.display-4.fw-bold ChatGPTよりも効率よく
+                    h1.display-4.fw-bold コンテンツ作成を進めましょう
                 h6.fw-normal ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
                 .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.py-5
                     .col.d-flex.align-items-start
@@ -70,7 +71,7 @@ block content
             div.row
                 div.col-md-6.gx-5.mb-4
                     div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="https://storage.googleapis.com/studio-design-asset-files/projects/VGOKDzGlqn/s-2400x1925_v-frms_webp_5dc7a9f1-627e-4515-a6ab-6b5b6dc66218_middle.webp")
+                        img.img-fluid(src="")
                         a(href="#!")
                             div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
                 div.col-md-6.gx-5.mb-4
@@ -87,7 +88,7 @@ block content
             div.row
                 div.col-md-6.gx-5.mb-4.order-md-2
                     div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="https://storage.googleapis.com/studio-design-asset-files/projects/VGOKDzGlqn/s-2400x1610_v-frms_webp_918879e4-e6ce-4e95-92d6-37688b3bde50_middle.webp")
+                        img.img-fluid(src="")
                         a(href="#!")
                             div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
                 div.col-md-6.gx-5.mb-4

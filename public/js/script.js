@@ -23,6 +23,8 @@ $(document).ready(function() {
     handleGridRange();
     handleUserProfile();
 
+    handleGenerateText()
+
     handleCopyButtons();
     handlePostButtons() ;
 
@@ -1318,4 +1320,53 @@ const handleEvents = () => {
         // Replace the content of the element with the converted HTML
         $(this).html(htmlContent);
     });
+}
+
+function handleGenerateText() {
+    // Iterate through each .generate-text element
+    $('.generate-text').each(function() {
+        const $span = $(this); // Current span element
+        const prompt = $span.data('context'); // Getting the data-context value
+        const $failTemplate = $span.next('.generate-text-fail'); // Getting the corresponding failure template
+
+        // Make an AJAX call to the backend with the prompt
+        $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
+            $span.html('')
+            let source =  handleStream(response, function(message) {
+                $failTemplate .hide()
+                $span.append(message);
+            },function(endMessage){
+            });
+        }).fail(function() { 
+            // If there's an error in the AJAX request, show the fail template
+            $failTemplate.show();
+            $span.hide(); // Optionally, hide the original .generate-text span
+        });
+        
+    });
+
+    // Bind the click event to .generate-text elements
+    $('.generate-text').on('click', function() {
+        handleGenerateTextForElement($(this));
+    });
+}
+
+function handleGenerateTextForElement($element) {
+    const prompt = $element.data('context'); // Getting the data-context value
+    const $failTemplate = $element.next('.generate-text-fail'); // Getting the corresponding failure template
+
+    // Make an AJAX call to the backend with the prompt
+    $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
+        $element.html('')
+        let source =  handleStream(response, function(message) {
+            $failTemplate .hide()
+            $element.append(message);
+        },function(endMessage){
+        });
+    }).fail(function() { 
+        // If there's an error in the AJAX request, show the fail template
+        $failTemplate.show();
+        $element.hide(); // Optionally, hide the original .generate-text span
+    });
+        
 }

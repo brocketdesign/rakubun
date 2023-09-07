@@ -1,7 +1,10 @@
 main#dashboard {
   display:none;
 }
-
+.generate-text:hover{
+  opacity: 0.8;
+  cursor:pointer;
+}
 .hide-text{
   font-size: 12px;
   display:none;
