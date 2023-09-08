@@ -3,12 +3,13 @@ extends default
 block content
     //- Background image
     div#intro.bg-image.shadow-1-strong
-        div(style="background:linear-gradient(45deg, rgba(23, 88, 213, 0.7), rgba(14, 167, 214, 0.7) 100%);")
+        div(style="background:linear-gradient(45deg, rgb(23, 88, 213), rgb(14, 167, 214) 100%);")
             div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
                 div.text-white.col-12.col-md-12.py-5
-                    h1.mb-3.fw-bold.display-4(style="height: 200px;")
-                        span RAKUBUN,
-                        span.generate-text#headline(data-context="この見出しに代わる見出しを書いてほしい：AIを使ってコンテンツ制作を10倍速に" )
+                    h1.mb-3.fw-bold.display-4(style="height: 170px;")
+                        span RAKUBUN
+                        span(style="opacity: 0.8;") なら,
+                        p.generate-text#headline(data-context="この見出しに代わる見出しを書いてほしい：AIを使ってコンテンツ制作を10倍速に" )
                         span.generate-text-fail(style="display:none")
                             span コンテンツ制作を10倍速に
                     h5 高品質な記事やSNS・広告文を数秒で作成
