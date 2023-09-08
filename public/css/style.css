@@ -1,7 +1,7 @@
 main#dashboard {
   display:none;
 }
-.generate-text:hover{
+.generate-text{
   opacity: 0.8;
   cursor:pointer;
 }

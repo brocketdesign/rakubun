@@ -23,8 +23,6 @@ $(document).ready(function() {
     handleGridRange();
     handleUserProfile();
 
-    handleGenerateText()
-
     handleCopyButtons();
     handlePostButtons() ;
 
@@ -1321,6 +1319,50 @@ const handleEvents = () => {
         $(this).html(htmlContent);
     });
 }
+const headlines = [
+    "AI技術でデザインの品質を飛躍的に向上",
+    "AIによる最先端のコンテンツ最適化技術",
+    "AIを駆使してビジネスの生産性を大幅に向上",
+    "コンテンツ制作の新時代: AIの可能性を最大限に",
+    "AIのパワーでクリエイティブな作業を劇的に加速",
+    "AIを組み込んだツールでコンテンツクリエーションの新境地へ",
+    "AIの革命的な技術でコンテンツ制作の限界を超えて",
+    "AIを活用したコンテンツ戦略でビジネスの成長をサポート",
+    "AI技術とクリエイティブの融合で次世代のコンテンツを制作",
+    "AIとクリエイティブデザインの力でコンテンツ産業をリード"
+];
+let $headlineElement = $("#headline"); // replace this with your actual jQuery selector
+let currentHeadlineIndex = 0;
+showNextHeadline();
+
+function appendHeadlineCharacterByCharacter($element, headline, callback) {
+    let index = 0;
+
+    let intervalID = setInterval(function() {
+        if (index < headline.length) {
+            $element.append(headline.charAt(index));
+            index++;
+        } else {
+            clearInterval(intervalID);
+            if (callback) callback();
+        }
+    }, 50);
+}
+
+function showNextHeadline() {
+    if (currentHeadlineIndex >= headlines.length) {
+        currentHeadlineIndex = 0;  // Reset to the start of the array
+    }
+
+    let nextHeadline = headlines[currentHeadlineIndex];
+    currentHeadlineIndex++;
+
+    appendHeadlineCharacterByCharacter($headlineElement, nextHeadline, function() {
+        setTimeout(function() {
+            clearContentFromEnd($headlineElement, showNextHeadline);
+        }, 2000); // waits for 2 seconds after displaying a headline before clearing and showing the next one
+    });
+}
 
 function handleGenerateText() {
     // Iterate through each .generate-text element
@@ -1331,8 +1373,7 @@ function handleGenerateText() {
 
         // Make an AJAX call to the backend with the prompt
         $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
-            $span.html('')
-            let source =  handleStream(response, function(message) {
+            handleStream(response, function(message) {
                 $failTemplate .hide()
                 $span.append(message);
             },function(endMessage){
@@ -1354,19 +1395,69 @@ function handleGenerateText() {
 function handleGenerateTextForElement($element) {
     const prompt = $element.data('context'); // Getting the data-context value
     const $failTemplate = $element.next('.generate-text-fail'); // Getting the corresponding failure template
-
-    // Make an AJAX call to the backend with the prompt
-    $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
-        $element.html('')
-        let source =  handleStream(response, function(message) {
-            $failTemplate .hide()
-            $element.append(message);
-        },function(endMessage){
+   
+    clearContentFromEnd($element, function() {
+        console.log("Content has been cleared!");
+        // any other logic you want to perform after clearing can go here
+        $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
+            
+            handleStream(response, function(message) {
+                $failTemplate .hide()
+                $element.append(message);
+            },function(endMessage){
+            });
+        }).fail(function() { 
+            // If there's an error in the AJAX request, show the fail template
+            $failTemplate.show();
+            $element.hide(); // Optionally, hide the original .generate-text span
         });
-    }).fail(function() { 
-        // If there's an error in the AJAX request, show the fail template
-        $failTemplate.show();
-        $element.hide(); // Optionally, hide the original .generate-text span
+            
     });
-        
+
+}
+
+function replaceCharacterByIndex($element, newStr) {
+    // Fetch or initialize the index from/to data-index attribute
+    let index = $element.data('index') || 0;
+    let currentContent = $element.text();
+
+    if (index < currentContent.length) {
+        let updatedContent = currentContent.substring(0, index) + newStr + currentContent.substring(index + newStr.length);
+        $element.text(updatedContent);
+
+        // Increment the index by the length of newStr and store it for next use
+        $element.data('index', index + newStr.length);
+    } else {
+        $element.append(newStr);
+        $element.data('index', index + newStr.length);
+    }
+}
+
+function clearContentByIndex($element) {
+    let index = $element.data('index') || 0;
+    let currentContent = $element.text();
+
+    if (index < currentContent.length) {
+        currentContent = currentContent.substring(0, index) + "".repeat(currentContent.length - index);
+        $element.text(currentContent);
+    }
+
+    // Reset the index
+    $element.data('index', 0);
+}
+
+function clearContentFromEnd($element, callback) {
+    let currentContent = $element.text();
+
+    let clearIntervalID = setInterval(function() {
+        if (currentContent.length > 0) {
+            currentContent = currentContent.substring(0, currentContent.length - 1);
+            $element.text(currentContent);
+        } else {
+            clearInterval(clearIntervalID);
+            if (typeof callback === 'function') {
+                callback();
+            }
+        }
+    }, 50); // This duration can be adjusted as per your requirement
 }

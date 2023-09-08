@@ -6,9 +6,9 @@ block content
         div(style="background:linear-gradient(45deg, rgba(23, 88, 213, 0.7), rgba(14, 167, 214, 0.7) 100%);")
             div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
                 div.text-white.col-12.col-md-12.py-5
-                    h1.mb-3.fw-bold.display-4
+                    h1.mb-3.fw-bold.display-4(style="height: 200px;")
                         span RAKUBUN,
-                        span.generate-text(data-context="この見出しに代わる見出しを書いてほしい：AIを使ってコンテンツ制作を10倍速に")
+                        span.generate-text#headline(data-context="この見出しに代わる見出しを書いてほしい：AIを使ってコンテンツ制作を10倍速に" )
                         span.generate-text-fail(style="display:none")
                             span コンテンツ制作を10倍速に
                     h5 高品質な記事やSNS・広告文を数秒で作成
@@ -18,10 +18,11 @@ block content
         //- Section: Features
         section 
             #icon-grid.container.px-4.py-5
-                h1.display-4.fw-bold.generate-text(data-context="この見出しに代わる見出しを書いてほしい：ChatGPTよりも効率よくコンテンツ作成を進めましょう")
-                .generate-text-fail(style="display:none")
-                    h1.display-4.fw-bold ChatGPTよりも効率よく
-                    h1.display-4.fw-bold コンテンツ作成を進めましょう
+                div(style="height: 200px;")
+                    h1.display-4.fw-bold.generate-text(data-context="この見出しに代わる見出しを書いてほしい：ChatGPTよりも効率よくコンテンツ作成を進めましょう")
+                    .generate-text-fail
+                        h1.display-4.fw-bold ChatGPTよりも効率よく
+                        h1.display-4.fw-bold コンテンツ作成を進めましょう
                 h6.fw-normal ブログ記事や広告文など100種類以上の効果的な日本語テンプレートを備えており、必要なジャンルのコンテンツをすぐに作成することが可能です。
                 .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.py-5
                     .col.d-flex.align-items-start
