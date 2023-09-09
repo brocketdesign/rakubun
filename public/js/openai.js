@@ -387,49 +387,75 @@ function loopSearchResult(){
         }
     }
 }
-
+function isAlreadySummarized(videoId,callback){
+    $.get(`/api/video?videoId=${videoId}`,function(result){
+        if(result && result.data && result.data.openai && result.data.openai['short-summarize']){
+            callback(result.data.openai['short-summarize'])
+        }else{
+            callback(false)
+        }
+    })
+}
 function handleAutoOpenai(cardId,videoId,additionalCallback){
-    $.ajax({
-        url: `/api/openai-video/short-summarize?videoId=${videoId}`,
-        method: 'POST',
-        data: {language:'jp'},
-        success: function(response) {
-    
-            let containerID = `card${response.insertedId}${generateRandomID()}`;
-            containerID = `card${response.insertedId}${generateRandomID()}`;
+    isAlreadySummarized(videoId,function(iSummarized){
+        if(iSummarized){
 
+            const containerID = 'card-'+generateRandomID()
             const resultContainer = $(`.summary[data-id=${cardId}]`)
             const tempResultContainer = $(`.summary-temp[data-id=${cardId}]`)
-        
-            if($('#' + containerID).length == 0) {
-                const initialCardHtml = designCard(containerID,response)
-                const initialCardHtmlTemp = designCard(containerID+'temp',response)
-
-                resultContainer.prepend(initialCardHtml);
-                tempResultContainer.prepend(initialCardHtmlTemp);
-
-                updateMoments();
-                console.log(`Initial card created with id: card-${containerID}`);
-            }
-        
-            let source =  handleStream(response, function(message) {
-
-                $(`#${containerID}temp .card-body p`).append(message);
-                //$(`#${containerID} .card-body p`).append(message);
-                watchAndConvertMarkdown(`#${containerID}temp .card-body p`, `#${containerID} .card-body p` ); 
-                if (additionalCallback) additionalCallback(response, message);
-            },function(endMessage){
-            });
-            // Store the source instance for this generation
-            sourceInstances[generateRandomID()] = source
-        },
-        error: function(error) {
-            console.error(error);
-        },
-        finally: function(error) {
-            console.error(error);
+            const initialCardHtml = designCard(containerID,{insertedId: containerID})
+            const initialCardHtmlTemp = designCard(containerID+'temp',{insertedId: containerID})
+            resultContainer.prepend(initialCardHtml);
+            tempResultContainer.prepend(initialCardHtmlTemp);
+            watchAndConvertMarkdown(`#${containerID}temp .card-body p`, `#${containerID} .card-body p` ); 
+            appendHeadlineCharacterByCharacter($(`#${containerID}temp .card-body p`), iSummarized,function(){
+            })
+            return 
         }
-    });
+        $.ajax({
+            url: `/api/openai-video/short-summarize?videoId=${videoId}`,
+            method: 'POST',
+            data: {language:'en'},
+            success: function(response) {
+        
+                let containerID = `card${response.insertedId}${generateRandomID()}`;
+                containerID = `card${response.insertedId}${generateRandomID()}`;
+    
+                const resultContainer = $(`.summary[data-id=${cardId}]`)
+                const tempResultContainer = $(`.summary-temp[data-id=${cardId}]`)
+            
+                if($('#' + containerID).length == 0) {
+                    const initialCardHtml = designCard(containerID,response)
+                    const initialCardHtmlTemp = designCard(containerID+'temp',response)
+    
+                    resultContainer.prepend(initialCardHtml);
+                    tempResultContainer.prepend(initialCardHtmlTemp);
+    
+                    updateMoments();
+                    console.log(`Initial card created with id: card-${containerID}`);
+                }
+            
+                let source =  handleStream(response, function(message) {
+    
+                    $(`#${containerID}temp .card-body p`).append(message);
+                    //$(`#${containerID} .card-body p`).append(message);
+                    watchAndConvertMarkdown(`#${containerID}temp .card-body p`, `#${containerID} .card-body p` ); 
+                    if (additionalCallback) additionalCallback(response, message);
+                },function(endMessage){
+                });
+                // Store the source instance for this generation
+                sourceInstances[generateRandomID()] = source
+            },
+            error: function(error) {
+                console.error(error);
+            },
+            finally: function(error) {
+                console.error(error);
+            }
+        });
+    })
+
+
 }
 function resetButton($spinner,$buttonContainer){
     $spinner.hide()

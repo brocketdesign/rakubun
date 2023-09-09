@@ -8,7 +8,7 @@ block dynamicContent
     .row
       each data in scrapedData
         if data._id
-            .card.info-container.col-6.mb-3(class=`card-clickable-${mode}`, style="cursor:pointer",data-videoid=data.video_id, data-id=data._id, data-title=data.title)
+            .card.info-container.col-12.col-sm-6.mb-3(class=`card-clickable-${mode}`, style="cursor:pointer",data-videoid=data.video_id, data-id=data._id, data-title=data.title)
               .card-body-over.position-absolute(style="inset:0;display: none;")
               .card-top.py-2.px-3.position-absolute
                 .d-flex.justify-content-between
@@ -24,8 +24,8 @@ block dynamicContent
                   button.info-button.btn.shadow-0.text-white.p-0.d-none(type="button")
                     i.fas.fa-info
                 p.card-title.text-white.bg-dark.border-white.border.p-3(style="display:none")= data.title
-            .col-6.mb-3.summary(data-id=data._id,data-videoid=data.video_id)
-            .col-6.mb-3.summary-temp.d-none(data-id=data._id,data-videoid=data.video_id)
+            .col-12.col-sm-6.mb-3.summary(data-id=data._id,data-videoid=data.video_id)
+            .col-12.col-sm-6.mb-3.summary-temp.d-none(data-id=data._id,data-videoid=data.video_id)
   else
     p ここには何もありません！
   if scrapedData.length > 0 

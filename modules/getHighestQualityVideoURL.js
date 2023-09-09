@@ -27,7 +27,6 @@ async function searchVideoYoutube(videoDocument, user, stream) {
     if (!stream) {
         return videoDocument.link;
     }
-console.log(videoDocument)
     try {
         const info = await ytdl.getInfo(videoDocument.video_id);
 

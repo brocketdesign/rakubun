@@ -84,6 +84,9 @@ router.get('/stream/:type', async (req, res) => {
         const summaries = [];
   
         for (let i = 0; i < chunks.length; i++) {
+          if(type == 'short-summarize' && i>0){
+            return
+          }
           console.log(`Generating section ${i + 1}/${chunks.length}`);
           const prompts = {
                 'summarize' : {
@@ -106,8 +109,6 @@ router.get('/stream/:type', async (req, res) => {
                   'en': `Please summarize the following content in one very short sentence :\n${chunks[i]}\n\n\nNote: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.`,
                   'jp': `次の内容を非常に短い文で要約してください：\n${chunks[i]}\n\n\n注意: マークダウンを使用して返答し、要求されていない限りコメントや翻訳を含めずに投稿内容のみを提供してください。`
                 }
-                
-                  
                   
             }
             let prompt = prompts[type][data.language]

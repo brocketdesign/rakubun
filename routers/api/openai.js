@@ -24,7 +24,7 @@ const openai = new OpenAI({
 
 router.post('/custom/:type', upload.fields([{ name: 'pdf1' }, { name: 'pdf2' }]), async (req, res) => {
   let { prompt, time, data } = req.body;
-  console.log({ prompt, time, data })
+
   const type = req.params.type;
 
   let isPDF = false
