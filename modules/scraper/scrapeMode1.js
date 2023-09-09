@@ -1,34 +1,51 @@
 const { ObjectId, GoogleApis } = require('mongodb');
 
 const searchYoutube = async (query, mode, page) => {
-  const { google } = require('googleapis');
-
   const youtube = google.youtube({
     version: 'v3',
     auth: process.env.FIREBASE_API_KEY
   });
 
-  const response = await youtube.search.list({
-    part: 'snippet',
-    q: query,
-    maxResults: 10,
-    type: 'video'  // This filters out everything except videos
-  });
+  try {
+    const response = await youtube.search.list({
+      part: 'snippet',
+      q: query,
+      maxResults: 50,
+      type: 'video',
+      videoDuration: 'medium'
+    });
 
-  const result = response.data.items.map(item => {
-    const { title, thumbnails, description } = item.snippet;
-    const videoId = item.id.videoId;
-    const link = `https://www.youtube.com/watch?v=${videoId}`;
-    const thumb = item.snippet.thumbnails;
-    const imageUrl = thumb.high ? thumb.high.url : thumb.default.url;
-    const alt = title;
-    const currentPage = query;
+    // Fetch video details
+    const videoIds = response.data.items.map(item => item.id.videoId).join(',');
+    const videoDetailsResponse = await youtube.videos.list({
+      id: videoIds,
+      part: 'contentDetails'
+    });
 
-    return { video_id: videoId, imageUrl, title, alt, link, currentPage, query, mode };
-  });
+    // Filter videos that are less than 10 minutes
+    const shortVideos = videoDetailsResponse.data.items.filter(video => {
+      const duration = video.contentDetails.duration;
+      const durationInMinutes = convertDurationToMinutes(duration);
+      return durationInMinutes < 10;
+    }).slice(0, 10); // Get the top 10 results
 
-  return result;
+    const result = shortVideos.map(item => {
+      const { title, thumbnails, description } = item.snippet;
+      const videoId = item.id.videoId;
+      const link = `https://www.youtube.com/watch?v=${videoId}`;
+      const imageUrl = thumbnails.high ? thumbnails.high.url : thumbnails.default.url;
+
+      return { video_id: videoId, imageUrl, title, alt: title, link, currentPage: query, query, mode };
+    });
+
+    return result;
+
+  } catch (error) {
+    console.error('Error searching YouTube:', error);
+    throw error; // or return a default/error value depending on your error handling strategy
+  }
 }
+
 
 
 async function scrapeMode1(query, mode, page) {
@@ -39,5 +56,14 @@ async function scrapeMode1(query, mode, page) {
     return [];
   }
 }
-
+function convertDurationToMinutes(duration) {
+  const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+  
+  const hours = (parseInt(match[1]) || 0);
+  const minutes = (parseInt(match[2]) || 0);
+  const seconds = (parseInt(match[3]) || 0);
+  
+  const totalMinutes = (hours * 60 + minutes + seconds / 60);
+  return totalMinutes;
+}
 module.exports = scrapeMode1;
