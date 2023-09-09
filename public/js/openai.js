@@ -374,7 +374,7 @@ function handleOpenaiFormSubmission(formSelector, apiEndpoint, additionalCallbac
 function loopSearchResult(){
     if(document.querySelector('.summary')){
         const containers = $('.info-container');
-        const postCount = 3;  // Process only the first two elements
+        const postCount = 10;  // Process only the first two elements
     
         for(let i = 0; i < postCount; i++) {
             (function(index) {
