@@ -66,11 +66,6 @@ function extractKeywords(text) {
   }
 
 async function summarizeVideo(user,videoId) {
-  const checkSUmmary = await isSummarized (user,videoId)
-  if (checkSUmmary){
-    console.log('Video has already been summarized')
-    //return {summary:checkSUmmary.summary}
-  }
 
   console.log('Summarizing the video')
   const transcript = await getTranscript(videoId);
@@ -79,22 +74,5 @@ async function summarizeVideo(user,videoId) {
 
   return chunks
 }
-
-async function isSummarized (user,videoId) {
-
-  const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
-  if(foundElement.summary){
-    return foundElement
-  }
-  return false
-
-}
-
-// Usage
-/*
-summarizeVideo('PIrkVICLhkM')
-  .then(result => console.log(result.summary))
-  .catch(err => console.error(err));
-*/
 
 module.exports = summarizeVideo

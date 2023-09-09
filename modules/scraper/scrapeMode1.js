@@ -36,7 +36,7 @@ const searchYoutube = async (query, mode, page) => {
     const shortVideos = combinedResults.filter(video => {
       const duration = video.contentDetails.duration;
       const durationInMinutes = convertDurationToMinutes(duration);
-      return durationInMinutes < 10;
+      return durationInMinutes < 15;
     }).slice(0, 10); // Get the top 10 results
 
     const result = shortVideos.map(item => {

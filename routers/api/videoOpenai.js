@@ -65,7 +65,7 @@ router.get('/stream/:type', async (req, res) => {
     try {
         // Fetch the prompt from the database using the provided id
         const record = await global.db.collection('openai').findOne({ _id: new ObjectId(id) });
-        console.log({record})
+
         if (!record) {
             res.write('data: {"error": "Record not found"}\n\n');
             res.end();
@@ -74,7 +74,6 @@ router.get('/stream/:type', async (req, res) => {
         const videoId = record.videoId
         const foundElement = await global.db.collection('medias').findOne({_id:new ObjectId(videoId)})
         const title = foundElement.title
-        console.log(`Title fetched for video: ${title}`);
         
         const data = record.data
         const chunks = await summarizeVideo(req.user,videoId);
@@ -85,7 +84,7 @@ router.get('/stream/:type', async (req, res) => {
   
         for (let i = 0; i < chunks.length; i++) {
           if(type == 'short-summarize' && i>0){
-            return
+            break;
           }
           console.log(`Generating section ${i + 1}/${chunks.length}`);
           const prompts = {
@@ -106,13 +105,14 @@ router.get('/stream/:type', async (req, res) => {
                 'en': `Please extract the important points from the following content:\n\n${chunks[i]}\n\nList the important points clearly in bullet points. Respond using markdown. Note: Provide the post content only—no comments, no translations unless explicitly requested.`
                 },
                 'short-summarize': {
-                  'en': `Please summarize the following content in one very short sentence :\n${chunks[i]}\n\n\nNote: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.`,
+                  'en': `Summarize the following content in one very short sentence :\n${chunks[i]}`,
                   'jp': `次の内容を非常に短い文で要約してください：\n${chunks[i]}\n\n\n注意: マークダウンを使用して返答し、要求されていない限りコメントや翻訳を含めずに投稿内容のみを提供してください。`
                 }
                   
             }
             let prompt = prompts[type][data.language]
-          const messages = [
+
+            const messages = [
             { role: 'system', content: data.language == 'jp' ? 'あなたは強力な日本語アシスタントです。':'You are a powerful assistant' },
             { role: 'user', content: prompt },
           ];
@@ -124,11 +124,8 @@ router.get('/stream/:type', async (req, res) => {
         }
 
         const combinedSummary = summaries
-        .map((summary, index) => `<h2> パート ${index + 1}</h2><br>${summary}`)
         .join('<br>');
   
-        console.log({combinedSummary})
-
         const myObject = {
         openai: {
             [type]: combinedSummary
@@ -136,7 +133,6 @@ router.get('/stream/:type', async (req, res) => {
         };
         saveDataSummarize(videoId, myObject)
       }
-  
       res.write('event: end\n');
       res.write('data: {"videoId": "'+videoId+'"}\n\n');
       res.flush(); // Flush the response to send the data immediately

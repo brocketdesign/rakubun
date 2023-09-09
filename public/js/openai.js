@@ -380,7 +380,6 @@ function loopSearchResult(){
             (function(index) {
                 const cardId = containers.eq(index).data('id');
                 $.get('/api/video?videoId='+cardId, function(response) {
-                    console.log('Summarize: ', response.data._id);
                     handleAutoOpenai(cardId,response.data._id);
                 })
             })(i);
@@ -399,7 +398,6 @@ function isAlreadySummarized(videoId,callback){
 function handleAutoOpenai(cardId,videoId,additionalCallback){
     isAlreadySummarized(videoId,function(iSummarized){
         if(iSummarized){
-
             const containerID = 'card-'+generateRandomID()
             const resultContainer = $(`.summary[data-id=${cardId}]`)
             const tempResultContainer = $(`.summary-temp[data-id=${cardId}]`)
