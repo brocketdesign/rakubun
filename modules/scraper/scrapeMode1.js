@@ -1,4 +1,5 @@
 const { ObjectId, GoogleApis } = require('mongodb');
+const { google } = require('googleapis');
 
 const searchYoutube = async (query, mode, page) => {
   const youtube = google.youtube({
@@ -7,7 +8,7 @@ const searchYoutube = async (query, mode, page) => {
   });
 
   try {
-    const response = await youtube.search.list({
+    const searchResponse = await youtube.search.list({
       part: 'snippet',
       q: query,
       maxResults: 50,
@@ -16,21 +17,30 @@ const searchYoutube = async (query, mode, page) => {
     });
 
     // Fetch video details
-    const videoIds = response.data.items.map(item => item.id.videoId).join(',');
+    const videoIds = searchResponse.data.items.map(item => item.id.videoId).join(',');
     const videoDetailsResponse = await youtube.videos.list({
       id: videoIds,
       part: 'contentDetails'
     });
 
+    // Combine the search results with the video details
+    const combinedResults = searchResponse.data.items.map(searchItem => {
+        const details = videoDetailsResponse.data.items.find(detailItem => detailItem.id === searchItem.id.videoId);
+        return {
+            ...searchItem,
+            contentDetails: details.contentDetails
+        };
+    });
+
     // Filter videos that are less than 10 minutes
-    const shortVideos = videoDetailsResponse.data.items.filter(video => {
+    const shortVideos = combinedResults.filter(video => {
       const duration = video.contentDetails.duration;
       const durationInMinutes = convertDurationToMinutes(duration);
       return durationInMinutes < 10;
     }).slice(0, 10); // Get the top 10 results
 
     const result = shortVideos.map(item => {
-      const { title, thumbnails, description } = item.snippet;
+      const { title, thumbnails } = item.snippet;
       const videoId = item.id.videoId;
       const link = `https://www.youtube.com/watch?v=${videoId}`;
       const imageUrl = thumbnails.high ? thumbnails.high.url : thumbnails.default.url;
@@ -40,10 +50,11 @@ const searchYoutube = async (query, mode, page) => {
 
     return result;
 
-  } catch (error) {
+} catch (error) {
     console.error('Error searching YouTube:', error);
-    throw error; // or return a default/error value depending on your error handling strategy
-  }
+    throw error;
+}
+
 }
 
 
