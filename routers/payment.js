@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
-
+const { daysLeft } = require('../services/tools')
 const ensureAuthenticated = require('../middleware/authMiddleware');
 
 const BasicPlan = {
@@ -36,7 +36,7 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
     const premiumPrice = await stripe.prices.retrieve(premiumDefaultPriceId)
 
     // Pass the relevant product information to the payment view
-    res.render('subscription-payment', {
+    res.render('subscription/payment', {
       publishableKey: process.env.STRIPE_PUBLIC,
       basicProductName: basicProduct.name,
       basicProductDescription: basicProduct.description,
@@ -51,6 +51,7 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       premiumProductId: premiumProduct.id,
       premiumPriceId: premiumDefaultPriceId,
       user:req.user,
+      daysLeft:daysLeft(req.user),
       title: "Choose a membership"
     });
   } catch (error) {
@@ -63,7 +64,7 @@ router.get('/subscription/bought-products',ensureAuthenticated, async (req, res)
   
   try {
       if(!req.user.subscriptionId){
-        res.render('subscription-bought-products', {user:req.user, subscriptions:[], title:"My memberships" });
+        res.render('subscription/bought-products', {user:req.user, subscriptions:[], title:"My memberships" });
         return
       }
       const sub = await stripe.subscriptions.retrieve(req.user.subscriptionId);
@@ -86,7 +87,7 @@ router.get('/subscription/bought-products',ensureAuthenticated, async (req, res)
       }]
       console.log(subscribedProducts)
       // Render the bought products page with the list of product details
-      res.render('subscription-bought-products', {user:req.user, subscriptions:subscribedProducts, title:"My memberships" });
+      res.render('subscription/bought-products', {user:req.user, subscriptions:subscribedProducts, title:"My memberships" });
   } catch (error) {
       // Handle error
       console.log(error)
@@ -130,9 +131,9 @@ router.get('/subscription-payment-success', async (req, res) => {
   const session = await stripe.checkout.sessions.retrieve(session_id);
   const newSubscription = await stripe.subscriptions.retrieve(session.subscription);
   
-  console.log("Session and Subscription:");
-  console.log(session);
-  console.log(newSubscription);
+  //console.log("Session and Subscription:");
+  //console.log(session);
+  //console.log(newSubscription);
 
   const userId = session.metadata.userId;
   const newSubscriptionId = session.subscription;
@@ -142,12 +143,9 @@ router.get('/subscription-payment-success', async (req, res) => {
   console.log(`Fetching user from database with UserID: ${userId}`);
   const user = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
 
-  console.log("User from database:");
-  console.log(user);
-
-  if (user && user.subscriptionId) {
+  if (user && user.subscriptionId && user.subscriptionId != newSubscriptionId) {
     console.log(`Deleting old subscription: ${user.subscriptionId}`);
-    await stripe.subscriptions.del(user.subscriptionId);
+    await stripe.subscriptions.cancel(user.subscriptionId);
   }
 
   console.log("Updating user with new subscription details in database");
@@ -164,12 +162,12 @@ router.get('/subscription-payment-success', async (req, res) => {
 
   console.log("Exiting /subscription-payment-success");
   
-  res.render('subscription-payment-success', { user: req.user, subscription: newSubscription }); 
+  res.render('subscription/payment-success', { user: req.user, subscription: newSubscription }); 
 });
 
 
 router.get('/subscription-payment-error', (req, res) => {
-  res.render('subscription-payment-error',{user:req.user}); // Render the login template
+  res.render('subscription/payment-error',{user:req.user}); // Render the login template
 });
 
 router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
@@ -177,7 +175,8 @@ router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
   
   try {
     // Cancel the subscription
-    const canceledSubscription = await stripe.subscriptions.del(subscriptionId);
+    console.log('Cancelling subcription: ',subscriptionId)
+    const canceledSubscription = await stripe.subscriptions.cancel(subscriptionId);
 
     if (canceledSubscription.status === 'canceled') {
       // Remove the subscription ID from the user document in your MongoDB collection

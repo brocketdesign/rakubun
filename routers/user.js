@@ -216,7 +216,7 @@ router.post('/signup', async (req, res, next) => {
   
     const hash = await bcrypt.hash(password, 10);
 
-    await global.db.collection('users').insertOne({ email: email, username: username, password: hash  });
+    await global.db.collection('users').insertOne({ signup_date:new Date(), email: email, username: username, password: hash  });
  
     const welcomeEmailData = {
       FIRSTNAME: username, 

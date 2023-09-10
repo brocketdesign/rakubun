@@ -313,6 +313,14 @@ async function saveDataSummarize(videoId, format){
     console.log('Error while updating element:', error);
   }
 }
+function daysLeft(user) {
+  // Calculate the number of days since the user signed up
+  const signUpDate = new Date(user.signup_date);
+  const currentDate = new Date();
+  const daysSinceSignUp = Math.ceil((currentDate - signUpDate) / (1000 * 60 * 60 * 24));
+  
+  return 7 - daysSinceSignUp;
+}
 
 module.exports = { 
   formatDateToDDMMYYHHMMSS, 
@@ -324,5 +332,6 @@ module.exports = {
   getOpenaiTypeForUser,
   fetchOpenAICompletion,
   initCategories,
-  saveDataSummarize
+  saveDataSummarize,
+  daysLeft
 }

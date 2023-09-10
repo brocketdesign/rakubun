@@ -233,9 +233,19 @@ async function findAllData(data){
   try {
     // Get a reference to the 'openai' collection
     const collection = global.db.collection('medias');
+   
+    // Convert string IDs to ObjectIds and filter out invalid ones
+    const objectIds = data.filter(id => {
+        try {
+            new ObjectId(id);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }).map(id => new ObjectId(id));
 
-    // Convert string IDs to ObjectIds
-    const objectIds = data.map(id => new ObjectId(id));
+    // At this point, 'objectIds' will only contain valid ObjectIds
+
 
     // Find all matching documents in the 'openai' collection
     result = await collection.find({
