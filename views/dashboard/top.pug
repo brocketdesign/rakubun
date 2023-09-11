@@ -16,27 +16,6 @@ block mainContent
                                 | 動画を要約する
                             p.card-text.text-start.text-muted
                                 | 動画を要約してブログに投稿する。
-
-            .col
-                a.card.btn.bg-white.px-2(href="/dashboard/app/openai/sns/")
-                    .card-body.row.justify-start.items-start.px-2
-                        div.col-2.d-flex.align-items-center
-                            i.fas.fa-comments.mr-3.display-6
-                        div.col-10
-                            h5.card-title.fw-bold.text-start
-                                | SNS投稿生成
-                            p.card-text.text-start.text-muted
-                                | 魅力的なSNS投稿文を生成します。
-            .col
-                a.card.btn.bg-white.px-2(href="/dashboard/app/openai/summarizePDF/")
-                    .card-body.row.justify-start.items-start.px-2
-                        div.col-2.d-flex.align-items-center
-                            i.fas.fa-lightbulb.mr-3.display-6
-                        div.col-10
-                            h5.card-title.fw-bold.text-start
-                                | PDFを要約する
-                            p.card-text.text-start.text-muted
-                                | PDFの内容から要点を引き出します。
     section.my-5
         .row.row-cols-1.row-cols-md-2.my-5
             .col
@@ -65,60 +44,3 @@ block mainContent
                         a.btn.btn-outline-primary.w-100(href="#") 使い方
                     .col.my-1
                         a.btn.btn-outline-primary.w-100(href="#") お問い合わせ
-
-
-    section.my-5
-        .row
-            .col
-                h5.fw-bold メモ
-                .row.row-cols-1.row-cols-md-3.my-3
-                    .col
-                        textarea.form-control(name="memo", placeholder="メモを入力してください")
-                        button#memo.btn.btn-primary.w-100(type="submit") 新しいメモを保存する
-                    if memos && memos.length > 0
-                        each memo in memos
-                            .col
-                                .card(data-id=memo._id)
-                                    .remove-memo.position-absolute(type="button" style="right: 10px;")
-                                        i.fas.fa-times
-                                    .card-body
-                                        p=memo.content
-
-
-    section.my-5 
-        .row
-            .col
-                h5.fw-bold 作成したドキュメント
-                if books && books.length > 0
-                    .row.row-cols-1.row-cols-md-3.my-3
-                        each book in books 
-                            .col
-                                a.text-dark(href=`/dashboard/app/openai/ebook/${book._id}`)
-                                    .card.btn.bg-white
-                                        .card-body
-                                            h3.fw-normal.fs-6.text-capitalize=book.title
-                                            p.text-capitalize=book.book_content[0].content.slice(0,50)
-                                                | ... 
-                else
-                    .py-3.text-center
-                        .mt-4.h-8.text-center.text-sm.text-muted
-                            | 作成したドキュメントはまだありません
-
-
-    section.my-5
-        .row
-            .col
-                h5.fw-bold ブックマーク
-                if !user.bookmarked
-                    .py-3.text-center
-                        .mt-4.h-8.text-center.text-sm.text-muted
-                            | ブックマークはまだありません
-
-    section.my-5
-        .row
-            .col
-                h5.fw-bold お気に入りのテンプレート
-                if !user.templateFavorited
-                    .py-3.text-center
-                        .mt-4.h-8.text-center.text-sm.text-muted
-                            | お気に入りのテンプレートはありません

@@ -13,29 +13,6 @@
         a(href="/dashboard/app/1/history") 
           i.fas.fa-video
           span.hide-text.ms-3 動画の要約
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="文章生成")
-        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse5', aria-controls='contents-collapse4') 
-          i.fas.fa-newspaper
-          span.hide-text.ms-3 文章生成
-        ul.list-unstyled.collapse#contents-collapse5.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
-          li
-            a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/article/') 記事作成
-          li
-            a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/sns/') SNSの投稿
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="チャットGPT")
-        a(href="#" aria-current='false', data-bs-toggle='collapse', aria-expanded='false', data-bs-target='#contents-collapse8', aria-controls='contents-collapse4') 
-          i.fas.fa-comments
-          span.hide-text.ms-3 ドキュメント
-        ul.list-unstyled.collapse#contents-collapse8.pt-3(class=`${mode == 'openai' ? "show":"hide"}`)
-          li
-            a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/compare/') 
-              span.hide-text.ms-3 テキスト比較
-          li
-            a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/summarizePDF/') 
-              span.hide-text.ms-3 PDFの要約
-          li
-            a.list-group-item.list-group-item-action.p-3.ps-5.ripple(href='/dashboard/app/openai/comparePDF/') 
-              span.hide-text.ms-3 PDF比較
       li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="お問い合わせ")
         a(href="#") 
           i.fas.fa-question

@@ -19,6 +19,7 @@ const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
 }
 $(document).ready(function() {
+    
     handleEvents()
     handleGridRange();
     handleUserProfile();
@@ -39,7 +40,6 @@ $(document).ready(function() {
 
     handleDownloadButton();
     handleCardButton();
-    handleMemo();
 
     handleLoadMore();
     handleResetFormSubmission();
@@ -764,60 +764,6 @@ function handleSideBar2(){
     $('#sidebarMenu').css({ 'max-height': '0' ,width:"100%"})
     $('main#dashboard').show();
     $('#sidebarMenuToggleSmall').on('click', adjustSidebarAppearance2);
-}
-function handleMemo(){
-$('button#memo').on('click', function() {
-    let memo = $('[name="memo"]').val();
-    if(memo.length == 0){
-        alert('保存する前にメモを書いてください。')
-        return
-    }
-    // Make the AJAX request
-    $.ajax({
-        url: '/api/user/memo',
-        type: 'POST',
-        data: {
-            content: memo
-        },
-        success: function(response) {
-            console.log('Memo saved successfully');
-            location.reload()
-            // Additional code to handle the response
-        },
-        error: function(error) {
-            console.log('Error saving memo:', error);
-            // Additional code to handle the error
-        }
-    });
-});
-// Listen for click events on buttons with the class .remove-memo
-$('.remove-memo').on('click', function(e) {
-    e.preventDefault()
-    const confirmation = confirm("削除してもよろしいでしょうか？");
-
-    if (!confirmation) {
-        return
-    }
-    // Extract the memo ID from the data-id attribute of the clicked button
-    const $cardContainer = $(this).closest('.card')
-    let memoId = $cardContainer.data('id');
-
-    // Make the AJAX DELETE request
-    $.ajax({
-        url: '/api/user/memo/' + memoId, // Construct the URL with the memo ID
-        type: 'DELETE',
-        success: function(response) {
-            console.log('Memo removed successfully');
-            $cardContainer .remove()
-            // Additional code to handle the response, e.g., remove the memo from the UI
-        },
-        error: function(error) {
-            console.log('Error removing memo:', error);
-            // Additional code to handle the error
-        }
-    });
-});
-
 }
 
 function handleStream(response,callback,endCallback) {
