@@ -42,7 +42,7 @@ router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
   const books = await fetchUserAssociatedData(userId, 'users', 'books', 'bookIds');
   const memos = await fetchUserAssociatedData(userId, 'users', 'memo', 'memoIds');
 
-  res.render('dashboard/top',{user:req.user,latestNews,books,memos,title:"Dashboadr"});
+  res.render('dashboard/top',{user:req.user,latestNews,books,memos,title:"RAKUBUN - Dashboard"});
 });
 
 router.get('/app/openai/:app', ensureAuthenticated, ensureMembership, async (req, res) => {
