@@ -244,22 +244,6 @@ const handleCardClickable = () => {
             $('#video-holder').append($video)//.append($thisCard.find('.tool-bar').clone()).append($thisCard.find('.card-title').clone().show())
             
             //scrollToTop();
-
-            $('#mobile-toolbar').html('')
-            const cardClone = $thisCard.clone()
-            cardClone.find('.card-top').remove()
-            cardClone.find('img').remove()
-            cardClone.find('.card-title').text().length > 0 ? cardClone.find('.card-title').show() : cardClone.find('.card-title').hide()
-            cardClone.find('.card-body-over').remove()
-            cardClone.find('.card-body').show()
-            cardClone.find('.card-body').removeClass('position-absolute px-3')
-            cardClone.find('.text-white').each(function(){
-                $(this).removeClass('text-white')
-            })
-
-            $('#video-holder').append(cardClone)
-
-            $('#mobile-toolbar').append(cardClone.clone())
        
             //displaySummary(response)
             $('#summary').show()

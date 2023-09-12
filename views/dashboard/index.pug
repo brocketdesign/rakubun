@@ -20,9 +20,6 @@ block mainContent
       .row.row-cols-1.row-cols-sm-2.w-100.m-0
         .col.px-0.order-1.my-3
           #video-holder.sticky-video.px-0.bg-transparent
-        .col.order-3.order-sm-3.my-3
-          block dynamicContent
-        .col.order-2.order-sm-2.my-3
           #result.d-none
           #summary(style="display:none")
             .content
@@ -153,7 +150,9 @@ block mainContent
                             | 生成する
                         .result
                         .result-temp.d-none
+        .col.order-2.order-sm-2.my-3
 
+          block dynamicContent
     //block dynamicContent
   else 
     block dynamicContent
