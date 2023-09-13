@@ -6,6 +6,7 @@ const axios = require('axios'); // You'll need to install axios: npm install axi
 const { createParser } = require('eventsource-parser');
 const fetch = require('node-fetch');
 
+const MAX_TOKEN = 20
 
 // Initialize OpenAI with your API key
 let openai = null
@@ -102,7 +103,7 @@ async function askGPT(prompt) {
     top_p: 0.95,
     frequency_penalty: 0,
     presence_penalty: 0,
-    max_tokens: 150,
+    max_tokens: MAX_TOKEN,
   });
   const content = gptResponse.choices[0].message.content.trim();
 
@@ -208,7 +209,7 @@ const fetchOpenAICompletion = async (messages, res) => {
                   top_p: 0.95,
                   frequency_penalty: 0,
                   presence_penalty: 0,
-                  max_tokens: 150,
+                  max_tokens: MAX_TOKEN,
                   stream: true,
                   n: 1,
               }),

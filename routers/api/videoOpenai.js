@@ -86,11 +86,11 @@ router.get('/stream/:type', async (req, res) => {
           if(type == 'short-summarize' && i>0){
             break;
           }
-          console.log(`Generating section ${i + 1}/${chunks.length}`);
+          console.log(`Generating part ${i + 1}/${chunks.length}`);
           const prompts = {
                 'summarize' : {
-                    'jp' : `以下の内容を要約してください \n\n${chunks[i]}\n\n そして、主要なポイントの短い段落にし、リストの中で簡潔にハイライトされた情報にまとめてください。各ハイライトには適切な絵文字を選んでください。\n\n あなたの出力は以下のテンプレートを使用してください:\n要約\nハイライト\n結論\n[絵文字] バレットポイント\n\nNote: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.`,
-                    'en' : `Please summarize the following content:\n${chunks[i]}\nThen, create short paragraphs of the main points and summarize the information in concise highlighted points within a list. Please choose appropriate emojis for each highlight.\n\nUse the following template for your output:\n\nSummary\nHighlights\nConclusion\n[Emoji] Bullet Point\n\nNote: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.`
+                    'jp' : `以下の内容を要約してください \n\n${chunks[i]}\n\n`,
+                    'en' : `Please summarize the following content:\n${chunks[i]}\n\nNote: Respond using markdown and provide the post content only—no comments, no translations unless explicitly requested.`
                 },
                 'snsContent' :{
                     'jp' :`SNSの選択肢に合わせて魅力的な投稿を作成したいと考えています。主要な言語は ${data.language} で、コアメッセージは「${chunks[i]}」。${data.keywordsArray && data.keywordsArray.length > 0?`投稿に関連するキーワードは ${data.keywordsArray.join(', ')}。`:''}ハッシュタグも統合したいです。コメントや翻訳以外の要素なしで、投稿のみをお願いします！`,
@@ -119,12 +119,12 @@ router.get('/stream/:type', async (req, res) => {
         
           const summary = await fetchOpenAICompletion(messages, res);
           summaries.push(summary);
-          res.write(`data: ${JSON.stringify({ content: "<br><br>" })}\n\n`);
+          res.write(`data: ${JSON.stringify({ content: "<br>\n" })}\n\n`);
         res.flush(); // Flush the response to send the data immediately
         }
 
         const combinedSummary = summaries
-        .join('<br>');
+        .join('');
   
         const myObject = {
         openai: {
