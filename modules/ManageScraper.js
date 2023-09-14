@@ -1,8 +1,6 @@
 const { ObjectId } = require('mongodb');
 const { 
   findDataInMedias,
-  sanitizeData,
-  initCategories 
 } = require('../services/tools')
 // Helper function to find user and update their scraped data
 async function findAndUpdateUser(userId, newScrapedData = null) {
@@ -33,15 +31,13 @@ async function ManageScraper(url, mode, user, page) {
   scrapedData = await scrapeMode(url, mode, page);
   console.log(`Scrape data and found ${scrapedData.length} elements.`)
 
-  const categories = await initCategories(userId)
-
   scrapedData = scrapedData.map((data) => ({
     ...data,
     query: url,
     mode: mode,
     page:parseInt(page),
     userId: userId,
-    categories:categories
+    categories:[]
   })); 
 
 

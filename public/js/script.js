@@ -44,6 +44,9 @@ $(document).ready(function() {
     handleLoadMore();
     handleResetFormSubmission();
     feather.replace()
+    $('.toggle').on('click',function(){
+        $(this).toggle().toggleClass('d-flex')
+    })
 });
 function scrollBottomWindow(){
     $('html, body').animate({ scrollTop: $(document).height() }, 'fast', function() {
@@ -176,8 +179,8 @@ const handleFormResult = (isSuccess, message) => {
 
 // Handling of card clicking
 const handleCardClickable = () => {
-    $(`.card-clickable-1 img`)
-    .click(function() {
+    $(document)
+    .on('click',`.card-clickable-1 img`,function() {
     const $thisCard = $(this).parent()
     var id = $thisCard.data('id');
     var isdl = $thisCard.data('isdl');
@@ -366,21 +369,10 @@ const handleDownloadButton = () => {
   });
 }
 
-const handleHiding = (videoId) => {
-    let $container = $(`.card[data-id=${videoId}]`)
-    $.ajax({
-        url: '/api/hide',
-        method: 'POST',
-        data: { element_id: videoId },
-        success: function(response) {
-            $container.remove()
-            handleFormResult(true,response.message)
-            // Handle the success response
-            console.log(response);
-            },
-        error: handleFormError
-    });
-
+const handleHiding = (mediaId) => {
+    let $container = $(`.card[data-id=${mediaId}]`)
+    deleteAllMediasCategories({mediaId})
+    $container.remove()
 }
 
 const handleHidingHistory = (query) => {
@@ -1208,7 +1200,7 @@ const handleEvents = () => {
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
     $(".card.pricing").hover(() => $(this).addClass('border-primary'), () => $(this).removeClass('border-primary'));
    
-    $('.delete-button').click(function(e) { 
+    $(document).on('click','.delete-button', function(e) { 
         e.preventDefault()
          handleHiding($(this).closest('.card').data('id'))  
     });
@@ -1218,11 +1210,11 @@ const handleEvents = () => {
         handleHidingHistory($(this).closest('.card').data('query'))  
     });
     
-    $(".card").on('mouseenter', function(){
+    $(document).on('mouseenter',".card", function(){
         $(this).find('.hover').show();
     });
 
-    $(".card").on('mouseleave', function(){
+    $(document).on('mouseleave',".card", function(){
         $(this).find('.hover').hide();
     });
 

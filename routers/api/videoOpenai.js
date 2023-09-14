@@ -119,7 +119,7 @@ router.get('/stream/:type', async (req, res) => {
         
           const summary = await fetchOpenAICompletion(messages, res);
           summaries.push(summary);
-          res.write(`data: ${JSON.stringify({ content: "<br>\n" })}\n\n`);
+          res.write(`data: ${JSON.stringify({ content: "<br>" })}\n\n`);
         res.flush(); // Flush the response to send the data immediately
         }
 

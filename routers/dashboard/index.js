@@ -37,7 +37,6 @@ const { ObjectId } = require('mongodb');
 // Route for handling '/dashboard/'
 router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
   const userId = req.user._id;
-
   const latestNews = await global.db.collection('latestNews').find().limit(2).toArray();
   const books = await fetchUserAssociatedData(userId, 'users', 'books', 'bookIds');
   const memos = await fetchUserAssociatedData(userId, 'users', 'memo', 'memoIds');
@@ -87,42 +86,102 @@ router.get('/app/:mode', ensureAuthenticated,ensureMembership, async (req, res) 
   }
 });
 
-// Route for handling '/dashboard/:mode'
-router.get('/app/:mode/fav', ensureAuthenticated,ensureMembership, async (req, res) => {
-
-  console.log('Dashboard page requested');
-  const { mode } = req.params; // Get the 'mode' parameter from the route URL
-  let { searchTerm, page } = req.query; // Get the search term from the query parameter
-  page = parseInt(page) || 1
-
-  // If 'mode' is not provided, use the mode from the session (default to '1')
-  const currentMode = mode || req.session.mode || '1';
-
-  try{
-    let query_obj = {
-      query: {
-        $regex: searchTerm,
-      },
-      mode:mode,
-      isdl:true,
-    }
-    if(!searchTerm){
-      query_obj = {
-        mode:mode,
-        isdl:true,
+// Route to fetch media documents by category ID
+router.get('/medias-category/', async (req, res) => {
+    // Find the category name from the user's categories
+    const category = req.user.categories.find(cat => cat.name === 'Favorites');
+    const categoryName = category ? category.name : 'Category';
+    const categoryId = category.id
+    res.redirect(categoryId)
+    return
+    const mode = '1'
+    const searchTerm = ''
+  try {
+      // Fetch media documents that contain the provided category ID
+      // and sort them from most recent to less recent
+      const medias = await global.db.collection('medias').find({
+          categories: new ObjectId(categoryId)
+      }).sort({ createdAt: -1 }).toArray();  // Assuming your documents have a createdAt field
+  
+      let scrapInfo  
+      try {
+        const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
+        scrapInfo = userInfo.scrapInfo.find(info => info.url === searchTerm);
+      } catch (error) {
+        console.log(error)
       }
-    }
-    let medias = await findDataInMedias(req.user._id, query_obj);
-    console.log(`Found ${medias.length} element(s).`)
-    medias = getUniqueElementBySource(medias)
-    res.render(`search`, { user: req.user,result:true, searchTerm, scrapedData:medias.reverse(), mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
-
-  }catch(err){
-    console.log(err)
-    res.render(`search`, { user: req.user, searchTerm, scrapedData:[], mode, page, title: `Mode ${mode}` }); // Pass the user data and scrapedData to the template
+      
+    res.render(`search`, { user: req.user, result:true, searchTerm, scrapedData:medias, scrapInfo, mode, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+  } catch (error) {
+    console.log(error)
+    res.render(`dashboard/category`, { user: req.user, result:false, searchTerm, 
+    scrapedData:[], scrapInfo:[], mode, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
 
   }
-  
+return
+  res.render('dashboard/category', { 
+    user: req.user, 
+    result: true, 
+    medias:[],
+    mode:'1',
+    title: `Category` 
+  });
+});
+
+router.get('/medias-category/:categoryId', async (req, res) => {
+  const categoryId = req.params.categoryId;
+  const searchTerm = ''
+  const mode = '1'
+  // Find the category name from the user's categories
+  const category = req.user.categories.find(cat => cat.id.toString() === categoryId);
+  const categoryName = category ? category.name : 'Category';
+
+  try {
+      // Fetch media documents that contain the provided category ID
+      // and sort them from most recent to less recent
+      const medias = await global.db.collection('medias').find({
+          categories: new ObjectId(categoryId)
+      }).sort({ createdAt: -1 }).toArray();  // Assuming your documents have a createdAt field
+      let scrapInfo  
+      try {
+        const userInfo = await global.db.collection('users').findOne({_id:new ObjectId(req.user._id)})
+        scrapInfo = userInfo.scrapInfo.find(info => info.url === searchTerm);
+      } catch (error) {
+        console.log(error)
+      }
+      if (medias.length > 0) {
+
+        
+      res.render(`dashboard/category`, { user: req.user, result:true, searchTerm, scrapedData:medias, scrapInfo, mode, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+    return
+          res.render('dashboard/category', { 
+              user: req.user, 
+              result: true, 
+              medias,
+              title: `${categoryName}` 
+          });
+      } else {        
+        res.render(`dashboard/category`, { user: req.user, result:true, searchTerm, scrapedData:[], scrapInfo, mode, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+      return
+          res.render('dashboard/category', { 
+              user: req.user, 
+              result: false, 
+              medias: [],
+              title: `${categoryName}` 
+          });
+      }
+  } catch (err) {    
+    res.render(`dashboard/category`, { user: req.user, result:true, searchTerm, scrapedData:[], scrapInfo, mode, title: `Mode ${mode} : ${searchTerm}` }); // Pass the user data and scrapedData to the template
+  return
+      // Handle the error appropriately, for now, just rendering the search with a result of false
+      res.render('dashboard/category', { 
+          user: req.user, 
+          result: false, 
+          medias: [],
+          title: `${categoryName}`,
+          error: 'サーバーエラーが発生しました。'  // "A server error occurred."
+      });
+  }
 });
 
 // Route for handling '/dashboard/:mode'

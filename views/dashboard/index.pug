@@ -11,9 +11,8 @@ block mainContent
       button.shadow-0(type="submit", class="btn btn-primary", style="z-index: 1;") 
         i.fas.fa-search
     .d-flex.mb-3
-      a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/app/${mode}/fav?searchTerm=${searchTerm?searchTerm:''}`)
-        | Favorites
-        i.fas.fa-heart.ms-2
+      a.badge.bg-dark.d-flex.align-items-center.text-white(href=`/dashboard/medias-category/`)
+        i.fas.fa-heart
   ul.list-group#subRedditSearchRes.bg-white.w-100.position-absolute.border.shadow(style="max-height: 50vh;overflow: auto;z-index: 3;display: contents;")
   if result && mode == 1
     #video-container

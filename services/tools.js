@@ -57,36 +57,6 @@ async function saveData(user, documentId, update){
   } catch (error) {
     console.log('Element not founded in medias collections');
   }
-  
-   try {
-     const { elementIndex, foundElement } = await findElementIndex(user, documentId);
- 
-     if (elementIndex === -1) {
-       console.log('Element with video_id not found.');
-       return;
-     }
- 
-     const userId = user._id;
-     const userInfo = await global.db.collection('users').findOne({ _id: new ObjectId(userId) });
-     const AllData = userInfo.scrapedData || [];
-     AllData[elementIndex] = Object.assign({}, AllData[elementIndex], update);
- 
-     const result = await global.db.collection('users').updateOne(
-       { _id: new ObjectId(userId) },
-       { $set: { scrapedData: AllData } }
-     );
-
-     if(result.matchedCount > 0){
-      console.log(`Updated the database `,update)
-     }else{
-      console.log('Could not update the database')
-     }
-
-     return true
-   } catch (error) {
-      console.log(error)
-      console.log('Could not save the data in the user data')
-   }
    return false
 }
 
@@ -285,17 +255,15 @@ async function initCategories(userId) {
     return existingCategory;
   }
 
-  // Check and create "All" category if it doesn't exist
-  const allCategory = await createCategoryIfNotExists('All');
-
   // Check and create "Favorites" category if it doesn't exist
-  await createCategoryIfNotExists('Favorites');
+  const FavoritesCategory = await createCategoryIfNotExists('Favorites');
 
   // Check and create "Delete" category if it doesn't exist
   await createCategoryIfNotExists('Delete');
 
-  // Return the "All" category's ID in an array
-  return [allCategory.id];
+  const result = await global.db.collection('users').findOne({ _id: objectId })
+
+  return [result.categories];
 }
 
 
@@ -334,5 +302,5 @@ module.exports = {
   fetchOpenAICompletion,
   initCategories,
   saveDataSummarize,
-  daysLeft
+  daysLeft,
 }

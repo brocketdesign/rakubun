@@ -4,7 +4,8 @@ const router = express.Router();
 const getHighestQualityVideoURL = require("../../modules/getHighestQualityVideoURL")
 const ensureAuthenticated = require('../../middleware/authMiddleware');
 const { askGPT } = require('../../services/tools')
-
+const userCategoryController = require('../../controllers/category');
+const mediasCategoryController = require('../../controllers/medias-category');
 const postArticleToWordpress = require('../../modules/postArticleToWordpress')
 const ManageScraper = require('../../modules/ManageScraper');
 
@@ -249,71 +250,42 @@ router.post('/hideHistory', async (req, res) => {
   }
 });
 
-router.post('/category/add', async (req, res) => {
-  const { categoryName, mode } = req.body;
-  const userId = req.user._id; // Assuming user ID is available in the request
+// User category routes
+router.post('/user-category/add', userCategoryController.add);
+router.put('/user-category/update', userCategoryController.update);
+router.delete('/user-category/delete', userCategoryController.delete);
+router.post('/user-category/get', userCategoryController.get); // Using POST here as we might send query data in the request body
 
+// Medias category routes
+router.post('/medias-category/add', mediasCategoryController.add);
+router.delete('/medias-category/delete', mediasCategoryController.delete);
+router.delete('/medias-category/deleteAll', mediasCategoryController.deleteAll);
+router.post('/medias-category/get', mediasCategoryController.get); // Using POST here as we might send query data in the request body
+
+// Route to fetch media documents by category ID
+router.get('/medias-category/:categoryId', async (req, res) => {
+  const categoryId = req.params.categoryId;
+console.log(`Request medias category : ${categoryId}`)
   try {
-    // Retrieve the current user's data
-    const user = await global.db.collection('users').findOne({ _id: new ObjectID(userId) });
+      // Fetch media documents that contain the provided category ID
+      // and sort them from most recent to less recent
+      const medias = await global.db.collection('medias').find({
+          userId: new ObjectId(req.user._id),
+          categories: new ObjectId(categoryId)
+      }).sort({ createdAt: -1 }).toArray();  // Assuming your documents have a createdAt field
 
-    // Check if a category with the same name already exists
-    if (user.categories && user.categories.some(cat => cat.name === categoryName)) {
-      return res.status(400).json({ message: 'この名前のカテゴリは既に存在します' }); // A category with this name already exists
-    }
-
-    // Create a category object with a unique ID
-    const category = { id: new ObjectID(), name: categoryName, mode };
-
-    // Add the new category to the user's categories object
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectID(userId) },
-      { $push: { categories: category } }
-    );
-
-    res.status(200).json({ message: 'カテゴリが追加されました', categoryId: category.id }); // Category has been added
+      if (medias.length > 0) {
+          res.json(medias);
+      } else {
+          // If no medias are found, return an empty array
+          res.json([]);
+      }
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
+      res.status(500).send({
+          error: 'サーバーエラーが発生しました。'  // "A server error occurred."
+      });
   }
 });
-
-router.post('/category/edit', async (req, res) => {
-  const { categoryId, newName, newMode } = req.body;
-  const userId = req.user._id; // Assuming user ID is available in the request
-
-  try {
-    // Update the category name and mode in the user's categories object
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectID(userId), 'categories.id': new ObjectID(categoryId) },
-      { $set: { 'categories.$.name': newName, 'categories.$.mode': newMode } }
-    );
-
-    res.status(200).json({ message: 'カテゴリが更新されました' }); // Category has been updated
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
-  }
-});
-
-router.post('/category/remove', async (req, res) => {
-  const { categoryId } = req.body;
-  const userId = req.user._id; // Assuming user ID is available in the request
-
-  try {
-    // Remove the category from the user's categories object
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectID(userId) },
-      { $pull: { categories: { id: new ObjectID(categoryId) } } }
-    );
-
-    res.status(200).json({ message: 'カテゴリが削除されました' }); // Category has been removed
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: 'エラーが発生しました' }); // An error occurred
-  }
-});
-
 // ルーターを定義して '/loadpage' への POST リクエストを処理します
 router.post('/loadpage', async (req, res) => {
   console.log('API request loadmore')
