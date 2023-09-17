@@ -1,27 +1,15 @@
 extends base
 
 block mainContent
-    h2.fw-bold ホーム
+    h2.fw-bold Home
     hr.my-4
     section.my-5
-        h5.fw-bold おすすめ
-        .row.row-cols-1.row-cols-md-3.mt-4
-            .col
-                a.card.btn.bg-white.px-2(href="/dashboard/app/1/")
-                    .card-body.row.justify-start.items-start.px-2
-                        div.col-2.d-flex.align-items-center
-                            i.fas.fa-video.mr-3.display-6
-                        div.col-10
-                            h5.card-title.fw-bold.text-start
-                                | 動画を要約する
-                            p.card-text.text-start.text-muted
-                                | 動画を要約してブログに投稿する。
     section.my-5
         .row.row-cols-1.row-cols-md-2.my-5
             .col
                 h5.fw-bold
                     i.fas.fa-bell.me-2
-                    | お知らせ
+                    | News
                 if latestNews
                     .news-item.mt-3
                         .news-date.text-muted
@@ -29,18 +17,18 @@ block mainContent
                         .news-content
                             | #{latestNews.content}
                 else
-                    p.text-muted.mt-3.px-3 お知らせはまだありません。
+                    p.text-muted.mt-3.px-3 Nothing new for now.
 
             .col 
                 h5.fw-bold
                     i.fas.fa-cogs.me-2
-                    | 設定・サポート
+                    | Settings and Support
                 .row.row-cols-1.row-cols-md-2.my-3
                     .col.my-1
-                        a.btn.btn-primary.w-100(href="/user/setting") アカウント設定
+                        a.btn.btn-primary.w-100(href="/user/setting") Account Parameters
                     .col.my-1
                         a.btn.btn-primary.w-100(href="#") 利用文字数
                     .col.my-1
-                        a.btn.btn-outline-primary.w-100(href="#") 使い方
+                        a.btn.btn-outline-primary.w-100(href="#") How to use ?
                     .col.my-1
-                        a.btn.btn-outline-primary.w-100(href="#") お問い合わせ
+                        a.btn.btn-outline-primary.w-100(href="#") Contact Us

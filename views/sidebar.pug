@@ -5,33 +5,29 @@
         i.fas.fa-bars
         .hide-text.mx-2
           | RAKUBUN
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="ホーム")
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Home")
         a(href="/dashboard/") 
           i.fas.fa-home
-          span.hide-text.ms-3 ホーム
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="動画の要約")
-        a(href="/dashboard/app/1/history") 
-          i.fas.fa-video
-          span.hide-text.ms-3 動画の要約
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="お問い合わせ")
+          span.hide-text.ms-3 Home
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Contact Us")
         a(href="#") 
           i.fas.fa-question
-          span.hide-text.ms-3 お問い合わせ
-      li.list-group-item.list-group-item-action.p-3(class=user && user.subscriptionId?"bg-success":"bg-primary",data-bs-toggle="tooltip" title="アップグレード")
+          span.hide-text.ms-3 Contact Us
+      li.list-group-item.list-group-item-action.p-3(class=user && user.subscriptionId?"d-none":"bg-primary",data-bs-toggle="tooltip" title="Upgrade")
         a.ripple.text-white.w-100(href='/payment/subscription')
           i.fas.fa-arrow-up
-          span.hide-text.ms-3 マイメンバーシップ
-      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="設定")
+          span.hide-text.ms-3 Upgrade
+      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Setting")
         if user
           a(href="/user/setting") 
             i.fas.fa-cog
-            span.hide-text.ms-3 設定
-      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="ログアウト")
+            span.hide-text.ms-3 Setting
+      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Logout")
         if user
           a(href='#', onclick='logout()') 
             i.fas.fa-sign-out-alt
-            span.hide-text.ms-3 ログアウト
+            span.hide-text.ms-3 Logout
         else
           a(href='/user/login') 
             i.fas.fa-sign-in-alt
-            span.hide-text.ms-3 ログイン
+            span.hide-text.ms-3 Login

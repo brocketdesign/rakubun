@@ -1,6 +1,9 @@
 const express = require('express');
 const multer = require('multer');
-const {formatDateToDDMMYYHHMMSS} = require('../services/tools')
+const {
+  formatDateToDDMMYYHHMMSS,
+  addUsertoFreePlan
+} = require('../services/tools')
 
 const router = express.Router();
 const bcrypt = require('bcrypt');
@@ -201,39 +204,66 @@ router.post('/resetpassword', async (req, res, next) => {
 
 
 router.post('/signup', async (req, res, next) => {
-  const { email, username, password } = req.body;
-  console.log(`Signup request: ${JSON.stringify(req.body)}`);
+  const { email } = req.body;
+
+  // Check if email is provided and is valid
+  if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+    console.log(`Signup failed. Invalid email provided: ${email}`);
+    req.flash('error', 'Please provide a valid email address.');
+    return res.redirect('/user/signup');
+  }
+  
+  console.log(`Received signup request for Email: ${email}`);
   
   try {
-    const existingUser = await global.db.collection('users').findOne(
-      { $or: [{ email: email }, { username: username }] }
-    );
+    const existingUser = await global.db.collection('users').findOne({ email: email });
   
     if (existingUser) {
-      req.flash('error', 'User with the same email or username already exists.'); // Set an error flash message
+      console.log(`Signup failed. User with Email: ${email} already exists.`);
+      req.flash('error', 'A user with this email already exists.');
       return res.redirect('/user/signup');
     }
   
+    // Here, you might want to generate a random username or some other mechanism
+    // since you don't have a username in the request body.
+    const generatedUsername = `user_${Math.random().toString(36).substring(7)}`; // Sample
+    const password = "default_password"; // You should generate a secure random password or ask the user for it
+  
     const hash = await bcrypt.hash(password, 10);
 
-    await global.db.collection('users').insertOne({ signup_date:new Date(), email: email, username: username, password: hash  });
- 
-    const welcomeEmailData = {
-      FIRSTNAME: username, 
-    };
+    // Add user to freePlan on Stripe and get Stripe info
+    const stripeInfo = await addUsertoFreePlan(email);
 
-    sendEmail(email, 'welcome', welcomeEmailData)
-      .then(() => console.log('Email sent!'))
-      .catch(error => console.error(`Error sending email: ${error}`));
+    // Insert the user along with Stripe info into the database
+    const result = await global.db.collection('users').insertOne({
+      signup_date: new Date(),
+      email: email,
+      username: generatedUsername,
+      password: hash,
+      ...stripeInfo
+    });
 
-
-    req.flash('info', 'Successfully signed up! You can now log in.'); // Set an info flash message
-    res.redirect('/user/login');
+    console.log(`User successfully created. Email: ${email}, Username: ${generatedUsername}, ID: ${result.insertedId}`);
+    const newUser = await global.db.collection('users').findOne({ _id: result.insertedId });
+    // Automatically log in the user after signup
+    req.login(newUser, (err) => {
+      if (err) {
+        console.error(`Error logging in the user after signup for Email: ${email}. Error: ${err.message}`);
+        req.flash('error', 'An error occurred during login after signup. Please log in manually.');
+        return res.redirect('/user/login');
+      }
+      
+      req.flash('info', 'Successfully signed up and logged in!');
+      res.redirect('/dashboard');
+    });
   } catch (err) {
-    console.log('Signup error:', err);
-    return next(err);
+    console.error(`Signup error for Email: ${email}. Error: ${err.message}`);
+    req.flash('error', 'An error occurred during signup. Please try again.');
+    return res.redirect('/user/signup');
   }
 });
+
+
 
 router.post('/isOldPasswordCorrect', (req, res) => {
   const { oldPassword } = req.body;

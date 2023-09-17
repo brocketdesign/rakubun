@@ -1,15 +1,6 @@
 extends ../dashboard/base
 
 block mainContent
-    if daysLeft > 0
-    .card.my-2
-        .card-header.bg-primary.text-white.text-center
-            | 無料利用残り日数 
-        .card-body.d-flex.justify-content-center.align-items-center
-            p.card-text.font-weight-bold 
-                = daysLeft
-                |  日  
-
     .d-flex.justify-content-between.my-4
         if user.subscriptionId
             a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") マイメンバーシップ

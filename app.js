@@ -30,17 +30,7 @@ function startServer() {
 
       const db = client.db(dbName); // Use the database name from .env file
       global.db = db; // Save the db connection in a global variable
-
-      // Create an instance of the StableDiffusionApi
-      const sd_api = new StableDiffusionApi({
-        host: process.env.SD_HOST,
-        port: process.env.SD_PORT, 
-        protocol: "http",
-        defaultSampler: "DPM++ 2M Karras",
-        defaultStepCount: 50,
-      });
-
-      global.sdapi = sd_api; //Save the API for stable diffusion in a global variable
+      
       // Use the express-session middleware
       app.use(
         session({
@@ -124,20 +114,11 @@ function startServer() {
       const index = require('./routers/index');
       const user = require('./routers/user');
       const payment = require('./routers/payment');
-
-      const api = require('./routers/api/index');
-      const videoOpenai = require('./routers/api/videoOpenai');
-      const openai = require('./routers/api/openai')
       const dashboard= require('./routers/dashboard/index');
 
       app.use('/', index); 
       app.use('/user', user); 
       app.use('/payment', payment);
-
-      app.use('/api/openai-video', videoOpenai); 
-      app.use('/api/openai', openai); 
-      app.use('/api', api); 
-
       app.use('/dashboard', dashboard);
 
 

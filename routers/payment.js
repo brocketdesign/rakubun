@@ -5,16 +5,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET);
 const { daysLeft } = require('../services/tools')
 const ensureAuthenticated = require('../middleware/authMiddleware');
 
-const BasicPlan = {
-  id: process.env.STRIPE_BASIC_PLAN,
-  price: process.env.STRIPE_BASIC_PLAN_PRICE,
-  type: process.env.STRIPE_BASIC_PLAN_TYPE
-}
-const PremiumPlan = {
-  id: process.env.STRIPE_PREMIUM_PLAN,
-  price: process.env.STRIPE_PREMIUM_PLAN_PRICE,
-  type: process.env.STRIPE_PREMIUM_PLAN_TYPE
-}
+const {premiumPlan} = require('../modules/products')
 
 const { ObjectId } = require('mongodb');
 
@@ -25,25 +16,15 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       return
     }
     // Retrieve both product objects from Stripe using the product IDs
-    const basicProduct = await stripe.products.retrieve(BasicPlan.id);
-    const premiumProduct = await stripe.products.retrieve(PremiumPlan.id);
-
+    const premiumProduct = await stripe.products.retrieve(premiumPlan.id);
     // Retrieve the default price IDs of both products
-    const basicDefaultPriceId = basicProduct.default_price;
     const premiumDefaultPriceId = premiumProduct.default_price;
 
-    const basicPrice = await stripe.prices.retrieve(basicDefaultPriceId)
     const premiumPrice = await stripe.prices.retrieve(premiumDefaultPriceId)
 
     // Pass the relevant product information to the payment view
     res.render('subscription/payment', {
       publishableKey: process.env.STRIPE_PUBLIC,
-      basicProductName: basicProduct.name,
-      basicProductDescription: basicProduct.description,
-      basicProductPrice: basicPrice.unit_amount,
-      basicProductImage: basicProduct.images[0],
-      basicProductId: basicProduct.id,
-      basicPriceId: basicDefaultPriceId,
       premiumProductName: premiumProduct.name,
       premiumProductDescription: premiumProduct.description,
       premiumProductPrice: premiumPrice.unit_amount,
@@ -51,7 +32,6 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       premiumProductId: premiumProduct.id,
       premiumPriceId: premiumDefaultPriceId,
       user:req.user,
-      daysLeft:daysLeft(req.user),
       title: "Choose a membership"
     });
   } catch (error) {
@@ -165,7 +145,6 @@ router.get('/subscription-payment-success', async (req, res) => {
   res.render('subscription/payment-success', { user: req.user, subscription: newSubscription }); 
 });
 
-
 router.get('/subscription-payment-error', (req, res) => {
   res.render('subscription/payment-error',{user:req.user}); // Render the login template
 });
@@ -209,13 +188,30 @@ router.post('/create-checkout-session', async (req, res) => {
   const protocol = req.protocol;
   const host = req.get('host');
 
+  let stripeCustomerId = req.user.stripeCustomerId;
+
+  // If user does not have a Stripe customer ID, create one and store in database
+  if (!stripeCustomerId) {
+    const customer = await stripe.customers.create({
+      email: req.user.email,
+      description: `Customer for user ID: ${req.user._id}`
+    });
+
+    stripeCustomerId = customer.id;
+
+    await global.db.collection('users').updateOne(
+      { _id: new ObjectId(req.user._id) },
+      { $set: { stripeCustomerId: stripeCustomerId } }
+    );
+  }
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     line_items: [{
       price: price_id,
       quantity: 1,
     }],
-    customer_email: req.user.email,  // Pre-fill the email field
+    customer: stripeCustomerId,  // Use Stripe customer ID directly
     mode: 'subscription', 
     success_url: `${protocol}://${host}/payment/subscription-payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${protocol}://${host}/payment/subscription-payment-error`,
