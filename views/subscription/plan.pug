@@ -5,73 +5,74 @@
                 .card.mb-4.rounded-3.shadow-sm.border
                     .card-header.py-3.bg-white
                         h4.my-0.fw-bold Free Plan
-                        h6.mt-1.fw-normal ミニマムで始めてみたい方
+                        h6.mt-1.fw-normal For those who want to start with the minimum
                     .card-body
                         h1.card-title.pricing-card-title $0
                         small.text-muted.fw-light 
                         ul.list-unstyled.mt-3.mb-4.text-start.ps-3
-                            li GPT-3.5/4を使用
-                            li 利用文字数：毎月5000文字
-                            li プロジェクト数：3つまで
-                            li ユーザー数：2名まで
-                            li 50種類以上のテンプレート
+                            li Use GPT-3.5/4
+                            li Usage limit: 5,000 characters per month
+                            li Number of projects: Up to 3
+                            li Number of users: Up to 2
+                            li 50+ templates available
             .col
                 .card.mb-4.rounded-3.shadow-sm.border-primary
                     .card-header.py-3.text-white.bg-primary.border-primary
                         h4.my-0.fw-bold Standard
-                        h6.mt-1.fw-normal 使用量を気にせず使いたい方
+                        h6.mt-1.fw-normal For those who want to use without worrying about usage
                     .card-body
                         h1.card-title.pricing-card-title $15
                         small.text-muted.fw-light per month
                         ul.list-unstyled.mt-3.mb-4.text-start.ps-3
-                            li GPT-3.5/4を使用
-                            li 利用文字数：毎月5000文字
-                            li プロジェクト数：3つまで
-                            li ユーザー数：2名まで
-                            li 50種類以上のテンプレート
+                            li Use GPT-3.5/4
+                            li Usage limit: 5,000 characters per month
+                            li Number of projects: Up to 3
+                            li Number of users: Up to 2
+                            li 50+ templates available
                         if user
                             button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_OeUHg9ZQIyCkil" data-price="price_1NrBIeC8xKGwQm6Jg77DFLyP" type="button") Upgrade
                         else 
-                            a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") 無料ではじめる
-    h3 よくある質問
-    div#accordionExample.accordion
-        //- First accordion item
-        div.card.my-3
-            div#headingOne.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseOne' aria-expanded='true' aria-controls='collapseOne')
-                h2.mb-0
-                    button.btn.btn-link
-                       | RAKUBUNの料金プランは、ワークスペースごとの料金になりますか？
-            div#collapseOne.collapse(aria-labelledby='headingOne' data-bs-parent='#accordionExample')
-                div.card-body
-                    | RAKUBUNのプランはアカウントごとではなく、ワークスペースごとのお支払いとなっております。
-                    | そのため、1つのプランで適用されるワークスペースは1つのみです。
-                    | もし複数のワークスペースを有料プランで利用したい場合、対応するワークスペースすべてのプランをアップグレードする必要があります。
-        //- Second accordion item
-        div.card.my-3
-            div#headingTwo.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseTwo' aria-expanded='false' aria-controls='collapseTwo')
-                h2.mb-0
-                    button.btn.btn-link
-                      | 途中でプランを切り替えた場合、未使用のクレジットの扱いはどうなりますか？
-            div#collapseTwo.collapse(aria-labelledby='headingTwo' data-bs-parent='#accordionExample')
-                div.card-body
-                    | クレジットが残っていた場合でも、リセットされます。
-                    | 未使用のクレジットは繰越されませんのでご注意ください。
+                            a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") Start for Free
+h3 Frequently Asked Questions
+div#accordionExample.accordion
+    //- First accordion item
+    div.card.my-3
+        div#headingOne.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseOne' aria-expanded='true' aria-controls='collapseOne')
+            h2.mb-0
+                button.btn.btn-link
+                   | Are RAKUBUN's pricing plans billed per workspace?
+        div#collapseOne.collapse(aria-labelledby='headingOne' data-bs-parent='#accordionExample')
+            div.card-body
+                | RAKUBUN's plans are billed per workspace, not per account.
+                | Therefore, a single plan applies to only one workspace.
+                | If you want to use multiple workspaces with a paid plan, you'll need to upgrade the plan for each corresponding workspace.
 
-        //- Third accordion item
-        div.card.my-3
-            div#headingThree.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseThree' aria-expanded='false' aria-controls='collapseThree')
-                h2.mb-0
-                    button.btn.btn-link
-                       | 契約期間中に解約した場合、返金可能ですか？
-            div#collapseThree.collapse(aria-labelledby='headingThree' data-bs-parent='#accordionExample')
-                div.card-body
-                    | 月払い/年払いともに返金を承っておりません。
-                    | ただし、「年払いプラン」から別の「年払いプラン」に変更頂く場合、未使用分の差額の返金が可能ですので、下記までお問い合わせください。
+    //- Second accordion item
+    div.card.my-3
+        div#headingTwo.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseTwo' aria-expanded='false' aria-controls='collapseTwo')
+            h2.mb-0
+                button.btn.btn-link
+                  | What happens to unused credits if I switch plans midway?
+        div#collapseTwo.collapse(aria-labelledby='headingTwo' data-bs-parent='#accordionExample')
+            div.card-body
+                | Any remaining credits will be reset, even if you have unused credits.
+                | Please note that unused credits will not be carried over.
+
+    //- Third accordion item
+    div.card.my-3
+        div#headingThree.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseThree' aria-expanded='false' aria-controls='collapseThree')
+            h2.mb-0
+                button.btn.btn-link
+                   | Can I get a refund if I cancel during the contract period?
+        div#collapseThree.collapse(aria-labelledby='headingThree' data-bs-parent='#accordionExample')
+            div.card-body
+                | We do not offer refunds for both monthly and annual plans.
+                | However, if you switch from one "annual plan" to another "annual plan," a refund for the unused portion can be arranged. Please contact us for further details.
 .card.shadow-0.border
     .card-body(class= !user ? 'bg-light' : 'bg-white')
         .my-2.d-flex.align-items-center
             span.me-2.tag.border.border-dark.px-3.py-2.rounded 
                 span Powered by 
                 span.fw-bold stripe
-            h5.fw-bold  RAKUBUNでは、料金のお支払いに「Stripe」を導入しています。
-        p.text-sm.f-muted 「Stripe」は、業界団体が定める最も厳しい基準にも準拠。世界各国の規制当局が設けるライセンスも取得しています。（PCI DSS レベル1認証など）ご入力いただいたカード情報は、RAKUBUNのシステムには一切経由せず、決済システム「Stripe」のシステムに直接登録されますのでご安心してご利用ください。
+            h5.fw-bold  RAKUBUN uses "Stripe" for payment processing.
+        p.text-sm.f-muted "Stripe" complies with the strictest standards set by industry bodies and holds licenses from regulatory authorities in various countries (such as PCI DSS Level 1 certification). Your card information provided is not processed through RAKUBUN's system; it is directly registered with the "Stripe" payment system. You can use it with confidence.

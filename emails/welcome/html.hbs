@@ -28,6 +28,23 @@
         color: #74787e;
         -webkit-text-size-adjust: none;
       }
+
+
+        h1 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        p {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .important {
+            font-weight: bold;
+        }
       @media only screen and (max-width: 600px) {
         .email-body_inner {
           width: 100% !important;
@@ -153,20 +170,11 @@
                         word-break: break-word;
                       "
                     >
-                      <h1
-                        style="
-                          box-sizing: border-box;
-                          color: #2f3133;
-                          font-family: Arial, sans-serif;
-                          font-size: 19px;
-                          font-weight: bold;
-                          margin-top: 0;
-                        "
-                        align="left"
-                      >
-                        Welcome {{FIRSTNAME}},
-                      </h1>
-                      <p>Thank you for signing up to {{product_name}}</p>
+  <h1>Welcome, {{FIRSTNAME}}</h1>
+    <p>Thank you for signing up with {{product_name}}. We're delighted to have you on board.</p>
+    <p>For security reasons, we've provided you with a temporary password: <span class="important">{{PASSWORD}}</span></p>
+    <p>We recommend you to update this password promptly in your user profile page for your own safety.</p>
+    <p>Should you have any questions, don't hesitate to reach out. Welcome to the {{product_name}} community!</p>
                     </td>
                   </tr>
                 </table>

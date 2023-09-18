@@ -2,22 +2,22 @@ extends ../dashboard/base
 
 block mainContent
   if !subscriptions.length
-    p アクティブなメンバーシップはありません。
-    a.btn.btn-primary(href="/payment/subscription" data-user-id=user._id) メンバーシップを選んでください
+    p There are no active memberships.
+    a.btn.btn-primary(href="/payment/subscription" data-user-id=user._id) Choose a Membership
   else
     .d-flex.justify-content-between
-        h3 マイメンバーシップ
-        button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) 支払い方法を更新
+      h3 My Membership
+      button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) Update Payment Method
     each subscription in subscriptions
       .card.mt-3
         .card-body
           h5.card-title #{subscription.productName}
           ul.list-group.list-group-flush
-            li.list-group-item ステータス: #{subscription.isActive == true ? '有効':'無効'}
-            li.list-group-item 開始日: #{subscription.startDate}
-            li.list-group-item 次回支払い日: #{subscription.nextPaymentDate}
-            li.list-group-item 価格: #{subscription.price}¥/月
+            li.list-group-item Status: #{subscription.isActive == true ? 'Active':'Inactive'}
+            li.list-group-item Start Date: #{subscription.startDate}
+            li.list-group-item Next Payment Date: #{subscription.nextPaymentDate}
+            li.list-group-item Price: #{subscription.price}¥/month
           if subscription.isActive === true
             .text-end
-              button.btn.btn-danger(type="submit" onclick=`cancelSubscription("${subscription.id}")`) キャンセル
+              button.btn.btn-danger(type="submit" onclick=`cancelSubscription("${subscription.id}")`) Cancel
   script(src='/js/stripe.js')

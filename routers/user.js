@@ -96,12 +96,12 @@ router.post('/updateProfile', upload.fields([{ name: 'profileImage' }, { name: '
   }
 });
 
-router.get('/login', (req, res) => {
+router.get('/login',async (req, res) => {
   console.log('Login page requested');
   res.render('user/login'); // Render the login template
 });
 
-router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: '無効なユーザー名またはパスワード。' }), (req, res) => {
+router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Wrong email or password. Please try again.' }), (req, res) => {
   req.flash('info', 'You are now logged in!');
   res.redirect('/dashboard');
 });
@@ -226,9 +226,8 @@ router.post('/signup', async (req, res, next) => {
   
     // Here, you might want to generate a random username or some other mechanism
     // since you don't have a username in the request body.
-    const generatedUsername = `user_${Math.random().toString(36).substring(7)}`; // Sample
-    const password = "default_password"; // You should generate a secure random password or ask the user for it
-  
+    const generatedUsername = `${Math.random().toString(36).substring(7)}`;
+    const password = Math.random().toString(36).slice(-8);
     const hash = await bcrypt.hash(password, 10);
 
     // Add user to freePlan on Stripe and get Stripe info
@@ -245,6 +244,16 @@ router.post('/signup', async (req, res, next) => {
 
     console.log(`User successfully created. Email: ${email}, Username: ${generatedUsername}, ID: ${result.insertedId}`);
     const newUser = await global.db.collection('users').findOne({ _id: result.insertedId });
+
+    const welcomeEmailData = {
+      FIRSTNAME: generatedUsername, 
+      PASSWORD: password
+    };
+  
+    sendEmail(email, 'welcome', welcomeEmailData)
+      .then(() => console.log('Email sent!'))
+      .catch(error => console.error(`Error sending email: ${error}`));
+
     // Automatically log in the user after signup
     req.login(newUser, (err) => {
       if (err) {

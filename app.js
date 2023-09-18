@@ -51,9 +51,12 @@ function startServer() {
 
       // Passport config
       passport.use(
-        new LocalStrategy(function (username, password, done) {
+        new LocalStrategy({
+          usernameField: 'email',
+          passwordField: 'password'
+        },function (email, password, done) {
           db.collection('users')
-            .findOne({ username: username })
+            .findOne({ email })
             .then(user => {
               if (!user) {
                 console.log('LocalStrategy: No user found with this username.');
@@ -69,6 +72,10 @@ function startServer() {
                   console.log('LocalStrategy: Passwords do not match.');
                   return done(null, false, { message: 'Incorrect password.' });
                 }
+              })
+              .catch(err => {
+                console.log('Error during password comparison:', err);
+                return done(err);
               });
             })
             .catch(err => {
