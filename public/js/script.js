@@ -1239,16 +1239,16 @@ const handleEvents = () => {
     });
 }
 const headlines = [
-    "AI技術でデザインの品質を飛躍的に向上",
-    "AIによる最先端のコンテンツ最適化技術",
-    "AIを駆使してビジネスの生産性を大幅に向上",
-    "コンテンツ制作の新時代: AIの可能性を最大限に",
-    "AIのパワーでクリエイティブな作業を劇的に加速",
-    "AIを組み込んだツールでコンテンツクリエーションの新境地へ",
-    "AIの革命的な技術でコンテンツ制作の限界を超えて",
-    "AIを活用したコンテンツ戦略でビジネスの成長をサポート",
-    "AI技術とクリエイティブの融合で次世代のコンテンツを制作",
-    "AIとクリエイティブデザインの力でコンテンツ産業をリード"
+    "Dramatically Improve Design Quality with AI Technology",
+    "Cutting-Edge Content Optimization Technology Powered by AI",
+    "Significantly Enhance Business Productivity with AI",
+    "The New Era of Content Creation: Maximizing the Potential of AI",
+    "Dramatically Accelerate Creative Work with the Power of AI",
+    "Pushing the Boundaries of Content Creation with AI-Integrated Tools",
+    "Surpassing Limits in Content Creation with Revolutionary AI Technology",
+    "Supporting Business Growth with AI-Powered Content Strategies",
+    "Creating Next-Generation Content with the Fusion of AI Technology and Creativity",
+    "Leading the Content Industry with the Power of AI and Creative Design"
 ];
 let $headlineElement = $("#headline"); // replace this with your actual jQuery selector
 let currentHeadlineIndex = 0;

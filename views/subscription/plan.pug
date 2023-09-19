@@ -63,6 +63,15 @@
                             button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_OeUHg9ZQIyCkil" data-price="price_1NrBIeC8xKGwQm6Jg77DFLyP" type="button") Upgrade
                         else 
                             a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") Start for Free
+.card.shadow-0.border.mb-5
+    .card-body(class= !user ? 'bg-light' : 'bg-white')
+        .my-2.d-flex.align-items-center
+            p.me-2.tag.border.border-dark.px-3.py-2.rounded 
+                | Powered by 
+                span.fw-bold stripe
+        h5.fw-bold  RAKUBUN uses "Stripe" for payment processing.
+        p.text-sm.f-muted "Stripe" complies with the strictest standards set by industry bodies and holds licenses from regulatory authorities in various countries (such as PCI DSS Level 1 certification). Your card information provided is not processed through RAKUBUN's system; it is directly registered with the "Stripe" payment system. You can use it with confidence.
+
 h3 Frequently Asked Questions
 div#accordionExample.accordion
     each item, index in faq
@@ -75,11 +84,3 @@ div#accordionExample.accordion
                 div.card-body
                     | #{item.answer}
 
-.card.shadow-0.border
-    .card-body(class= !user ? 'bg-light' : 'bg-white')
-        .my-2.d-flex.align-items-center
-            span.me-2.tag.border.border-dark.px-3.py-2.rounded 
-                span Powered by 
-                span.fw-bold stripe
-            h5.fw-bold  RAKUBUN uses "Stripe" for payment processing.
-        p.text-sm.f-muted "Stripe" complies with the strictest standards set by industry bodies and holds licenses from regulatory authorities in various countries (such as PCI DSS Level 1 certification). Your card information provided is not processed through RAKUBUN's system; it is directly registered with the "Stripe" payment system. You can use it with confidence.

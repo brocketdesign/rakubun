@@ -194,7 +194,7 @@ router.post('/resetpassword', async (req, res, next) => {
 
 
     req.flash('info', 'We sent you an email with a reset password link valide for 10 minutes.'); // Set an info flash message
-    res.redirect('/user/resetpassword');
+    res.redirect('/user/login');
   } catch (err) {
     console.log('Signup error:', err);
     return next(err);

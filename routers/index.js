@@ -13,8 +13,9 @@ router.get('/',async(req, res, next) => {
 
   // Set the mode to 1 in the session
   req.session.mode = '1';
+  const faq = require('../services/faq')
 
-  res.render('index',{ngrok}); // Render the top page template
+  res.render('index',{faq}); // Render the top page template
 });
 
 // This route renders the contact form
