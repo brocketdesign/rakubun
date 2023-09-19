@@ -1,5 +1,8 @@
 .row.justify-content-center.my-3
-    div.tab-content
+    .text-center
+        h2 Memberships
+        p Upgrade your plan ✨
+    div.tab-content.my-5
         .row.row-cols-1.row-cols-md-3.mb-3.text-center.m-auto.justify-content-center
             .col
                 .card.mb-4.rounded-3.shadow-sm.border
@@ -8,66 +11,70 @@
                         h6.mt-1.fw-normal For those who want to start with the minimum
                     .card-body
                         h1.card-title.pricing-card-title $0
-                        small.text-muted.fw-light 
+                        small.text-muted.fw-light For ever
                         ul.list-unstyled.mt-3.mb-4.text-start.ps-3
-                            li Use GPT-3.5/4
-                            li Usage limit: 5,000 characters per month
-                            li Number of projects: Up to 3
-                            li Number of users: Up to 2
-                            li 50+ templates available
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | Use GPT-3.5
+                            li 
+                                i.fa.fa-times.me-3
+                                | Use GPT-4
+                            li 
+                                i.fa.fa-times.me-3
+                                | Usage limit: 5,000 characters per month
+                            li 
+                                i.fa.fa-times.me-3
+                                | Number of projects: Up to 3
+                            li 
+                                i.fa.fa-times.me-3
+                                | Number of users: Up to 2
+                            li 
+                                i.fa.fa-times.me-3
+                                | 50+ templates available
+                        a.btn.w-100.btn.btn-lg.btn-light.border.border-primary.text-primary(href="/dashboard" type="button") Enjoy Now
             .col
                 .card.mb-4.rounded-3.shadow-sm.border-primary
                     .card-header.py-3.text-white.bg-primary.border-primary
                         h4.my-0.fw-bold Standard
-                        h6.mt-1.fw-normal For those who want to use without worrying about usage
+                        h6.mt-1.fw-normal Enjoy unlimited access with peace of mind.
                     .card-body
                         h1.card-title.pricing-card-title $15
                         small.text-muted.fw-light per month
                         ul.list-unstyled.mt-3.mb-4.text-start.ps-3
-                            li Use GPT-3.5/4
-                            li Usage limit: 5,000 characters per month
-                            li Number of projects: Up to 3
-                            li Number of users: Up to 2
-                            li 50+ templates available
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | Use GPT-3.5
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | Use GPT-4
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | Usage limit: 5,000 characters per month
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | Number of projects: Up to 3
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | Number of users: Up to 2
+                            li 
+                                i.fa.fa-check.text-primary.me-3
+                                | 50+ templates available
                         if user
                             button.w-100.btn.btn-lg.btn-primary(onclick="createCheckoutSession(this)" data-id="prod_OeUHg9ZQIyCkil" data-price="price_1NrBIeC8xKGwQm6Jg77DFLyP" type="button") Upgrade
                         else 
                             a.btn.w-100.btn.btn-lg.btn-primary(href="/user/signup" type="button") Start for Free
 h3 Frequently Asked Questions
 div#accordionExample.accordion
-    //- First accordion item
-    div.card.my-3
-        div#headingOne.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseOne' aria-expanded='true' aria-controls='collapseOne')
-            h2.mb-0
-                button.btn.btn-link
-                   | Are RAKUBUN's pricing plans billed per workspace?
-        div#collapseOne.collapse(aria-labelledby='headingOne' data-bs-parent='#accordionExample')
-            div.card-body
-                | RAKUBUN's plans are billed per workspace, not per account.
-                | Therefore, a single plan applies to only one workspace.
-                | If you want to use multiple workspaces with a paid plan, you'll need to upgrade the plan for each corresponding workspace.
+    each item, index in faq
+        div.card.my-3
+            div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
+                h2.mb-0
+                    button.btn.btn-link
+                       | #{item.question}
+            div(class='collapse' id=`collapse${index}` aria-labelledby=`heading${index}` data-bs-parent='#accordionExample')
+                div.card-body
+                    | #{item.answer}
 
-    //- Second accordion item
-    div.card.my-3
-        div#headingTwo.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseTwo' aria-expanded='false' aria-controls='collapseTwo')
-            h2.mb-0
-                button.btn.btn-link
-                  | What happens to unused credits if I switch plans midway?
-        div#collapseTwo.collapse(aria-labelledby='headingTwo' data-bs-parent='#accordionExample')
-            div.card-body
-                | Any remaining credits will be reset, even if you have unused credits.
-                | Please note that unused credits will not be carried over.
-
-    //- Third accordion item
-    div.card.my-3
-        div#headingThree.card-header(type='button' data-bs-toggle='collapse' data-bs-target='#collapseThree' aria-expanded='false' aria-controls='collapseThree')
-            h2.mb-0
-                button.btn.btn-link
-                   | Can I get a refund if I cancel during the contract period?
-        div#collapseThree.collapse(aria-labelledby='headingThree' data-bs-parent='#accordionExample')
-            div.card-body
-                | We do not offer refunds for both monthly and annual plans.
-                | However, if you switch from one "annual plan" to another "annual plan," a refund for the unused portion can be arranged. Please contact us for further details.
 .card.shadow-0.border
     .card-body(class= !user ? 'bg-light' : 'bg-white')
         .my-2.d-flex.align-items-center

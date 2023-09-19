@@ -9,19 +9,19 @@
         a(href="/dashboard/") 
           i.fas.fa-home
           span.hide-text.ms-3 Home
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Contact Us")
-        a(href="/contact") 
-          i.fas.fa-question
-          span.hide-text.ms-3 Contact Us
-      li.list-group-item.list-group-item-action.p-3(class=user && user.subscriptionId?"d-none":"bg-primary",data-bs-toggle="tooltip" title="Upgrade")
-        a.ripple.text-white.w-100(href='/payment/subscription')
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Upgrade")
+        a(href='/payment/subscription')
           i.fas.fa-arrow-up
-          span.hide-text.ms-3 Upgrade
+          span.hide-text.ms-3=user && user.subscriptionId?"Subscription":"Upgrade" 
       li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Setting")
         if user
           a(href="/user/setting") 
             i.fas.fa-cog
             span.hide-text.ms-3 Setting
+      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Contact Us")
+        a(href="/contact") 
+          i.fas.fa-question
+          span.hide-text.ms-3 Contact Us
       li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Logout")
         if user
           a(href='#', onclick='logout()') 

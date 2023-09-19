@@ -15,6 +15,7 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       res.redirect('/payment/subscription/bought-products')
       return
     }
+    const faq = require('../services/faq')
     // Retrieve both product objects from Stripe using the product IDs
     const premiumProduct = await stripe.products.retrieve(premiumPlan.id);
     // Retrieve the default price IDs of both products
@@ -32,6 +33,7 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       premiumProductId: premiumProduct.id,
       premiumPriceId: premiumDefaultPriceId,
       user:req.user,
+      faq,
       title: "Choose a membership"
     });
   } catch (error) {
