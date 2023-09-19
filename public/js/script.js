@@ -43,7 +43,7 @@ $(document).ready(function() {
 
     handleLoadMore();
     handleResetFormSubmission();
-    feather.replace()
+
     $('.toggle').on('click',function(){
         $(this).toggle().toggleClass('d-flex')
     })
@@ -1167,16 +1167,13 @@ const handleUserProfile = () => {
     // Image preview and click to trigger file input
     const profileImageInput = document.getElementById('profileImage');
     const bannerImageInput = document.getElementById('bannerImage');
-    const galleryImageInput = document.getElementById('image-upload');
 
-    if (profileImageInput && bannerImageInput && galleryImageInput) {
+    if (profileImageInput && bannerImageInput ) {
       inputTrigger(profileImageInput, document.querySelector('.profile-image'));
       inputTrigger(bannerImageInput, document.querySelector('.banner-image'));
-      inputTrigger(galleryImageInput, document.querySelector('#upload-btn'));
   
       previewImage(profileImageInput, document.querySelector('.profile-image img'));
       previewImage(bannerImageInput, document.querySelector('.header img'));
-      previewImage(galleryImageInput, document.querySelector('img#image-upload-holder'));
   
     }
     // Active Tab

@@ -3,7 +3,7 @@ const { premiumPlan } = require('../modules/products');
 
 /**
  * Add a user to the freePlan on Stripe.
- */
+**/
 async function addUsertoFreePlan(userEmail) {
   console.log(`Adding user with Email: ${userEmail} to Stripe freePlan...`);
 
@@ -21,6 +21,19 @@ async function addUsertoFreePlan(userEmail) {
   };
 }
 
+function formatDateToDDMMYYHHMMSS() {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = String(now.getFullYear()).substr(-2);
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const ddmmyyhhmmss = `${day}${month}${year}${hours}${minutes}${seconds}`;
+  return ddmmyyhhmmss;
+}
+
 module.exports = {
-  addUsertoFreePlan
+  addUsertoFreePlan,
+  formatDateToDDMMYYHHMMSS
 };

@@ -221,7 +221,6 @@ router.post('/create-checkout-session', async (req, res) => {
   res.json({ id: session.id });
 });
 
-
 // Update payment information
 router.post('/create-checkout-session-for-update', async (req, res) => {
   const { userId } = req.body; // Get user ID from request body
@@ -249,5 +248,63 @@ router.post('/create-checkout-session-for-update', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
+// Middleware to check if user has an active subscription
+router.get('/check-subscription', async (req, res) => {
+    try {
+        // Retrieve the user's subscription ID from the request
+        const subscriptionId = req.user.subscriptionId;
+
+        // Log the subscription ID for debugging purposes
+        console.log(`Checking subscription for ID: ${subscriptionId}`);
+
+        // If there's no subscription ID, return an appropriate response
+        if (!subscriptionId) {
+            console.log("No subscription ID found for the user.");
+            return res.status(200).json({
+                success: false,
+                message: 'No subscription ID found for the user.'
+            });
+        }
+
+        // Query the database to get the user's details
+        const user = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+
+        // If there's no user found, return an appropriate response
+        if (!user) {
+            console.log("User not found in the database.");
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            });
+        }
+
+        // Using the Stripe SDK, retrieve the subscription details
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+        // Check if the subscription status is 'active'
+        if (subscription.status === 'active') {
+            console.log("User has an active subscription.");
+            return res.json({
+                success: true,
+                message: 'User has an active subscription.'
+            });
+        } else {
+            console.log("User does not have an active subscription.");
+            return res.json({
+                success: false,
+                message: 'User does not have an active subscription.'
+            });
+        }
+
+    } catch (error) {
+        console.error(`Error checking subscription: ${error.message}`);
+        return res.status(500).json({
+            success: false,
+            message: 'An error occurred while checking the subscription.'
+        });
+    }
+});
+
 
 module.exports = router;

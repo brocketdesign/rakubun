@@ -4,16 +4,59 @@ const axios = require('axios');
 
 // Require and use 'express-session' middleware
 const session = require('express-session');
+const { email, sendEmail } = require('../services/email')
 
 router.get('/',async(req, res, next) => {
   if (req.isAuthenticated()) {
     return res.redirect('/dashboard'); // Redirect to the dashboard if user is logged in
   }
+
   // Set the mode to 1 in the session
   req.session.mode = '1';
 
-  let ngrok = process.env.NGROK 
-
   res.render('index',{ngrok}); // Render the top page template
 });
+
+// This route renders the contact form
+router.get('/contact', async (req, res, next) => {
+  res.render('contact', { user: req.user, sent: false });
+});
+
+// This route renders the contact form with a success message after the emails are sent
+router.get('/contact-success', async (req, res, next) => {
+  res.render('contact', { user: req.user, sent: true });
+});
+
+// This route handles the form submission
+router.post('/contact', (req, res) => {
+  const { name, email, message } = req.body;
+
+  const EmailDataForAdmin = {
+      username: name,
+      email: email,
+      message: message
+  };
+
+  const EmailDataForUser = {
+      username: name
+  };
+
+  const sendEmailToAdmin = sendEmail('admin@hatoltd.com', 'contact form admin', EmailDataForAdmin);
+  const sendEmailToUser = sendEmail(email, 'contact form user', EmailDataForUser);
+
+  // Sending both emails in parallel using Promise.all
+  Promise.all([sendEmailToAdmin, sendEmailToUser])
+      .then(() => {
+          console.log('Both emails sent!');
+          
+          // Redirect to the GET route with a success flag
+          res.redirect('/contact-success');
+      })
+      .catch(error => {
+          console.error(`Error sending emails: ${error}`);
+          res.status(500).send('Error sending emails.');
+      });
+});
+
+
 module.exports = router;

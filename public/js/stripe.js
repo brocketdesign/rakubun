@@ -45,3 +45,30 @@ function updatePaymentMethod(e) {
     console.error('Error:', error);
   });
 }
+
+$(document).ready(function() {
+  function checkUserSubscription() {
+      $.ajax({
+          type: "GET",
+          url: "/payment/check-subscription",
+          dataType: "json",
+          success: function(response) {
+              if (response.success) {
+                  console.log("Success:", response.message);
+                  // Handle success case, e.g., display a message or update UI
+              } else {
+                  console.log("Error:", response.message);
+                  // Handle error case, e.g., display an error message or update UI
+              }
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+              console.error("Request failed:", textStatus, errorThrown);
+              // Handle the failure case, e.g., display an error message or update UI
+          }
+      });
+  }
+
+  // You can now call the function wherever needed in your code
+  // For instance, you might want to check the subscription when the page loads:
+   checkUserSubscription();
+});
