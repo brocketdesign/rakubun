@@ -60,4 +60,15 @@ router.post('/contact', (req, res) => {
 });
 
 
+
+// Handle GET request for /about-us
+router.get('/about-us', (req, res) => {
+  // Log that a GET request has been received for /about-us
+  console.log('GET request received for /about-us');
+  const user = req.user 
+  // Render the 'about-us' template
+  res.render('about-us',{user});
+});
+
+// Export the router
 module.exports = router;

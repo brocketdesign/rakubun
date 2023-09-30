@@ -921,7 +921,7 @@ function enableTrackScroll() {
         let atBottomOfPage = currentScrollTop + $(window).height() >= $(document).height();
 
         if (atTopOfPage || atBottomOfPage || scrollDifference >= threshold) {
-            if (currentScrollTop > lastScrollTop && !atTopOfPage && !atBottomOfPage) { // Scrolling down
+            if (currentScrollTop > (lastScrollTop + 100) && !atTopOfPage && !atBottomOfPage) { // Scrolling down
                 $(".auto-hide").fadeOut();
             } else { // Scrolling up or at top/bottom of page
                 $(".auto-hide").fadeIn();

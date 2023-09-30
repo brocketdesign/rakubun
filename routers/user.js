@@ -89,15 +89,18 @@ router.post('/updateProfile', upload.fields([{ name: 'profileImage' }, { name: '
         await global.db.collection('users').updateOne({ resetToken : req.body.resetToken },{$set:{resetToken:false,validityToken:false}});
       }
       
-      res.json({ status: 'success', message: 'プロフィールが更新されました。' });
+      res.json({ status: 'success', message: 'Profile has been updated.' });
   } catch (error) {
     console.log(error)
-      res.json({ status: 'error', message: 'プロフィールを更新する際にエラーが発生しました。' });
+      res.json({ status: 'error', message: 'An error occurred while updating the profile.' });
   }
 });
 
 router.get('/login',async (req, res) => {
   console.log('Login page requested');
+  if(req.user){
+    res.redirect('/dashboard')
+  }
   res.render('user/login'); // Render the login template
 });
 
@@ -109,6 +112,9 @@ router.post('/login', passport.authenticate('local', { failureRedirect: '/user/l
 
 router.get('/signup', (req, res) => {
   console.log('Signup page requested');
+  if(req.user){
+    res.redirect('/dashboard')
+  }
   res.render('user/signup'); // Render the signup template
 });
 
