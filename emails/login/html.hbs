@@ -3,7 +3,7 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Empty Template</title>
+    <title>Login Template</title>
   </head>
   <body
     style="
@@ -171,12 +171,8 @@
                       "
                     >
   <h1>Welcome, {{FIRSTNAME}}</h1>
-    <p>Thank you for signing up with {{product_name}}. We're delighted to have you on board.</p>
+    <p>Thank you for using {{product_name}}.</p>
     <p>Login to our platform with this link :  <a href="http://{{HOSTNAME}}:3000/dashboard?randomkey={{RANDOMKEY}}&userID={{USERID}}">click here</a></p>
-    <p>Note that the above link is available for 30 minutes only.</p>
-    <p>For security reasons, we've provided you with a temporary password: <span class="important">{{PASSWORD}}</span></p>
-    <p>We recommend you to update this password promptly in your user profile page for your own safety.</p>
-    <p>Should you have any questions, don't hesitate to reach out. Welcome to the {{product_name}} community!</p>
                     </td>
                   </tr>
                 </table>

@@ -7,18 +7,15 @@ block content
         .card.shadow
           .card-body
             h1.card-title.text-center Login
-            form(action='/user/login', method='POST')
-              .mb-3
-                label(for='email', class='form-label') Email:
-                input(type='email', name='email', id='email', class='form-control')
-              .mb-3
-                label(for='password', class='form-label') Password:
-                input(type='password', name='password', id='password', class='form-control')
-              button(type='submit', class='btn btn-primary btn-block') Login
-            p.card-text.text-center.mt-3
-              | Don't have an account? 
-              a(href='/user/signup') Sign up
-        .card-text.text-center.mt-3
-          | Forgot your password? 
-          br
-          a(href='/user/resetpassword') Reset password
+            if prelog
+              p Verify your email to login
+              a#resend-email(href="#" onclick=`resendSigninMail('${userID}')`) Resend email
+            else
+              form(action='/user/login', method='POST')
+                .mb-3
+                  label(for='email', class='form-label') Email:
+                  input(type='email', name='email', id='email', class='form-control')
+                button(type='submit', class='btn btn-primary btn-block') Login
+              p.card-text.text-center.mt-3
+                | Don't have an account ?
+                a.d-block(href='/user/signup') Sign up

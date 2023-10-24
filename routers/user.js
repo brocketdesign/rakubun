@@ -11,6 +11,7 @@ const passport = require('passport');
 const { email, sendEmail } = require('../services/email')
 
 const { ObjectId } = require('mongodb');
+const { hostname } = require('os');
 
 router.get('/setting', (req, res) => {
   console.log('User setting page requested');
@@ -104,10 +105,71 @@ router.get('/login',async (req, res) => {
   res.render('user/login'); // Render the login template
 });
 
-router.post('/login', passport.authenticate('local', { failureRedirect: '/user/login', failureFlash: 'Wrong email or password. Please try again.' }), (req, res) => {
-  req.flash('info', 'You are now logged in!');
-  res.redirect('/dashboard');
+router.post('/login', async (req, res, next) => {
+  const { email } = req.body;
+
+  // Check if email is provided and is valid
+  if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+    console.log(`Login failed. Invalid email provided: ${email}`);
+    req.flash('error', 'Please provide a valid email address.');
+    return res.redirect('/user/login');
+  }
+
+  console.log(`Received login request for Email: ${email}`);
+
+  try {
+    // Find existing user
+    const existingUser = await global.db.collection('users').findOne({ email: email });
+
+    if (!existingUser) {
+      console.log(`Login failed. User with Email: ${email} not found.`);
+      req.flash('error', 'User with this email does not exist.');
+      return res.redirect('/user/login');
+    }
+
+    // Generate a new randomkey for login
+    const randomkey = Math.random().toString(36).slice(-8);
+    const hash_randomkey = await bcrypt.hash(randomkey, 10);
+
+    // Update the randomkey and its timestamp in the database
+    await global.db.collection('users').updateOne(
+      { email: email },
+      {
+        $set: {
+          randomkey: hash_randomkey,
+          isKeyActive:false,
+          randomkey_date: new Date()
+        }
+      }
+    );
+
+    console.log(`Randomkey updated for Email: ${email}`);
+
+    // Send the randomkey via email
+    const hostname = req.hostname;
+    const loginEmailData = {
+      FIRSTNAME: existingUser.username,
+      RANDOMKEY: hash_randomkey,
+      HOSTNAME: hostname,
+      USERID: existingUser._id
+    };
+
+    sendEmail(email, 'login', loginEmailData)
+      .then(() => console.log('Login Email sent!'))
+      .catch(error => console.error(`Error sending login email: ${error}`));
+
+    return res.render('user/login', {
+      prelog: true,
+      userID: existingUser._id
+    });
+
+  } catch (err) {
+    console.error(`Login error for Email: ${email}. Error: ${err.message}`);
+    req.flash('error', 'An error occurred during login. Please try again.');
+    return res.redirect('/user/login');
+  }
 });
+
 
 
 router.get('/signup', (req, res) => {
@@ -235,7 +297,8 @@ router.post('/signup', async (req, res, next) => {
     const generatedUsername = `${Math.random().toString(36).substring(7)}`;
     const password = Math.random().toString(36).slice(-8);
     const hash = await bcrypt.hash(password, 10);
-
+    const randomkey = Math.random().toString(36).slice(-8);
+    const hash_randomkey = await bcrypt.hash(randomkey, 10);
     // Add user to freePlan on Stripe and get Stripe info
     const stripeInfo = await addUsertoFreePlan(email);
 
@@ -245,32 +308,34 @@ router.post('/signup', async (req, res, next) => {
       email: email,
       username: generatedUsername,
       password: hash,
+      randomkey:hash_randomkey,
+      isKeyActive:false,
+      randomkey_date: new Date(),
       ...stripeInfo
     });
 
     console.log(`User successfully created. Email: ${email}, Username: ${generatedUsername}, ID: ${result.insertedId}`);
     const newUser = await global.db.collection('users').findOne({ _id: result.insertedId });
+    const hostname = req.hostname;
 
     const welcomeEmailData = {
       FIRSTNAME: generatedUsername, 
-      PASSWORD: password
+      PASSWORD: password,
+      HOSTNAME:hostname,
+      RANDOMKEY:hash_randomkey,
+      USERID:result.insertedId
     };
   
     sendEmail(email, 'welcome', welcomeEmailData)
       .then(() => console.log('Email sent!'))
       .catch(error => console.error(`Error sending email: ${error}`));
 
-    // Automatically log in the user after signup
-    req.login(newUser, (err) => {
-      if (err) {
-        console.error(`Error logging in the user after signup for Email: ${email}. Error: ${err.message}`);
-        req.flash('error', 'An error occurred during login after signup. Please log in manually.');
-        return res.redirect('/user/login');
-      }
-      
-      req.flash('info', 'Successfully signed up and logged in!');
-      res.redirect('/dashboard');
+    return res.render('user/signup', {
+      presign: true,
+      userID: result.insertedId
     });
+    
+
   } catch (err) {
     console.error(`Signup error for Email: ${email}. Error: ${err.message}`);
     req.flash('error', 'An error occurred during signup. Please try again.');

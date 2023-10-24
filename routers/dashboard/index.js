@@ -11,9 +11,7 @@ const {sendEmail} = require('../../services/email')
 const { ObjectId } = require('mongodb');
 
 // Route for handling '/dashboard/'
-router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {
-  const userId = req.user._id;
-  
+router.get('/', ensureAuthenticated,ensureMembership, async (req, res) => {  
   res.render('dashboard/top',{user:req.user,title:"RAKUBUN - Dashboard"});
 });
 
