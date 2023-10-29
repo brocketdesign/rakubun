@@ -97,253 +97,211 @@ router.post('/updateProfile', upload.fields([{ name: 'profileImage' }, { name: '
   }
 });
 
-router.get('/login',async (req, res) => {
-  console.log('Login page requested');
-  if(req.user){
-    res.redirect('/dashboard')
-  }
-  res.render('user/login'); // Render the login template
-});
-
+// POST /login
 router.post('/login', async (req, res, next) => {
-  const { email } = req.body;
-
-  // Check if email is provided and is valid
-  if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
-    console.log(`Login failed. Invalid email provided: ${email}`);
-    req.flash('error', 'Please provide a valid email address.');
-    return res.redirect('/user/login');
-  }
-
-  console.log(`Received login request for Email: ${email}`);
-
   try {
-    // Find existing user
+    // Destructure email from request body
+    const { email } = req.body;
+
+    // Log received email
+    console.log(`Received email: ${email}`);
+
+    // Check if the email exists in the 'users' collection
     const existingUser = await global.db.collection('users').findOne({ email: email });
 
-    if (!existingUser) {
-      console.log(`Login failed. User with Email: ${email} not found.`);
-      req.flash('error', 'User with this email does not exist.');
-      return res.redirect('/user/login');
+    // Log existing user
+    console.log(`Existing user: ${JSON.stringify(existingUser)}`);
+
+    if (existingUser) {
+      // If the email exists, execute the login function
+      return await login(req,res);
+    } else {
+      // If the email doesn't exist, execute the signup function
+      return await signup(req,res);
     }
+  } catch (error) {
+    console.log(`Error occurred: ${error}`);
+    res.status(500).send('An error occurred');
+  }
+});
 
-    // Generate a new randomkey for login
-    const randomkey = Math.random().toString(36).slice(-8);
-    const hash_randomkey = await bcrypt.hash(randomkey, 10);
+  async function login(req,res){
+    const { email } = req.body;
 
-    // Update the randomkey and its timestamp in the database
-    await global.db.collection('users').updateOne(
-      { email: email },
-      {
-        $set: {
-          randomkey: hash_randomkey,
-          isKeyActive:false,
-          randomkey_date: new Date()
+    // Check if email is provided and is valid
+    if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+      console.log(`Login failed. Invalid email provided: ${email}`);
+      return res.send({ 
+        prelog: false, 
+        status: false, 
+        message: 'Please provide a valid email address.' 
+      });
+    }
+  
+    console.log(`Received login request for Email: ${email}`);
+  
+    try {
+      // Find existing user
+      const existingUser = await global.db.collection('users').findOne({ email: email });
+  
+      if (!existingUser) {
+        console.log(`Login failed. User with Email: ${email} not found.`);
+        return res.send({
+          prelog: false, 
+          status: false, 
+          message: 'User with this email does not exist.'
+        });
+      }
+  
+      // Generate a new randomkey for login
+      const randomkey = Math.random().toString(36).slice(-8);
+      const hash_randomkey = await bcrypt.hash(randomkey, 10);
+  
+      // Update the randomkey and its timestamp in the database
+      await global.db.collection('users').updateOne(
+        { email: email },
+        {
+          $set: {
+            randomkey: hash_randomkey,
+            isKeyActive:false,
+            randomkey_date: new Date()
+          }
         }
-      }
-    );
-
-    console.log(`Randomkey updated for Email: ${email}`);
-
-    // Send the randomkey via email
-    const hostname = req.hostname;
-    const loginEmailData = {
-      FIRSTNAME: existingUser.username,
-      RANDOMKEY: hash_randomkey,
-      HOSTNAME: hostname,
-      USERID: existingUser._id
-    };
-
-    sendEmail(email, 'login', loginEmailData)
-      .then(() => console.log('Login Email sent!'))
-      .catch(error => console.error(`Error sending login email: ${error}`));
-
-    return res.render('user/login', {
-      prelog: true,
-      userID: existingUser._id
-    });
-
-  } catch (err) {
-    console.error(`Login error for Email: ${email}. Error: ${err.message}`);
-    req.flash('error', 'An error occurred during login. Please try again.');
-    return res.redirect('/user/login');
+      );
+  
+      console.log(`Randomkey updated for Email: ${email}`);
+  
+      // Send the randomkey via email
+      const hostname = req.hostname;
+      const loginEmailData = {
+        FIRSTNAME: existingUser.username,
+        RANDOMKEY: hash_randomkey,
+        HOSTNAME: hostname,
+        USERID: existingUser._id
+      };
+  
+      sendEmail(email, 'login', loginEmailData)
+        .then(() => console.log('Login Email sent!'))
+        .catch(error => console.error(`Error sending login email: ${error}`));
+  
+      return res.send({
+        prelog: true,
+        status: true, 
+        userID: existingUser._id,
+        message:'Verify your email to login'
+      });
+  
+    } catch (err) {
+      console.error(`Login error for Email: ${email}. Error: ${err.message}`);
+      return res.send({
+        prelog:false,
+        status:false,
+        message:'An error occurred during login. Please try again.'
+      });
+    }
   }
-});
 
+  async function signup(req,res){
+    const { email } = req.body;
 
-
-router.get('/signup', (req, res) => {
-  console.log('Signup page requested');
-  if(req.user){
-    res.redirect('/dashboard')
-  }
-  res.render('user/signup'); // Render the signup template
-});
-
-router.get('/logout', (req, res) => {
-  console.log('Logout requested');
-
-  req.logout(function(err) {
-    req.session.destroy((err) => {
-      if (err) {
-        console.log('Error : Failed to destroy the session during logout.', err);
-      } else {
-        req.user = null;
-        console.log('Logout response: Redirecting to /login');
-        res.redirect('/user/login');
+    // Check if email is provided and is valid
+    if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+      console.log(`Signup failed. Invalid email provided: ${email}`);
+      return res.send({ 
+        prelog: false, 
+        status: false, 
+        message: 'Please provide a valid email address.' 
+      });
+    }
+    
+    console.log(`Received signup request for Email: ${email}`);
+    
+    try {
+      const existingUser = await global.db.collection('users').findOne({ email: email });
+    
+      if (existingUser) {
+        console.log(`Signup failed. User with Email: ${email} already exists.`);
+        return res.send({
+          prelog: false, 
+          status: false, 
+          message: 'A user with this email already exists.'
+        });
       }
+    
+      // Here, you might want to generate a random username or some other mechanism
+      // since you don't have a username in the request body.
+      const generatedUsername = `${Math.random().toString(36).substring(7)}`;
+      const password = Math.random().toString(36).slice(-8);
+      const hash = await bcrypt.hash(password, 10);
+      const randomkey = Math.random().toString(36).slice(-8);
+      const hash_randomkey = await bcrypt.hash(randomkey, 10);
+      // Add user to freePlan on Stripe and get Stripe info
+      const stripeInfo = await addUsertoFreePlan(email);
+  
+      // Insert the user along with Stripe info into the database
+      const result = await global.db.collection('users').insertOne({
+        signup_date: new Date(),
+        email: email,
+        username: generatedUsername,
+        password: hash,
+        randomkey:hash_randomkey,
+        isKeyActive:false,
+        randomkey_date: new Date(),
+        ...stripeInfo
+      });
+  
+      console.log(`User successfully created. Email: ${email}, Username: ${generatedUsername}, ID: ${result.insertedId}`);
+      const newUser = await global.db.collection('users').findOne({ _id: result.insertedId });
+      const hostname = req.hostname;
+  
+      const welcomeEmailData = {
+        FIRSTNAME: generatedUsername, 
+        PASSWORD: password,
+        HOSTNAME:hostname,
+        RANDOMKEY:hash_randomkey,
+        USERID:result.insertedId
+      };
+    
+      sendEmail(email, 'welcome', welcomeEmailData)
+        .then(() => console.log('Email sent!'))
+        .catch(error => console.error(`Error sending email: ${error}`));
+  
+      return res.send({
+        presign: true,
+        status: true, 
+        userID: result.insertedId,
+        message:'Verify your email to login'
+      });
+      
+  
+    } catch (err) {
+      console.error(`Signup error for Email: ${email}. Error: ${err.message}`);
+      return res.send({
+        prelog:false,
+        status:false,
+        message:'An error occurred during signup. Please try again.'
+      });    
+    }
+  }
+  
+
+  router.get('/logout', (req, res) => {
+    console.log('Logout requested');
+  
+    req.logout(function(err) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.log('Error : Failed to destroy the session during logout.', err);
+        } else {
+          req.user = null;
+          console.log('Logout response: Redirecting to /');
+          res.redirect('/');
+        }
+      });
     });
+    
   });
   
-});
-
-router.get('/resetpassword', async (req, res) => {
-  const resetToken = req.query.resetToken || false; // Assuming the token is passed as a query parameter
-
-  try {
-    // Find the user with the matching reset token
-    const user = await global.db.collection('users').findOne({ resetToken });
-
-    if (!user) {
-      // No user found with the provided reset token
-      return res.render('user/resetpassword', { error: 'Invalid reset token' });
-    }
-
-    if (new Date() > user.validityToken) {
-      // The token has expired
-      return res.render('user/resetpassword', { error: 'Reset token has expired' });
-    }
-
-    // Valid reset token, proceed with password reset
-    res.render('user/resetpassword', { resetToken });
-
-  } catch (err) {
-    console.error('Error during password reset:', err);
-    res.render('user/resetpassword', { error: 'Error during password reset' });
-  }
-});
-
-
-router.post('/resetpassword', async (req, res, next) => {
-  const crypto = require('crypto');
-
-  const { email } = req.body;
-  console.log(`Password reset request: ${JSON.stringify(req.body)}`);
-  
-  try {
-    const existingUser = await global.db.collection('users').findOne(
-      { $or: [{ email: email }] }
-    );
-  
-    if (!existingUser) {
-      req.flash('error', 'We could not find your email in our database'); // Set an error flash message
-      return res.redirect('/user/resetpassword');
-    }
-
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const validity = new Date();
-    validity.setMinutes(validity.getMinutes() + 10);
-    const protocol = req.protocol;
-    const host = req.get('host');
-    const link = `${protocol}://${host}/user/resetpassword?resetToken=${resetToken}`;
-
-
-    await global.db.collection('users').updateOne({_id:new ObjectId(existingUser._id)},{$set:{resetToken:resetToken,validityToken:validity}})
-    
-    const EmailData = {
-      username: existingUser.username, 
-      resetToken: resetToken,
-      link:link
-    };
-
-    sendEmail(email, 'password reset', EmailData)
-      .then(() => console.log('Email sent!'))
-      .catch(error => console.error(`Error sending email: ${error}`));
-
-
-    req.flash('info', 'We sent you an email with a reset password link valide for 10 minutes.'); // Set an info flash message
-    res.redirect('/user/login');
-  } catch (err) {
-    console.log('Signup error:', err);
-    return next(err);
-  }
-});
-
-
-
-router.post('/signup', async (req, res, next) => {
-  const { email } = req.body;
-
-  // Check if email is provided and is valid
-  if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
-    console.log(`Signup failed. Invalid email provided: ${email}`);
-    req.flash('error', 'Please provide a valid email address.');
-    return res.redirect('/user/signup');
-  }
-  
-  console.log(`Received signup request for Email: ${email}`);
-  
-  try {
-    const existingUser = await global.db.collection('users').findOne({ email: email });
-  
-    if (existingUser) {
-      console.log(`Signup failed. User with Email: ${email} already exists.`);
-      req.flash('error', 'A user with this email already exists.');
-      return res.redirect('/user/signup');
-    }
-  
-    // Here, you might want to generate a random username or some other mechanism
-    // since you don't have a username in the request body.
-    const generatedUsername = `${Math.random().toString(36).substring(7)}`;
-    const password = Math.random().toString(36).slice(-8);
-    const hash = await bcrypt.hash(password, 10);
-    const randomkey = Math.random().toString(36).slice(-8);
-    const hash_randomkey = await bcrypt.hash(randomkey, 10);
-    // Add user to freePlan on Stripe and get Stripe info
-    const stripeInfo = await addUsertoFreePlan(email);
-
-    // Insert the user along with Stripe info into the database
-    const result = await global.db.collection('users').insertOne({
-      signup_date: new Date(),
-      email: email,
-      username: generatedUsername,
-      password: hash,
-      randomkey:hash_randomkey,
-      isKeyActive:false,
-      randomkey_date: new Date(),
-      ...stripeInfo
-    });
-
-    console.log(`User successfully created. Email: ${email}, Username: ${generatedUsername}, ID: ${result.insertedId}`);
-    const newUser = await global.db.collection('users').findOne({ _id: result.insertedId });
-    const hostname = req.hostname;
-
-    const welcomeEmailData = {
-      FIRSTNAME: generatedUsername, 
-      PASSWORD: password,
-      HOSTNAME:hostname,
-      RANDOMKEY:hash_randomkey,
-      USERID:result.insertedId
-    };
-  
-    sendEmail(email, 'welcome', welcomeEmailData)
-      .then(() => console.log('Email sent!'))
-      .catch(error => console.error(`Error sending email: ${error}`));
-
-    return res.render('user/signup', {
-      presign: true,
-      userID: result.insertedId
-    });
-    
-
-  } catch (err) {
-    console.error(`Signup error for Email: ${email}. Error: ${err.message}`);
-    req.flash('error', 'An error occurred during signup. Please try again.');
-    return res.redirect('/user/signup');
-  }
-});
-
-
 
 router.post('/isOldPasswordCorrect', (req, res) => {
   const { oldPassword } = req.body;

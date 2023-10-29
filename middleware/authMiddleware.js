@@ -25,7 +25,7 @@ async function ensureAuthenticated(req, res, next) {
             if (err) {
               console.error(`Error logging in the user after signup. Error: ${err.message}`);
               req.flash('error', 'An error occurred during login after signup. Please log in manually.');
-              return res.redirect('/user/login');
+              return res.redirect('/');
             }
             
             req.flash('info', 'Successfully signed up and logged in!');
@@ -43,7 +43,7 @@ async function ensureAuthenticated(req, res, next) {
       }
     }
 
-    res.redirect('/user/login');
+    res.redirect('/');
   }
 }
 

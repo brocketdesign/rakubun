@@ -1,6 +1,32 @@
 extends default
 
 block content
+
+    //- login popup
+    #login-container.position-fixed.d-none(onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
+        .position-fixed.top-50.start-50.translate-middle#positionElement
+            .col
+                #login-form.card.shadow.bg-light.border.border-white
+                    .card-body.d-flex.flex-column.justify-content-center(style="min-height: 250px;")
+                        h1.card-title.text-start Login to RAKUBUN
+                        span Join the community and unlock amazing features! 🧙
+                        .mb-3
+
+                        .verify-email.d-none(style="min-height: 60px;")
+                            span Verify your email to login
+                            a#resend-email(href="#" style="display:block" onclick="resendSigninMail()") Resend email
+
+                        form
+                            .mb-3
+                                label(for='email', class='form-label') Email:
+                                .input-group
+                                    input(type='email', name='email', id='email', class='form-control' placeholder="me@email.com")
+                                    button.btn.btn-primary.shadow-0.input-group-append(type='submit') 
+                                        i.fas.fa-arrow-circle-right
+                        .copyright
+                            input.me-2(type="checkbox")
+                            span I accept the Terms and Privacy Policy
+
     //- Background image
     div#intro.bg-image.shadow-1-strong
         div(style="background:linear-gradient(45deg, rgb(23, 88, 213), rgb(14, 167, 214) 100%);")
@@ -14,7 +40,7 @@ block content
                             span Create content 10 times faster with AI
                     h5 Create high-quality articles, social media, and ad copy in seconds
                     h5.mb-4 AI Writing Assistant
-                    a.btn.btn-warning.btn-lg.m-2(href="/user/signup", role="button", style="font-size:1em;") Try it for free first
+                    button.btn.btn-warning.btn-lg.m-2(onclick="displayLogin()", role="button", style="font-size:1em;") Try it for free first
 
     div.container.pt-5(style="overflow-x:hidden;")
         //- Section: Features

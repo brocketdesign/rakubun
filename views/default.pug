@@ -31,9 +31,9 @@ html
                           button.nav-link.btn.shadow-0(type='button', onclick='logout()') Logout
                     else
                       li.nav-item
-                          a.nav-link.shadow-0(href='/user/login') Login
+                          a.nav-link.shadow-0(href="#" onclick="displayLogin()") Login
                       li.nav-item
-                          a.btn.btn-outline-warning.btn-lg.shadow-0(href="/user/signup" role="button") Start Now For Free
+                          buttom.btn.btn-outline-warning.btn-lg.shadow-0(onclick="displayLogin()" role="button") Start Now For Free
       else 
         .top-nav.auto-hide
             nav.navbar.navbar-expand-md.navbar-white.bg-white.py-0

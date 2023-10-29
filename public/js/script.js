@@ -19,6 +19,8 @@ const inputTrigger = (inputElement, triggerElement) => {
     triggerElement.addEventListener('click', () => inputElement.click());
 }
 $(document).ready(function() {
+
+    handleLoginForm()
     
     handleEvents()
     handleGridRange();
@@ -1379,4 +1381,95 @@ function clearContentFromEnd($element, callback) {
             }
         }
     }, 50); // This duration can be adjusted as per your requirement
+}
+
+function handleLoginForm(){
+    if(!!document.querySelector('#login-form')){
+        $('#login-form').click(function(event) {
+            event.stopPropagation(); // Stop event from bubbling up to container
+        });
+        checkIfCopyright()
+        $('#login-form form').on('submit',function(e){
+            e.preventDefault()
+            const email = $('#email').val()
+            $('#resend-email').attr('data-email',email)
+            sendLoginForm(email)
+        })
+    }
+}
+function sendLoginForm(email,callback){
+    $.post('/user/login',{email},function(response){
+        if(response.status){
+            $('#login-form .verify-email').removeClass('d-none')
+            $('#login-form .copyright').hide()
+            $('#login-form form').hide()
+        }
+        if(callback){
+            callback(response)
+        }
+    })
+}
+let canResend = true;  // Variable to track if the user can resend the email
+
+function resendSigninMail(){
+  if (!canResend) {
+    console.log('Please wait before resending.');
+    return;
+  }
+
+  const email = $('#resend-email').attr('data-email');
+
+  // Disable the resend button
+  $('#resend-email').hide()
+
+  sendLoginForm(email, function(response) {
+    if (response.status) {
+      // Show a text that mail has been sent
+      const VerifyMailMessage = $('#login-form .verify-email span').text()
+      const messageElement = 'New mail has been sent!';
+      $('#login-form .verify-email span').text('');
+      appendHeadlineCharacterByCharacter($('#login-form .verify-email span'), messageElement)
+
+      canResend = false;
+      // Set timeout to remove the message after a few seconds
+      setTimeout(() => {
+        canResend = true;
+        $('#login-form .verify-email span').text('');
+        appendHeadlineCharacterByCharacter($('#login-form .verify-email span'), VerifyMailMessage)
+      }, 5000);
+      setTimeout(() => {
+        $('#resend-email').show();
+      },10000)
+    }
+  });
+}
+
+function checkIfCopyright() {
+    const copyright = $('#login-form .copyright input'); // type="checkbox"
+    const formSelector = $('#login-form form :input'); // selects all form fields
+  
+    // Function to enable or disable form based on checkbox state
+    const toggleForm = (isChecked) => {
+      if (isChecked) {
+        formSelector.prop('disabled', false); // Enable form
+      } else {
+        formSelector.prop('disabled', true);  // Disable form
+      }
+    };
+  
+    // Check the initial state of the checkbox
+    const isChecked = copyright.prop('checked');
+    toggleForm(isChecked);
+  
+    // Listen for changes to checkbox state
+    copyright.change(function() {
+      const isChecked = $(this).prop('checked');
+      toggleForm(isChecked);
+    });
+  }
+function displayLogin(){
+    $('#login-container').removeClass('d-none')
+}
+function hideLogin(){
+    $('#login-container').addClass('d-none')
 }
