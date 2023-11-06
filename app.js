@@ -122,15 +122,11 @@ function startServer() {
       const user = require('./routers/user');
       const payment = require('./routers/payment');
       const dashboard= require('./routers/dashboard/index');
-      const dating = require('./routers/dashboard/dating');
-      const assistants = require('./routers/dashboard/assistants');
 
       app.use('/', index); 
       app.use('/user', user); 
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
-      app.use('/dashboard/app/dating', dating);
-      app.use('/dashboard/app/assistants', assistants);
 
 
 
