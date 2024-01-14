@@ -80,7 +80,7 @@ function handleKeywordsBehavior(){
             if (input) { // If there's some input
                 input = input.replace(/,$/, ""); // Remove trailing comma if present
                 // Create the tag (you need to style it with CSS)
-                var html = '<span class="d-flex btn keyword-badge shadow-0" data-keyword="' + input + '">' + input + 
+                var html = '<span class="d-flex w-100 btn keyword-badge shadow-0" data-keyword="' + input + '">' + input + 
                            '<i type="button" class="remove-tag fa fa-times"></i></span>';
                 $(this).before(html); // Insert the tag before the input field
                 $(this).val(''); // Clear the input field
