@@ -1,6 +1,9 @@
 main#dashboard {
   display:none;
 }
+#sidebarMenu.open{
+  width: auto !important;
+}
 .generate-text{
   opacity: 0.8;
   cursor:pointer;
@@ -151,6 +154,22 @@ li.list-group-item{
 }
 .hashtag-inputs input, .chapters-inputs input, .keyword-inputs input{
   min-width: 150px;
+}
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+}
+
+.separator hr {
+  flex-grow: 1;
+  border: 0;
+  border-top: 1px solid #000; /* Classic black line, like the best of tuxedos */
+  margin: 0 10px; /* A little breathing room, please! */
+}
+
+.separator span {
+  white-space: nowrap; /* Keep 'Or' from wrapping like a bad gift */
 }
 
 /*Chat*/

@@ -10,11 +10,10 @@ const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const { StableDiffusionApi } = require("stable-diffusion-api");
-
-const passport = require('passport');
+const passport = require("passport");
+const passportConfig = require('./middleware/passport')(passport);
 const path = require('path'); // Add path module
 const ip = require('ip');
-const bcrypt = require('bcrypt');
 const app = express();
 const server = http.createServer(app);
 
@@ -47,59 +46,6 @@ function startServer() {
       // Serve static files from the 'public' directory
       app.use(express.static(path.join(__dirname, 'public')));
 
-      // Continue with the remaining code...
-
-      // Passport config
-      passport.use(
-        new LocalStrategy({
-          usernameField: 'email',
-          passwordField: 'password'
-        },function (email, password, done) {
-          db.collection('users')
-            .findOne({ email })
-            .then(user => {
-              if (!user) {
-                console.log('LocalStrategy: No user found with this username.');
-                return done(null, false, { message: 'Incorrect username.' });
-              }
-              console.log('LocalStrategy: User found, comparing passwords...');
-              // Use bcrypt to compare the input password with the hashed password in the database
-              bcrypt.compare(password, user.password).then(isMatch => {
-                if (isMatch) {
-                  console.log('LocalStrategy: Passwords match, login successful.');
-                  return done(null, user);
-                } else {
-                  console.log('LocalStrategy: Passwords do not match.');
-                  return done(null, false, { message: 'Incorrect password.' });
-                }
-              })
-              .catch(err => {
-                console.log('Error during password comparison:', err);
-                return done(err);
-              });
-            })
-            .catch(err => {
-              console.log('Error in LocalStrategy:', err);
-              return done(err);
-            });
-        })
-      );
-
-      passport.serializeUser(function (user, done) {
-        done(null, user._id.toString()); // Convert ObjectId to string
-      });
-
-      passport.deserializeUser(function (id, done) {
-        db.collection('users')
-          .findOne({ _id: new ObjectId(id) })
-          .then(user => {
-            done(null, user);
-          })
-          .catch(err => {
-            done(err, null);
-          });
-      });
-      
       app.use(compression());
       app.use(flash());
       app.use((req, res, next) => {
@@ -120,13 +66,17 @@ function startServer() {
       // Define your routers
       const index = require('./routers/index');
       const user = require('./routers/user');
+      const auth = require('./routers/auth');
       const payment = require('./routers/payment');
       const dashboard= require('./routers/dashboard/index');
-
+      const titlegenerator = require('./routers/api/titlegenerator');
+      
       app.use('/', index); 
       app.use('/user', user); 
+      app.use('/auth', auth); 
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
+      app.use('/api/titlegenerator', titlegenerator);
 
 
 

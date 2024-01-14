@@ -25,7 +25,7 @@ $(document).ready(function() {
     handleEvents()
     handleGridRange();
     handleUserProfile();
-
+    handleUserProfileImages();
     handleCopyButtons();
     handlePostButtons() ;
 
@@ -672,20 +672,28 @@ function adjustSidebarAppearance(isVisible) {
         $('#sidebarMenu').find('.hide-text').hide()
         $('#sidebarMenu').find('.collapse').removeClass('show').end()
         //iconAnimation();
+        $('#sidebarMenu').hide()
+        $('#sidebarMenu').removeClass('open')
+        /*
         $('#sidebarMenu').animate({ width: '60px' }, 100, function() {
             //$('#sidebarMenu').find('.list-group-item').addClass('text-center');
             $('#sidebarMenu').css("animation", "");
             $('#sidebarMenu').removeClass('open')
             $('#sidebarMenu').hide()
         });
+        */
     } else {
         $('#sidebarMenu').show()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
+        $('#sidebarMenu').find('.hide-text').show();
+        $('#sidebarMenu').addClass('open')
+        /*
         $('#sidebarMenu').animate({ width: '250px' }, 100, function() {
             $('#sidebarMenu').find('.hide-text').fadeIn();
             //iconAnimation();
             $('#sidebarMenu').addClass('open')
         });
+        */
     }
 
 }
@@ -733,8 +741,7 @@ function adjustSidebarAppearance2(){
         $('#sidebarMenu').fadeIn()
         $('#sidebarMenu').find('.list-group-item').removeClass('text-center').end()
         $('#sidebarMenu').find('.hide-text').show();
-        $('#sidebarMenu').animate({ 'max-height': '100vh' }, 500, function() {
-        });
+        $('#sidebarMenu').animate({ 'max-height': '100vh' }, 500, function() {});
     }
 }
 function handleSideBar2(){
@@ -1141,6 +1148,21 @@ function cancelSubscription(subscriptionID){
     }
     
 }
+function handleUserProfileImages(){
+    let form = $('#updateProfile form').not('#reset-form');
+
+       // Listen for changes on the profile image input
+       $('#profileImage').on('change', function() {
+        console.log("Profile image changed, hold tight, submitting the form...");
+        form.submit();
+    });
+
+    // Listen for changes on the banner image input
+    $('#bannerImage').on('change', function() {
+        console.log("Banner image changed, woo! Submitting the form...");
+        form.submit();
+    });
+}
 const handleUserProfile = () => {
     let formChanged = false;
     let form = $('#updateProfile form').not('#reset-form');
@@ -1169,7 +1191,7 @@ const handleUserProfile = () => {
     // Image preview and click to trigger file input
     const profileImageInput = document.getElementById('profileImage');
     const bannerImageInput = document.getElementById('bannerImage');
-
+    
     if (profileImageInput && bannerImageInput ) {
       inputTrigger(profileImageInput, document.querySelector('.profile-image'));
       inputTrigger(bannerImageInput, document.querySelector('.banner-image'));
@@ -1388,7 +1410,7 @@ function handleLoginForm(){
         $('#login-form').click(function(event) {
             event.stopPropagation(); // Stop event from bubbling up to container
         });
-        checkIfCopyright()
+        //checkIfCopyright()
         $('#login-form form').on('submit',function(e){
             e.preventDefault()
             const email = $('#email').val()

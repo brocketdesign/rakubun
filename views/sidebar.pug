@@ -1,23 +1,19 @@
-#sidebarMenu.bg-white.position-fixed.h-100.col-md-2.p-0.shadow(style="z-index:10;width:60px; overflow-y: auto; max-height: 100vh;display:none")
+#sidebarMenu.bg-white.position-fixed.col-md-2.p-0.shadow(style="right:10px;z-index:10;width:60px; overflow-y: auto; max-height: 100vh;display:none")
   .position-sticky
     .list-group.list-group-flush
       li#sidebarMenuToggle.list-group-item.list-group-item-action.p-3.ripple.toggler.align-items-center.d-none(type="button")
         i.fas.fa-bars
         .hide-text.mx-2
           | RAKUBUN
-      li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Home")
-        a(href="/dashboard/") 
-          i.fas.fa-home
-          span.hide-text.ms-3 Home
+      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Setting")
+        if user
+          a(href="/user/setting") 
+            i.fas.fa-user-circle
+            span.hide-text.ms-3 Account
       li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Upgrade")
         a(href='/payment/subscription')
           i.fas.fa-arrow-up
           span.hide-text.ms-3=user && user.subscriptionId?"Subscription":"Upgrade" 
-      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Setting")
-        if user
-          a(href="/user/setting") 
-            i.fas.fa-cog
-            span.hide-text.ms-3 Setting
       li.list-group-item.list-group-item-action.p-3.ripple(data-bs-toggle="tooltip" title="Contact Us")
         a(href="/contact") 
           i.fas.fa-question

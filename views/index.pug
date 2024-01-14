@@ -8,24 +8,31 @@ block content
             .col
                 #login-form.card.shadow.bg-light.border.border-white
                     .card-body.d-flex.flex-column.justify-content-center(style="min-height: 250px;")
-                        h1.card-title.text-start Login to RAKUBUN
+                        h1.card-title.text-start Welcome to RAKUBUN
                         span Join the community and unlock amazing features! 🧙
                         .mb-3
-
                         .verify-email.d-none(style="min-height: 60px;")
                             span Verify your email to login
                             a#resend-email(href="#" style="display:block" onclick="resendSigninMail()") Resend email
 
                         form
                             .mb-3
-                                label(for='email', class='form-label') Email:
+                                label.d-none(for='email', class='form-label') Email:
                                 .input-group
-                                    input(type='email', name='email', id='email', class='form-control' placeholder="me@email.com")
+                                    input(type='email', name='email', id='email', class='form-control' placeholder="Enter your email address")
                                     button.btn.btn-primary.shadow-0.input-group-append(type='submit') 
                                         i.fas.fa-arrow-circle-right
-                        .copyright
-                            input.me-2(type="checkbox")
-                            span I accept the Terms and Privacy Policy
+                        .separator.mb-3
+                            hr
+                            span Or
+                            hr
+                        .container
+                            a(href='/auth/google', class='google-login-button')
+                                img(src='/img/googleauth.png', alt='Continue with Google')
+
+                        .copyright.mt-3
+                            input.d-none.me-2(type="checkbox")
+                            span By continuing, you agree to our Terms of Use and Privacy Policy.
 
     //- Background image
     div#intro.bg-image.shadow-1-strong
