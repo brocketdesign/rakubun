@@ -21,12 +21,13 @@ function submitForm() {
     // Get values from country and language select elements
     var country = $('#country').val();
     var language = $('#language').val();
-
+    var tone = $('#tone').val();
     // Construct the data object
     var data = {
-        keywords: keywords,
-        country: country,
-        language: language
+        keywords,
+        country,
+        language ,
+        tone
     };
 
     handleFormSubmit(data);
@@ -80,8 +81,8 @@ function handleKeywordsBehavior(){
             if (input) { // If there's some input
                 input = input.replace(/,$/, ""); // Remove trailing comma if present
                 // Create the tag (you need to style it with CSS)
-                var html = '<span class="d-flex w-100 btn keyword-badge shadow-0" data-keyword="' + input + '">' + input + 
-                           '<i type="button" class="remove-tag fa fa-times"></i></span>';
+                var html = '<span class="col btn keyword-badge shadow-0 position-relative m-0 border border-dark rounded-0" data-keyword="' + input + '">' + input + 
+                           '<i type="button" class="remove-tag fa fa-times position-absolute" style="top:3px;right:5px;"></i></span>';
                 $(this).before(html); // Insert the tag before the input field
                 $(this).val(''); // Clear the input field
             }

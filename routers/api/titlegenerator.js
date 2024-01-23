@@ -16,8 +16,8 @@ const openai = new OpenAI({
 
 // Function to generate the prompt text based on the received data
 function generatePrompt(data) {
-    const { keywords, country, language, formattedKeywords, seoSearch } = data;
-    return `Generate 5 creative and SEO-friendly titles in ${language} for a blog post targeting the audience in ${country}, related to the following keywords: ${formattedKeywords}. Here are some examples : ${seoSearch}`;
+    const { keywords, country, language, formattedKeywords, seoSearch, tone } = data;
+    return `Generate 5 creative and SEO-friendly titles in ${language} for a blog post targeting the audience in ${country}, related to the following keywords: ${formattedKeywords}. Use a ${tone} tone. Here are some google search results : ${seoSearch}`;
   }
   
   // Function to parse the response from OpenAI
@@ -32,16 +32,19 @@ function generatePrompt(data) {
 
       data.formattedKeywords = data.keywords.join(', '); // Assuming keywords is an array
       data.seoSearch = await getSearchResult(data.formattedKeywords) 
+
+      const prompt = generatePrompt(data)
       console.log(data)
+      console.log({prompt})
   
       const response = await openai.completions.create({
             model: "gpt-3.5-turbo-instruct",
-            prompt: generatePrompt(data),
+            prompt,
             max_tokens: 300,
             temperature: 0.7, // Adjust this as needed for creativity
             top_p: 1, // Typical value for most use cases
-            frequency_penalty: 0, // Adjust if you want to penalize frequent tokens
-            presence_penalty: 0, // Adjust if you want to penalize new tokens
+            frequency_penalty: 0.5, // Adjust if you want to penalize frequent tokens
+            presence_penalty: 0.5, // Adjust if you want to penalize new tokens
             //n: 5, // Generate 5 completions
             //stop: ["\n"] // Stop the completions at new line
       });

@@ -14,22 +14,30 @@ block mainContent
                         .card-body
                             .form-group.my-2
                                 label(for="keywords") 主要なキーワード
-                                .keywords.form-box.rounded.d-flex
+                                .keywords.form-box.rounded.row.row-cols-3
                                     input#keywords.form-control.w-100(type="text", name="keywords", placeholder="「Enter」または「コンマ」を押して追加", required)
                                 
                             .row
-                                .col-md-6.my-2
+                                .col-md-4.my-2
                                     .form-group
-                                    label(for="country") ターゲットオーディエンスの国/地域
-                                    select#country.form-control(name="country")
-                                        option(value="Japan") 日本
-                                        option(value="United States") アメリカ合衆国
-                                .col-md-6.my-2
+                                        label(for="country") 国/地域
+                                        select#country.form-control(name="country")
+                                            option(value="Japan") 日本
+                                            option(value="United States") アメリカ合衆国
+                                .col-md-4.my-2
                                     .form-group
-                                    label(for="language") 言語
-                                    select#language.form-control(name="language")
-                                        option(value="japanese") 日本語
-                                        option(value="english") 英語
+                                        label(for="language") 言語
+                                        select#language.form-control(name="language")
+                                            option(value="japanese") 日本語
+                                            option(value="english") 英語
+                                .col-md-4.my-2
+                                    .form-group
+                                        label(for="tone") 言語
+                                        select#tone.form-control(name="tone")
+                                            option(value="formal") 正式 (Seishiki - Formal)
+                                            option(value="friendly") 友好的 (Yūkō-teki - Friendly)
+                                            option(value="casual") カジュアル (Kajuaru - Casual)
+
                             .form-group.my-2
                                 button#suggest-topics.btn.btn-info.w-100.text-center(type="submit") 
                                     span.load.spinner-border.spinner-border-sm.me-2(role="status" style="display:none")
