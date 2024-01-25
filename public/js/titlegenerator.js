@@ -59,7 +59,7 @@ function handleFormResponse(data) {
     $('#result').empty();
 
     // Loop through each title in the data array
-    $.each(data, function(index, title) {
+    $.each(data.titles, function(index, title) {
         // Create a list item for each title
         var listItem = $('<li>', {
             'class': 'list-group-item', // Add Bootstrap list item class
@@ -68,6 +68,21 @@ function handleFormResponse(data) {
 
         // Append the list item to the unordered list
         $('#result').append(listItem);
+    });
+    // Loop through each title in the data array
+    $.each(data.seoSearch, function(index, item) {
+        // Create a list item for each title
+        var listItem = $('<li>', {
+            'class': 'list-group-item', 
+        });
+        var hyperlink = $('<a>',{
+            'href':item.link,
+            text: item.title,
+            target:'_blank'
+        })
+
+        listItem.append(hyperlink)
+        $('#seoSearch').append(listItem);
     });
 }
 

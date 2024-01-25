@@ -17,6 +17,7 @@ const openai = new OpenAI({
 // Function to generate the prompt text based on the received data
 function generatePrompt(data) {
     const { keywords, country, language, formattedKeywords, seoSearch, tone } = data;
+    const title = seoSearch.map(item=>{return item.title})
     return `Generate 5 creative and SEO-friendly titles in ${language} for a blog post targeting the audience in ${country}, related to the following keywords: ${formattedKeywords}. Use a ${tone} tone. Here are some google search results : ${seoSearch}`;
   }
   
@@ -51,7 +52,7 @@ function generatePrompt(data) {
   
       // Parse the response to get the titles
       const titles = parseOpenAIResponse(response.choices[0].text);
-      return titles;
+      return {titles,seoSearch:data.seoSearch};
     } catch (error) {
       console.error('Error calling OpenAI API:', error);
       return [];
@@ -83,7 +84,7 @@ function generatePrompt(data) {
     // Process the search results here
     // For example, extract titles and links
     return data.items.map(item => {
-        return item.title;
+        return {title:item.title,link:item.link};
     });
 }
   module.exports = router
