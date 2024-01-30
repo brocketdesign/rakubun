@@ -49,7 +49,7 @@ function generatePrompt(data) {
       const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo-16k",
             messages,
-            max_tokens: 300,
+            max_tokens: 50,
             temperature: 0.7, // Adjust this as needed for creativity
             top_p: 1, // Typical value for most use cases
             frequency_penalty: 0.5, // Adjust if you want to penalize frequent tokens

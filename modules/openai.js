@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const { createParser } = require('eventsource-parser');
 
-const fetchOpenAICompletion = async (messages, res) => {
+const fetchOpenAICompletion = async (messages,max_tokens, res) => {
     try {
         let response = await fetch(
             "https://api.openai.com/v1/chat/completions",
@@ -14,7 +14,7 @@ const fetchOpenAICompletion = async (messages, res) => {
                 body: JSON.stringify({
                     model: "gpt-3.5-turbo-16k",
                     messages,
-                    max_tokens: 100,
+                    max_tokens,
                     temperature: 0.75,
                     top_p: 0.95,
                     frequency_penalty: 0.5, // Adjust if you want to penalize frequent tokens

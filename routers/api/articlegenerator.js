@@ -69,7 +69,7 @@ router.get('/stream/:type', async (req, res) => {
           { role: 'user', content: prompt },
       ];
       
-      const fullCompletion = await fetchOpenAICompletion(messages, res);
+      const fullCompletion = await fetchOpenAICompletion(messages,1000, res);
 
       // 文字列内のダブルクォートと改行をエスケープ
       const completionEscaped = fullCompletion.replace(/"/g, '\\"').replace(/\n/g, '\\n');
