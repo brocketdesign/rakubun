@@ -7,7 +7,7 @@ block mainContent
     .container.mt-5
         .row.justify-content-center
             .col-md-8
-                form#section-generator(data-type="article")
+                form#article-generator(data-type="article")
                     .card
                         .card-header
                             h3.mb-0 Enter your magic ingredients here!
@@ -47,7 +47,7 @@ block mainContent
                                             option(value="humorous") Humorous
 
                             .form-group.my-2
-                                button#generate-section.btn.btn-primary.w-100(type="submit") 
+                                button#generate-article.btn.btn-primary.w-100(type="submit") 
                                     span.load.spinner-border.spinner-border-sm.me-2(role="status", style="display:none")
                                     span.text Let's Create!
 
