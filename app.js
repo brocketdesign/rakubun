@@ -70,6 +70,8 @@ function startServer() {
       const payment = require('./routers/payment');
       const dashboard= require('./routers/dashboard/index');
       const titlegenerator = require('./routers/api/titlegenerator');
+      const sectiongenerator = require('./routers/api/sectiongenerator');
+      const articlegenerator = require('./routers/api/articlegenerator');
       
       app.use('/', index); 
       app.use('/user', user); 
@@ -77,6 +79,8 @@ function startServer() {
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
       app.use('/api/titlegenerator', titlegenerator);
+      app.use('/api/sectiongenerator', sectiongenerator);
+      app.use('/api/articlegenerator', articlegenerator);
 
 
 

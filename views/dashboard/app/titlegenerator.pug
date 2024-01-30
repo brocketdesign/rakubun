@@ -20,12 +20,6 @@ block mainContent
                             .row
                                 .col-md-4.my-2
                                     .form-group
-                                        label(for="country") 国/地域
-                                        select#country.form-control(name="country")
-                                            option(value="Japan") 日本
-                                            option(value="United States") アメリカ合衆国
-                                .col-md-4.my-2
-                                    .form-group
                                         label(for="language") 言語
                                         select#language.form-control(name="language")
                                             option(value="japanese") 日本語
@@ -51,5 +45,5 @@ block mainContent
             .col-md-8.my-2
                 h3 Google
                 ul#seoSearch.list-group
-    script(src="/js/titlegenerator.js")
+    script(src="/js/generator/titlegenerator.js")
 

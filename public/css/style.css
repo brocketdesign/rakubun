@@ -191,6 +191,10 @@ li.list-group-item{
 #chat-input-section input.form-control{
   padding: 20px;
 }
+
+.busy .load {
+  display: inherit !important;
+}
 @media (max-width: 992px) {
   .top-nav .navbar {
     padding: 0 !important;

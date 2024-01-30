@@ -19,13 +19,11 @@ function submitForm() {
     });
 
     // Get values from country and language select elements
-    var country = $('#country').val();
     var language = $('#language').val();
     var tone = $('#tone').val();
     // Construct the data object
     var data = {
         keywords,
-        country,
         language ,
         tone
     };
@@ -63,9 +61,14 @@ function handleFormResponse(data) {
         // Create a list item for each title
         var listItem = $('<li>', {
             'class': 'list-group-item', // Add Bootstrap list item class
-            text: title // Set the text of the list item
         });
+        var hyperlink = $('<a>',{
+            'href':`/dashboard/app/sectiongenerator?title=${title}`,
+            text: title,
+            target:'_blank'
+        })
 
+        listItem.append(hyperlink)
         // Append the list item to the unordered list
         $('#result').append(listItem);
     });

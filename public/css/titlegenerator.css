@@ -23,6 +23,3 @@
     border: none;
     background-color: transparent;
 }
-.busy .load {
-    display: inherit !important;
-}

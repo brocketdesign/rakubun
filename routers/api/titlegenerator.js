@@ -16,16 +16,22 @@ const openai = new OpenAI({
 
 // Function to generate the prompt text based on the received data
 function generatePrompt(data) {
-    const { keywords, country, language, formattedKeywords, seoSearch, tone } = data;
-    const title = seoSearch.map(item=>{return item.title})
-    return `Generate 5 creative and SEO-friendly titles in ${language} for a blog post targeting the audience in ${country}, related to the following keywords: ${formattedKeywords}. Use a ${tone} tone. Here are some google search results : ${seoSearch}`;
+    const { keywords, language, formattedKeywords, seoSearch, tone } = data;
+    const titles = seoSearch.map(item => { return item.title; });
+  
+    return `Generate 5 creative and SEO-friendly titles in ${language} for a blog post related to the following keywords: ${formattedKeywords}. 
+    Use a ${tone} tone. 
+    Here are some google search results : ${titles} \n\n
+    Use Markdown for the titles (# )
+    `;
   }
   
   // Function to parse the response from OpenAI
   function parseOpenAIResponse(responseText) {
-    // Assuming each title is separated by a newline
-    return responseText.trim().split('\n').filter(title => title.length);
-  }
+    // Trim the response, split by '#', remove quotation marks, and filter out empty titles
+    return responseText.trim().split('#').map(title => title.replace(/"/g, '')).filter(title => title.trim().length);
+}
+
   
   // The main function to call the OpenAI API and generate titles
   async function generateTitle(data) {
@@ -35,12 +41,14 @@ function generatePrompt(data) {
       data.seoSearch = await getSearchResult(data.formattedKeywords) 
 
       const prompt = generatePrompt(data)
-      console.log(data)
-      console.log({prompt})
+      const messages = [
+          { role: 'system', content: 'You are a powerful blog writer assistant' },
+          { role: 'user', content: prompt },
+      ];
   
-      const response = await openai.completions.create({
-            model: "gpt-3.5-turbo-instruct",
-            prompt,
+      const response = await openai.chat.completions.create({
+            model: "gpt-3.5-turbo-16k",
+            messages,
             max_tokens: 300,
             temperature: 0.7, // Adjust this as needed for creativity
             top_p: 1, // Typical value for most use cases
@@ -51,7 +59,8 @@ function generatePrompt(data) {
       });
   
       // Parse the response to get the titles
-      const titles = parseOpenAIResponse(response.choices[0].text);
+      console.log(response.choices[0].message)
+      const titles = parseOpenAIResponse(response.choices[0].message.content);
       return {titles,seoSearch:data.seoSearch};
     } catch (error) {
       console.error('Error calling OpenAI API:', error);

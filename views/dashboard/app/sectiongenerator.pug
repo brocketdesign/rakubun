@@ -1,0 +1,59 @@
+extends ../base
+
+block mainContent
+    link(rel='stylesheet', href='/css/sectiongenerator.css')
+    h2.fw-bold.text-center Section Generator Extraordinaire!
+    hr.my-4
+    .container.mt-5
+        .row.justify-content-center
+            .col-md-8
+                form#section-generator(data-type="section")
+                    .card
+                        .card-header
+                            h3.mb-0 Enter your magic ingredients here!
+                        .card-body
+                            .form-group.my-2
+                                label(for="title") Your Captivating Title
+                                input#title.form-control(type="text", name="title", placeholder="Enter a snazzy title", required)
+
+                            .form-group.my-2
+                                label(for="sectionsCount") Number of Sections
+                                input#sectionsCount.form-control(type="number", name="sectionsCount", placeholder="How many sections? 1, 2, 3...", min="1" max="3" required)
+
+                            .form-group.my-2
+                                label(for="writingStyle") Choose Your Writing Style
+                                select#writingStyle.form-control(name="writingStyle")
+                                    option(value="narrative") Narrative
+                                    option(value="expository") Expository
+                                    option(value="descriptive") Descriptive
+                                    option(value="persuasive") Persuasive
+
+                            .row
+                                .col-md-6.my-2
+                                    .form-group
+                                        label(for="language") Language, please!
+                                        select#language.form-control(name="language")
+                                            option(value="english") English
+                                            option(value="spanish") Spanish
+                                            option(value="japanese") Japanese
+                                            // Add more languages as needed
+                                
+                                .col-md-6.my-2
+                                    .form-group
+                                        label(for="writingTone") Pick a Tone
+                                        select#writingTone.form-control(name="writingTone")
+                                            option(value="formal") Formal
+                                            option(value="friendly") Friendly
+                                            option(value="casual") Casual
+                                            option(value="humorous") Humorous
+
+                            .form-group.my-2
+                                button#generate-section.btn.btn-primary.w-100(type="submit") 
+                                    span.load.spinner-border.spinner-border-sm.me-2(role="status", style="display:none")
+                                    span.text Let's Create!
+
+        .row.justify-content-center
+            .col-md-8.my-2
+                h3 Generated Sections
+                ul#result.list-group
+    script(src="/js/generator/sectiongenerator.js")

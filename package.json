@@ -48,6 +48,7 @@
     "stable-diffusion-api": "^0.0.7",
     "stripe": "^13.4.0",
     "wordpress": "^1.4.2",
+    "ws": "^8.16.0",
     "youtube-transcript": "^1.0.6",
     "ytdl-core": "^4.9.1"
   }

@@ -751,7 +751,7 @@ function handleSideBar2(){
     $('#sidebarMenuToggleSmall').on('click', adjustSidebarAppearance2);
 }
 
-function handleStream(response,callback,endCallback) {
+function handleStreamGPT(response,callback,endCallback) {
     console.log(`Start streaming on : ${response.redirect}`);
 
     // Establish an EventSource connection for live streaming
@@ -1011,7 +1011,7 @@ function watchAndConvertMarkdown(sourceSelector, outputSelector) {
     // Start observing the target node for configured mutations
     observer.observe(document.querySelector(sourceSelector), config);
 }
-function generateStream(type,gpt3Prompt,data,callback,errorcallback){
+function _generateStream(type,gpt3Prompt,data,callback,errorcallback){
     // simulate request
     $.ajax({
         url: '/api/openai/custom/'+type, // replace with your endpoint
@@ -1316,7 +1316,7 @@ function handleGenerateText() {
 
         // Make an AJAX call to the backend with the prompt
         $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
-            handleStream(response, function(message) {
+            handleStreamGPT(response, function(message) {
                 $failTemplate .hide()
                 $span.append(message);
             },function(endMessage){
@@ -1344,7 +1344,7 @@ function handleGenerateTextForElement($element) {
         // any other logic you want to perform after clearing can go here
         $.post(`/api/openai/custom/ask-gpt`,{prompt, time:new Date(), data:{}}, function(response) {
             
-            handleStream(response, function(message) {
+            handleStreamGPT(response, function(message) {
                 $failTemplate .hide()
                 $element.append(message);
             },function(endMessage){
