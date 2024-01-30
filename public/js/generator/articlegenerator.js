@@ -1,11 +1,10 @@
 $(document).ready(function(){
-    $('form#section-generator').on('submit',function(e){
+    $('form#article-generator').on('submit',function(e){
         e.preventDefault()
         submitForm($(this));
-    })
+    });
     var sectionId = getQueryParam('id');
     $.get('/api/sectiongenerator/sectiondata?sectionId='+sectionId,function(data){
-        console.log(data)
         if (data) {
             $('#title').val(data.request.TITLE);
             $('#sections').val(data.completion).attr('data-sections',data.completion);
@@ -96,8 +95,10 @@ function updateUIAfterStream(type) {
 }
 
 function udpateSendButton(containerID,completionId){
-    $('#result').append(`<a class="w-100 btn btn-primary send-${containerID}" target="_blank">Post article</a>`)
-   $(`.send-${containerID}`).attr('href',`/dashboard/app/postarticle?id=${completionId}`)
+    if($(`.send-${containerID}`).length == 0){
+        $('#result').append(`<a class="w-100 btn btn-primary send-${containerID}" target="_blank">Post article</a>`)
+        $(`.send-${containerID}`).attr('href',`/dashboard/app/postarticle?id=${completionId}`)
+    }
 }
 
 function convertMarkdown(sourceSelector) {
