@@ -23,9 +23,9 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
 });
 
 // Route for handling '/dashboard/'
-router.get('/app/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
+router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
   const appname = req.params.appname
-  res.render('dashboard/app/'+appname,{user:req.user,title:"RAKUBUN - Dashboard"});
+  res.render('dashboard/app/generator/'+appname,{user:req.user,title:"RAKUBUN - Dashboard"});
 });
 
 module.exports = router;

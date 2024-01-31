@@ -1,46 +1,57 @@
 extends base
 
 block mainContent
-    h2.fw-bold Home
+    h2.fw-bold ホーム
     hr.my-4
     
     section.my-5
         .row.row-cols-1.row-cols-md-3.my-5
             .col.mb-3
-                a.card.btn.bg-white.px-2(href=`/dashboard/app/titlegenerator`)
+                a.card.btn.bg-white.px-2(href=`/dashboard/app/generator/1`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
                             i.fas.fa-heading.mr-3.display-6
                         div.col-10
                             h5.card-title.fw-bold.text-start
-                                | タイトル生成ツール
+                                | タイトル
                             p.card-text.text-start.text-muted
                                 | SEO対応のタイトル生成ツール
             .col.mb-3
-                a.card.btn.bg-white.px-2(href=`/dashboard/app/sectiongenerator`)
+                a.card.btn.bg-white.px-2(href=`/dashboard/app/generator/2`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
-                            i.fas.fa-heading.mr-3.display-6
+                            i.fas.fa-list.mr-3.display-6
                         div.col-10
                             h5.card-title.fw-bold.text-start
-                                | Section生成ツール
+                                | セクション
                             p.card-text.text-start.text-muted
-                                | SEO対応のSection生成ツール
+                                | SEO対応のセクション生成ツール
             .col.mb-3
-                a.card.btn.bg-white.px-2(href=`/dashboard/app/articlegenerator`)
+                a.card.btn.bg-white.px-2(href=`/dashboard/app/generator/3`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col-2.d-flex.align-items-center
-                            i.fas.fa-heading.mr-3.display-6
+                            i.fas.fa-newspaper.mr-3.display-6
                         div.col-10
                             h5.card-title.fw-bold.text-start
-                                | Article生成ツール
+                                | 記事
                             p.card-text.text-start.text-muted
-                                | SEO対応のArticle生成ツール
+                                | SEO対応の記事生成ツール
+            .col.mb-3
+                a.card.btn.bg-white.px-2(href=`/dashboard/app/generator/4`)
+                    .card-body.row.justify-start.items-start.px-2
+                        div.col-2.d-flex.align-items-center
+                            i.fab.fa-twitter.mr-3.display-6
+                        div.col-10
+                            h5.card-title.fw-bold.text-start
+                                | X
+                            p.card-text.text-start.text-muted
+                                | SEO対応のSNS投稿生成ツール
+                                
         .row.row-cols-1.row-cols-md-2.my-5
             .col
                 h5.fw-bold
                     i.fas.fa-bell.me-2
-                    | News
+                    | ニュース
                 if latestNews
                     .news-item.mt-3
                         .news-date.text-muted
@@ -48,17 +59,17 @@ block mainContent
                         .news-content
                             | #{latestNews.content}
                 else
-                    p.text-muted.mt-3.px-3 Nothing new for now.
+                    p.text-muted.mt-3.px-3 今は何もありません。
             .col 
                 h5.fw-bold
                     i.fas.fa-cogs.me-2
-                    | Settings and Support
+                    | 設定とサポート
                 .row.row-cols-1.row-cols-md-2.my-3
                     .col.my-1
-                        a.btn.btn-primary.w-100(href="/user/setting") Account Parameters
+                        a.btn.btn-primary.w-100(href="/user/setting") アカウント設定
                     .col.my-1
-                        a.btn.btn-primary.w-100(href="/about-us") About Us
+                        a.btn.btn-primary.w-100(href="/about-us") 会社概要
                     .col.my-1
-                        a.btn.btn-outline-primary.w-100(href="#") How to use ?
+                        a.btn.btn-outline-primary.w-100(href="#") 使い方ガイド
                     .col.my-1
-                        a.btn.btn-outline-primary.w-100(href="/contact") Contact Us
+                        a.btn.btn-outline-primary.w-100(href="/contact") お問い合わせ
