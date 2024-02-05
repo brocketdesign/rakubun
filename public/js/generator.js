@@ -11,7 +11,7 @@ $(document).ready(function(){
             if (data) {
                 console.log(data)
                 if(data.request && data.request.TITLE){
-                    $('#title').val(data.request.TITLE);
+                    $('#title').val((data.request.TITLE).trim());
                 }
                 $('#sections').val(data.completion).attr('data-sections',data.completion);
             }
@@ -19,7 +19,7 @@ $(document).ready(function(){
     }
     var titleFromURL = getQueryParam('title');
     if (titleFromURL) {
-        $('#title').val(decodeURIComponent(titleFromURL));
+        $('#title').val(decodeURIComponent((titleFromURL).trim()));
     }
 });
 // Function to grab query params from the URL
@@ -47,10 +47,17 @@ function submitForm(formSelector) {
         sections = [''];
     }
 
+    let sectionsSubject = $('#sectionsSubject').val() || '';
+    sectionsSubject = sectionsSubject.trim().split(',').filter(title => title.length);
+    if (sectionsSubject.length === 0) {
+        sectionsSubject = [''];
+    }
+
     for (let [index, section] of sections.entries()) {
         var data = {
             KEYWORDS:keywords,
             SECTION : section,
+            SECTION_SUBJECT:sectionsSubject,
             SECTIONS_COUNT : $('#sectionsCount').val(),
             COUNT:$('#count').val(),
             TITLE : $('#title').val(),
