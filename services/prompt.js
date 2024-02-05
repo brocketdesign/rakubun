@@ -23,7 +23,7 @@ function generatePrompt(data, type) {
             // Setting up for article paragraph generation
             const { SECTION: articleSection, TITLE: articleTitle, WRITING_STYLE: articleStyle, LANGUAGE: articleLanguage, WRITING_TONE: articleTone } = data;
             result.prompt = `Write a paragraph about "${articleSection}" for an article "${articleTitle}" in ${articleLanguage}. Use Markdown for formatting. Style: ${articleStyle}. Tone: ${articleTone}.`;
-            result.max_tokens = 200; // A decent length for a paragraph
+            result.max_tokens = 1000; // A decent length for a paragraph
             break;
         default:
             result.prompt = 'Oops! You need to specify a valid type for the prompt.';
