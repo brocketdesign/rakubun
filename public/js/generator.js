@@ -10,9 +10,10 @@ $(document).ready(function(){
         $.get('/api/generator/data?id='+id,function(data){
             if (data) {
                 console.log(data)
-                if(data.request && data.request.TITLE){
-                    $('#title').val((data.request.TITLE).trim());
-                }
+                $('#title').val(data.request.TITLE)
+                $('#writingStyle').val(data.request.WRITING_STYLE)
+                $('#language').val(data.request.LANGUAGE)
+                $('#writingTone').val(data.request.WRITING_TONE)
                 $('#sections').val(data.completion).attr('data-sections',data.completion);
             }
         })

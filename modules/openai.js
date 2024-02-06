@@ -17,8 +17,8 @@ const fetchOpenAICompletion = async (messages,max_tokens, res) => {
                     max_tokens,
                     temperature: 0.75,
                     top_p: 0.95,
-                    frequency_penalty: 0.5, // Adjust if you want to penalize frequent tokens
-                    presence_penalty: 0.5, // Adjust if you want to penalize new tokens
+                    frequency_penalty: 0.75, // Adjust if you want to penalize frequent tokens
+                    presence_penalty: 0.75, // Adjust if you want to penalize new tokens
                     stream: true,
                     n: 1,
                 }),

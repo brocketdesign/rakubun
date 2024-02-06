@@ -22,7 +22,7 @@ function generatePrompt(data, type) {
         case '3':
             // Setting up for article paragraph generation
             const { SECTION: articleSection, TITLE: articleTitle, WRITING_STYLE: articleStyle, LANGUAGE: articleLanguage, WRITING_TONE: articleTone } = data;
-            result.prompt = `Write a paragraph about "${articleSection}" for an article "${articleTitle}" in ${articleLanguage}. Use Markdown for formatting. Style: ${articleStyle}. Tone: ${articleTone}.`;
+            result.prompt = `Write an extensive blog post about "${articleSection}" for an article titled "${articleTitle}" in ${articleLanguage}. Try to make shorter sentences, using less difficult words to improve readability. Add a heading at each paragraph beginning. Use Markdown for formatting. Style: ${articleStyle}. Tone: ${articleTone}.`;
             result.max_tokens = 1000; // A decent length for a paragraph
             break;
         default:
