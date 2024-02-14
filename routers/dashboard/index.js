@@ -22,10 +22,18 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
   }
 });
 
-// Route for handling '/dashboard/'
+// Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
   const appname = req.params.appname
   res.render('dashboard/app/generator/'+appname,{user:req.user,title:"RAKUBUN - Dashboard"});
 });
-
+// Route for handling '/rss/'
+router.get('/app/rss', ensureAuthenticated,ensureMembership, async (req, res) => {  
+  res.render('dashboard/app/rss/index',{user:req.user,title:"RAKUBUN - Dashboard"});
+  
+});
+// Route for handling '/feed/'
+router.get('/app/feed', ensureAuthenticated,ensureMembership, async (req, res) => {  
+  res.render('dashboard/app/rss/feed',{user:req.user,title:"RAKUBUN - Dashboard"});
+});
 module.exports = router;

@@ -6,21 +6,23 @@ $(document).ready(function(){
         submitForm($(this));
     });
     const id = getQueryParam('id');
+    var titleFromURL = getQueryParam('title');
     if(id){
         $.get('/api/generator/data?id='+id,function(data){
             if (data) {
                 console.log(data)
-                $('#title').val(data.request.TITLE)
+
+                if (titleFromURL) {
+                    $('#title').val(decodeURIComponent((titleFromURL).trim()));
+                }else{
+                    $('#title').val(data.request.TITLE)
+                }
                 $('#writingStyle').val(data.request.WRITING_STYLE)
                 $('#language').val(data.request.LANGUAGE)
                 $('#writingTone').val(data.request.WRITING_TONE)
                 $('#sections').val(data.completion).attr('data-sections',data.completion);
             }
         })
-    }
-    var titleFromURL = getQueryParam('title');
-    if (titleFromURL) {
-        $('#title').val(decodeURIComponent((titleFromURL).trim()));
     }
 });
 // Function to grab query params from the URL
@@ -33,46 +35,67 @@ function submitForm(formSelector) {
     if(formSelector.hasClass('busy')){
         return;
     }
-    const type = formSelector.data('type')
-    formSelector.addClass('busy');
-    $(`button#generation .text`).text('Loading ...');
 
-    var keywords = [];
-    $('.keyword-badge').each(function() {
-        keywords.push($(this).data('keyword'));
-    });
+    let type = formSelector.data('type');
 
-    let sections = $('#sections').val() || '';
-    sections = sections.trim().split(',').filter(title => title.length);
-    if (sections.length === 0) {
-        sections = [''];
+    // Safely parse the type if it's a string that could be an array
+    if (typeof type === 'string' && type.startsWith('[') && type.endsWith(']')) {
+        try {
+            type = JSON.parse(type);
+        } catch (e) {
+            console.error('Failed to parse type as JSON', e);
+            return;
+        }
     }
 
-    let sectionsSubject = $('#sectionsSubject').val() || '';
-    sectionsSubject = sectionsSubject.trim().split(',').filter(title => title.length);
-    if (sectionsSubject.length === 0) {
-        sectionsSubject = [''];
-    }
-
-    for (let [index, section] of sections.entries()) {
-        var data = {
-            KEYWORDS:keywords,
-            SECTION : section,
-            SECTION_SUBJECT:sectionsSubject,
-            SECTIONS_COUNT : $('#sectionsCount').val(),
-            COUNT:$('#count').val(),
-            TITLE : $('#title').val(),
-            WRITING_STYLE : $('#writingStyle').val(),
-            LANGUAGE : $('#language').val(),
-            WRITING_TONE : $('#writingTone').val(),
-            INDEX:index
-        };
-        console.log(data)
-        
-        handleFormSubmit(type,data);
+    if (Array.isArray(type)) {
+        type.forEach((t) => sendForm(formSelector, t));
+    } else {
+        sendForm(formSelector, type);
     }
 }
 
+ function sendForm(formSelector,type){
+        formSelector.addClass('busy');
+        $(`button#generation .text`).text('Loading ...');
+    
+        var keywords = [];
+        $('.keyword-badge').each(function() {
+            keywords.push($(this).data('keyword'));
+        });
+    
+        let sections = $('#sections').val() || '';
+        sections = sections.trim().split(',').filter(title => title.length);
+        if (sections.length === 0) {
+            sections = [''];
+        }
+    
+        let sectionsSubject = $('#sectionsSubject').val() || '';
+        sectionsSubject = sectionsSubject.trim().split(',').filter(title => title.length);
+        if (sectionsSubject.length === 0) {
+            sectionsSubject = [''];
+        }
+    
+        for (let [index, section] of sections.entries()) {
+            var data = {
+                KEYWORDS:keywords,
+                SECTION : section,
+                SECTION_SUBJECT:sectionsSubject,
+                SECTIONS_COUNT : $('#sectionsCount').val(),
+                COUNT:$('#count').val(),
+                TITLE : $('#title').val(),
+                CONTENT : $('#articleContent').val(),
+                WRITING_STYLE : $('#writingStyle').val(),
+                LANGUAGE : $('#language').val(),
+                WRITING_TONE : $('#writingTone').val(),
+                INDEX:index
+            };
+            console.log(data)
+            
+            handleFormSubmit(type,data);
+        }
+    }
+   
 function handleFormSubmit(type, data) {
     generateStream(type, data, handleStreamSuccess(type, data), handleStreamError(), handleStreamFinally());
     if($('#seoSearch').length>0){

@@ -25,9 +25,36 @@ function generatePrompt(data, type) {
             result.prompt = `Write an extensive blog post about "${articleSection}" for an article titled "${articleTitle}" in ${articleLanguage}. Try to make shorter sentences, using less difficult words to improve readability. Add a heading at each paragraph beginning. Use Markdown for formatting. Style: ${articleStyle}. Tone: ${articleTone}.`;
             result.max_tokens = 1000; // A decent length for a paragraph
             break;
-        default:
-            result.prompt = 'Oops! You need to specify a valid type for the prompt.';
-            result.max_tokens = 0;
+        case '5':
+            // Setting up for article title generation based on content
+            const { TITLE: generateArticleTitle, CONTENT: generateArticleContent, WRITING_STYLE: generateArticleStyle, LANGUAGE: generateArticleLanguage, WRITING_TONE: generateArticleTone } = data;
+            result.prompt = `Given the article content and its style, generate a compelling title that captures its essence while adhering to the specified writing style and tone. 
+            
+            Content: "${generateArticleContent}"
+            
+            Style: ${generateArticleStyle}
+            Tone: ${generateArticleTone}
+            Language: ${generateArticleLanguage}
+            
+            New Title in ${generateArticleLanguage}:`;
+            result.max_tokens = 60; // A title doesn't need too many tokens.
+            break;
+        
+        case '6':
+            // Setting up for article summary generation
+            const { CONTENT: GenerateArticleContent, WRITING_STYLE: GenerateArticleStyle, LANGUAGE: GenerateArticleLanguage, WRITING_TONE: GenerateArticleTone } = data;
+            result.prompt = `Summarize the following article content into a concise summary that retains the key points and messages, reflecting the specified writing style, tone, and language.
+            
+            Content: "${GenerateArticleContent}"
+            
+            Style: ${GenerateArticleStyle}
+            Tone: ${GenerateArticleTone}
+            Language: ${GenerateArticleLanguage}
+            
+            Summary in ${GenerateArticleLanguage}:`;
+            result.max_tokens = 500; // Adjust based on desired summary length, 150 tokens should provide a decent summary.
+            break;
+            
     }
     return result;
 }
