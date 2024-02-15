@@ -10,8 +10,8 @@ function generatePrompt(data, type) {
         case '0':
             // Setting up for title generation
             const { TITLE:feedTitle,METADESCRIPTION:feedDescription, LANGUAGE : feedLanguage,WRITING_STYLE: feedStyle, WRITING_TONE : feedTone } = data;
-            result.prompt = `Provide a totally new title tht catch the attention in ${feedLanguage}. Style: ${feedStyle}. Use a ${feedTone} tone.Respond in ${feedLanguage}  only,Use Markdown.Use the following keywords: ${feedTitle} \n ${feedDescription}.`;
-            result.max_tokens = 300 ; // Titles are usually short and sweet
+            result.prompt = `Generate a catchy SEO title for an article about [${feedTitle}] in ${feedLanguage}.Ensure it's engaging, relevant, and includes popular search terms. Style: ${feedStyle}. Use a ${feedTone} tone.Respond in ${feedLanguage} only.`;
+            result.max_tokens = 100 ; // Titles are usually short and sweet
             break;
         case '1':
             // Setting up for title generation
