@@ -10,7 +10,7 @@ const {generatePrompt} =require('../../services/prompt')
 router.post('/generate/:type', async (req, res) => {
   const type = req.params.type;
   const request_data = generatePrompt(req.body, type);
-  console.log({request_data})
+  console.log({request_data,type})
 
   try {
 

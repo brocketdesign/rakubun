@@ -5,43 +5,80 @@ $(document).ready(function(){
         e.preventDefault()
         submitForm($(this));
     });
+
     const id = getQueryParam('id');
     var titleFromURL = getQueryParam('title');
     var descriptionFromURL = getQueryParam('description');
+    var request1;
     if(id){
-        $.get('/api/generator/data?id='+id,function(data){
+        request1 = $.get('/api/generator/data?id='+id,function(data){
             if (data) {
                 console.log(data)
                 if (titleFromURL) {
                     $('#title').val(decodeURIComponent((titleFromURL).trim()));
+                    $('.current-title').text(decodeURIComponent((titleFromURL).trim()));
                 }else{
                     $('#title').val(data.request.TITLE)
+                    $('.current-title').text(data.request.TITLE);
                 }
 
                 if(descriptionFromURL){
                     $('#description').val(decodeURIComponent((descriptionFromURL).trim()));
+                    $('.current-description').text(decodeURIComponent((descriptionFromURL).trim()));
                 }else{
                     $('#description').val(data.request.DESCRIPTION)
+                    $('.current-description').text(data.request.DESCRIPTION);
                 }
+
+                $('#sections').val(data.completion).attr('data-sections',data.completion);
+
                 $('#writingStyle').val(data.request.WRITING_STYLE)
                 $('#language').val(data.request.LANGUAGE)
                 $('#writingTone').val(data.request.WRITING_TONE)
-                $('#sections').val(data.completion).attr('data-sections',data.completion);
-
-                sectionUpdate();
+                
+                if($('#sections').length > 0){
+                    sectionUpdate();
+                }
+               
             }
         })
     }
 
+    var request2;
     const articleId = getQueryParam('articleId');
 
     if(articleId){
-        $.get('/api/rss/articles/'+articleId,function(data){
-            $('#keywords').val(data.title);
-            keywordUpdate();
+       request2 = $.get('/api/rss/articles/'+articleId,function(data){
+            $('#title').val(data.title);
+            $('#metaDescription').val(data.metaDescription);
         });
     }
+    hideForm(); // Assuming hideForm is a function you want to call regardless
+
+    // Captain (you) making the call
+    $.when(request1, request2).done(function () {
+        // Both AJAX calls have returned, check the form type before proceeding
+        if ($('form#generator').data('type') !== 3) {
+            $('form#generator').submit();
+        } else {
+            // Maybe the form needs a last-minute check or you need to show a message
+            console.log("Arrr, we're not ready to set sail yet!");
+        }
+    });
 });
+function hideForm(){
+    $('form#generator .card-header').hide()
+    $('form#generator .form-group').hide()
+    $('form#generator .card').css({
+        "background": "transparent",
+        "box-shadow": "none"
+    })
+    $('#generation').css({
+        "position": "absolute",
+        "top": "0"
+      })
+    $('form#generator .form-group button#generation').parent().show()
+}
 // Function to grab query params from the URL
 function getQueryParam(param) {
     var queryParams = new URLSearchParams(window.location.search);
@@ -102,6 +139,7 @@ function submitForm(formSelector) {
                 SECTION_SUBJECT:sectionsSubject,
                 SECTIONS_COUNT : $('#sectionsCount').val(),
                 METADESCRIPTION_COUNT : $('#metaDescriptionCount').val(),
+                METADESCRIPTION : $('#metaDescription').val(),
                 COUNT:$('#count').val(),
                 TITLE : $('#title').val(),
                 DESCRIPTION: $('#description').val(),
@@ -178,30 +216,30 @@ function updateUIAfterStream() {
 function udpateSendButton(containerID,completionId){
     const type = parseInt($('form#generator').data('type'))
     const next_type = type + 1
-
+    if(type == 0 || type == 1 || type == 7){ return }
     if($(`.send-${completionId}`).length == 0){
         $(`#result .action-button[data-id="${containerID}"]`)
-        .append(`<a class="col-12 col-sm-6 btn btn-primary send-${completionId}" href="/dashboard/app/generator/${next_type}?id=${completionId}" target="_blank">NEXT</a>`)
+        .append(`<a class="col-12 btn btn-primary send-${completionId}" href="/dashboard/app/generator/${next_type}?id=${completionId}" target="_blank">USE THIS CONTENT</a>`)
     }
 }
 
 function convertResponse(sourceSelector,stream_data) {
     const type = parseInt($('form#generator').data('type'))
-    if(type == 1){
+    if(type == 1 || type == 0){
         var list = $('<ul>', {
             'class': 'list-group', 
             'id':`list-${stream_data.id}`
         });
         $(sourceSelector).html(list);
 
-        $.each(JSON.parse(stream_data.completion), function(index, title) {
+        $.each(stream_data.completion, function(index, title) {
             var listItem = $('<li>', {
                 'class': 'list-group-item', 
             });
             
             var hyperlink = $('<a>',{
                 'href':`/dashboard/app/generator/7?id=${stream_data.id}&title=${title}`,
-                text: title,
+                text: title.replace(/"/g, '').trim(),
                 target:'_blank'
             })
     
@@ -414,6 +452,7 @@ function sectionUpdate(){
             var html = '<span class="col btn section-badge shadow-0 position-relative m-0 border border-dark rounded-0 text-start" data-section="' + section + '">' + section +
                        '<i type="button" class="remove-tag fa fa-times position-absolute" style="top:3px;right:5px;"></i></span>';
             $('#sections').before(html); // Place our newly minted tags like jewels before the crown.
+            $('.current-sections').append(`<li class="list-group-item border-0 fs-5 fw-bold">${section}</li>`)
         });
 
         $('#sections').val(''); // Clear the stage, our input's job here is done.

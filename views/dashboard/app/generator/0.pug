@@ -1,39 +1,35 @@
 extends ../../base
 
 block mainContent
-    link(rel='stylesheet', href='/css/generator/articlegenerator.css')
-    .row.justify-content-center
-        .col-md-8.my-2.bg-white.border.rounded.shadow.py-4
-            h2.fw-bold.text-center.current-title セクションジェネレーターエクストラオーディネア！
-            p.current-description
-            ul.list-group.current-sections
-            ul#result.list-group
-    hr.my-4
-    .container.mt-5
+    link(rel='stylesheet', href='/css/generator/titlegenerator.css')
+   
+    .container.mt-5          
+        .row.justify-content-center
+            .col-md-8.my-2.bg-white.border.rounded.shadow.py-4
+                ul#result.list-group
+        hr.my-4
         .row.justify-content-center
             .col-md-8
-                form#generator(data-type="3")
+                form#generator(data-type="0")
                     .card
                         .card-header
-                            h3.mb-0 ここに魔法の材料を入力してください！
+                            h3.mb-0 キーワードを入力してください
                         .card-body
                             .form-group.my-2
-                                label.fw-bold(for="title") 魅力的なタイトル
-                                input#title.form-control(type="text", name="title", placeholder="素晴らしいタイトルを入力してください")
+                                label(for="title") 主要なキーワード
+                                input#title.form-control.w-100(type="text", name="title", placeholder="title", required)
+                            .form-group.my-2
+                                label(for="metaDescription") 主要なキーワード
+                                textarea#metaDescription.form-control.w-100(rows="2", name="metaDescription", placeholder="metaDescription", required)
                             
                             .form-group.my-2
-                                label.fw-bold(for="description") 魅力的なDESCRIPTION
-                                textarea#description.form-control(name="description", placeholder="素敵なタイトルを入力してください", rows=3, required)
-
-                            .form-group.my-2
-                                label.fw-bold(for="sections") あなたのセクション
-                                .sections.form-box.rounded.row.row-cols-1
-                                    textarea#sections.form-control(name="sections", placeholder="1行ごとにセクションを入力してください", required)
+                                label(for="count") タイトル数
+                                input#count.form-control(type="number", name="count", placeholder="1、2、3...", value=5, min="1" max="5" required)
 
                             .row 
                                 .col-md-4.my-2
                                     .form-group
-                                        label.fw-bold(for="language") 言語
+                                        label(for="language") 言語
                                         select#language.form-control(name="language")
                                             option(value="japanese" selected) 日本語
                                             option(value="english") 英語
@@ -42,7 +38,7 @@ block mainContent
                                             // 必要に応じて他の言語を追加
                                 .col-md-4.my-2
                                     .form-group
-                                        label.fw-bold(for="writingStyle") 書き方
+                                        label(for="writingStyle") 書き方
                                         select#writingStyle.form-control(name="writingStyle")
                                             option(value="narrative") 物語性
                                             option(value="expository") 説明的
@@ -51,7 +47,7 @@ block mainContent
 
                                 .col-md-4.my-2
                                     .form-group
-                                        label.fw-bold(for="writingTone") トーン
+                                        label(for="writingTone") トーン
                                         select#writingTone.form-control(name="writingTone")
                                             option(value="formal") フォーマル
                                             option(value="friendly") フレンドリー
@@ -59,8 +55,8 @@ block mainContent
                                             option(value="humorous") ユーモラス
 
                             .form-group.my-2
-                                button#generation.btn.btn-primary.w-100(type="submit") 
-                                    span.load.spinner-border.spinner-border-sm.me-2(role="status", style="display:none")
-                                    span.text 作成しましょう！
-
+                                button#generation.btn.btn-info.w-100.text-center(type="submit") 
+                                    span.load.spinner-border.spinner-border-sm.me-2(role="status" style="display:none")
+                                    span.text 提案されるトピック
     script(src="/js/generator.js")
+

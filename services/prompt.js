@@ -7,6 +7,12 @@ function generatePrompt(data, type) {
             result.prompt = `Write ${COUNT} tweets in ${LANGUAGE} with a ${WRITING_STYLE} style. It is to promote a blog post titled "${TITLE}" and the topic I want to focus on is ${SECTION}. The tweets should be composed in a ${WRITING_TONE} tone.`;
             result.max_tokens = 50; // Assuming max length of a tweet
             break;
+        case '0':
+            // Setting up for title generation
+            const { TITLE:feedTitle,METADESCRIPTION:feedDescription, COUNT:feedCount, LANGUAGE : feedLanguage,WRITING_STYLE: feedStyle, WRITING_TONE : feedTone } = data;
+            result.prompt = `Generate ${feedCount} creative and SEO-friendly ${feedCount>1?'titles':'title'} in ${feedLanguage} for a blog post related to the following subject: ${feedTitle} \n ${feedDescription}. Style: ${feedStyle}. Use a ${feedTone} tone.Use Markdown for the headings (# ).`;
+            result.max_tokens = 300 * feedCount; // Titles are usually short and sweet
+            break;
         case '1':
             // Setting up for title generation
             const { KEYWORDS,COUNT:titleCount, LANGUAGE : titleLanguage,WRITING_STYLE: titleStyle, WRITING_TONE : titleTone } = data;
@@ -16,7 +22,7 @@ function generatePrompt(data, type) {
         case '2':
             // Setting up for section heading generation
             const { SECTIONS_COUNT,SECTION_SUBJECT, TITLE:sectionTitle, DESCRIPTION, WRITING_STYLE: sectionStyle, LANGUAGE: sectionLanguage, WRITING_TONE: sectionTone } = data;
-            result.prompt = `Write ${SECTIONS_COUNT} headings for a blog post titled "${sectionTitle}" about ${DESCRIPTION} in ${sectionLanguage}.${SECTION_SUBJECT[0].length>0?`The heading subjects are : ${SECTION_SUBJECT}`:''} Style: ${sectionStyle}. Tone: ${sectionTone}. Each heading is between 40 and 60 characters. Use Markdown for the headings (# ).`;
+            result.prompt = `Write ${SECTIONS_COUNT} headings for a blog post titled "${sectionTitle}" about ${DESCRIPTION} in ${sectionLanguage}.${SECTION_SUBJECT[0].length>0?`The heading subjects are : ${SECTION_SUBJECT}`:''} Style: ${sectionStyle}. Tone: ${sectionTone}. Each heading is between 40 and 60 characters. Use Markdown for the headings (### ).`;
             result.max_tokens = 500 * SECTIONS_COUNT; // Approximation for section headings
             break;
         case '3':

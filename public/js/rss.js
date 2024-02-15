@@ -54,7 +54,7 @@
         feeds.forEach(feed => {
           $('#feedsList').append(`<li class="list-group-item d-flex justify-content-between flex-column">
           <a href="/dashboard/app/feed?feedId=${feed._id}">  ${feed.name} </a>
-            <div class="btn-group" role="group">
+            <div class="btn-group d-none" role="group">
               <button class="btn btn-secondary update-feed" data-id="${feed._id}">Update</button>
               <button class="btn btn-success change-status" data-id="${feed._id}" data-status="active">Start</button>
               <button class="btn btn-warning change-status" data-id="${feed._id}" data-status="paused">Pause</button>
@@ -156,7 +156,7 @@
             <h5><a href="${article.articleUrl}" target="_blank">${article.title}</a></h5>
             <p>${article.metaDescription.substring(0, 100)}...</p>
             <button class="btn btn-info btn-sm view-article" data-article-id="${article._id}">View</button>
-            <a class="btn btn-info btn-sm" href="/dashboard/app/generator/1?articleId=${article._id}">More</a>
+            <a class="btn btn-info btn-sm" href="/dashboard/app/generator/0?articleId=${article._id}">More</a>
           </li>`);
         });
       },
