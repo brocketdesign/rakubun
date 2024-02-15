@@ -51,7 +51,7 @@ router.get('/stream/:type', async (req, res) => {
 
       const prompt = record.request_data.prompt;
       const messages = [
-          { role: 'system', content: 'You are a proficient content planner.' },
+          { role: 'system', content: 'You are a proficient blog writer.' },
           { role: 'user', content: prompt },
       ];
 

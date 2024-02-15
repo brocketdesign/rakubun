@@ -18,8 +18,9 @@ $(document).ready(function(){
                     $('#title').val(decodeURIComponent((titleFromURL).trim()));
                     $('.current-title').text(decodeURIComponent((titleFromURL).trim()));
                 }else{
-                    $('#title').val(data.request.TITLE)
-                    $('.current-title').text(data.request.TITLE);
+                    $('#title').val(data.completion[0])
+                    //$('#title').val(data.request.TITLE)
+                    //$('.current-title').text(data.request.TITLE);
                 }
 
                 if(descriptionFromURL){
@@ -37,7 +38,7 @@ $(document).ready(function(){
                 $('#writingTone').val(data.request.WRITING_TONE)
                 
                 if($('#list-titles').length > 0){
-                    listTitles(data)
+                    //listTitles(data)
                 }
                 if($('#sections').length > 0){
                     sectionUpdate();
@@ -136,23 +137,22 @@ function submitForm(formSelector) {
         if (sectionsSubject.length === 0) {
             sectionsSubject = [''];
         }
-    
-        for (let [index, section] of sections.entries()) {
+        const count = $('#count').val() || 1 
+        for (let i = 0; i<count; i++) {
+            console.log({count,i})
             var data = {
                 KEYWORDS:keywords,
-                SECTION : section,
                 SECTION_SUBJECT:sectionsSubject,
                 SECTIONS_COUNT : $('#sectionsCount').val(),
                 METADESCRIPTION_COUNT : $('#metaDescriptionCount').val(),
                 METADESCRIPTION : $('#metaDescription').val(),
-                COUNT:$('#count').val(),
                 TITLE : $('#title').val(),
                 DESCRIPTION: $('#description').val(),
                 CONTENT : $('#articleContent').val(),
                 WRITING_STYLE : $('#writingStyle').val(),
                 LANGUAGE : $('#language').val(),
                 WRITING_TONE : $('#writingTone').val(),
-                INDEX:index
+                INDEX:i
             };
             console.log(data)
             
@@ -162,7 +162,7 @@ function submitForm(formSelector) {
    
 function handleFormSubmit(type, data) {
 
-    $('#result').html('')
+    //$('#result').html('')
     generateStream(type, data, handleStreamSuccess(type, data), handleStreamError(), handleStreamFinally());
     if($('#seoSearch').length>0){
         seoSearch(data)
@@ -180,8 +180,8 @@ function appendMessageToContainer(type, data, response) {
         const containerID = `response-${type}-${response.insertedId}-${data.INDEX}`;
         if ($(`#${containerID}`).length == 0) {
             const initialCardHtml = `
-                <div class="card-container mb-3">
-                    <div class="card-inner-body">
+                <div class="card mb-3">
+                    <div class="card-body">
                         <div id=${containerID}></div>
                         <div class="row">
                             <div data-id=${containerID} class="action-button"></div>
@@ -223,10 +223,10 @@ function updateUIAfterStream() {
 function udpateSendButton(containerID,completionId){
     const type = parseInt($('form#generator').data('type'))
     const next_type = type + 1
-    if(type == 0 || type == 1 || type == 7 || type == 8){ return }
+    if( type == 1 || type == 7 || type == 8){ return }
     if($(`.send-${completionId}`).length == 0){
         $(`#result .action-button[data-id="${containerID}"]`)
-        .append(`<a class="col-12 btn btn-primary send-${completionId}" href="/dashboard/app/generator/${next_type}?id=${completionId}" target="_blank">USE THIS CONTENT</a>`)
+        .append(`<a class="col-12 btn btn-primary send-${completionId}" href="/dashboard/app/generator/8?id=${completionId}" target="_blank">USE THIS CONTENT</a>`)
     }
 }
 function listTitles(stream_data){
@@ -254,7 +254,7 @@ function listTitles(stream_data){
 }
 function convertResponse(sourceSelector,stream_data) {
     const type = parseInt($('form#generator').data('type'))
-    if(type == 1 || type == 0){
+    if(type == 1 ){
         var list = $('<ul>', {
             'class': 'list-group', 
             'id':`list-${stream_data.id}`
