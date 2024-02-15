@@ -2,7 +2,7 @@ extends ../../base
 
 block mainContent
     link(rel='stylesheet', href='/css/generator/sectiongenerator.css')
-    h2.fw-bold.text-center セクションジェネレーターエクストラオーディネア！
+    h2.fw-bold.text-center Article DESCRIPTION
     hr.my-4
     .container.mt-5
         .row.justify-content-center
@@ -17,7 +17,7 @@ block mainContent
                                 input#title.form-control(type="text", name="title", placeholder="素敵なタイトルを入力してください", required)
 
                             .form-group.my-2
-                                label(for="metaDescriptionCount") セクションの数
+                                label(for="metaDescriptionCount") DESCRIPTIONの数
                                 input#metaDescriptionCount.form-control(type="number", name="metaDescriptionCount", placeholder="セクションの数は？ 1、2、3...", value=2, min="1" max="5" required)
 
                             .row 

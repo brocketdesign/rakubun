@@ -17,6 +17,10 @@ block mainContent
                                 input#title.form-control(type="text", name="title", placeholder="素敵なタイトルを入力してください", required)
 
                             .form-group.my-2
+                                label(for="description") 魅力的なDESCRIPTION
+                                input#description.form-control(type="text", name="description", placeholder="素敵なタイトルを入力してください", required)
+
+                            .form-group.my-2
                                 label(for="sectionsCount") セクションの数
                                 input#sectionsCount.form-control(type="number", name="sectionsCount", placeholder="セクションの数は？ 1、2、3...", value=2, min="1" max="5" required)
                             .form-group.my-2

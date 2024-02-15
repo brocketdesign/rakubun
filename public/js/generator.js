@@ -1,26 +1,34 @@
 $(document).ready(function(){
     handleKeywordsBehavior();
-
+    handleSectionsBehavior();
     $('form#generator').on('submit',function(e){
         e.preventDefault()
         submitForm($(this));
     });
     const id = getQueryParam('id');
     var titleFromURL = getQueryParam('title');
+    var descriptionFromURL = getQueryParam('description');
     if(id){
         $.get('/api/generator/data?id='+id,function(data){
             if (data) {
                 console.log(data)
-
                 if (titleFromURL) {
                     $('#title').val(decodeURIComponent((titleFromURL).trim()));
                 }else{
                     $('#title').val(data.request.TITLE)
                 }
+
+                if(descriptionFromURL){
+                    $('#description').val(decodeURIComponent((descriptionFromURL).trim()));
+                }else{
+                    $('#description').val(data.request.DESCRIPTION)
+                }
                 $('#writingStyle').val(data.request.WRITING_STYLE)
                 $('#language').val(data.request.LANGUAGE)
                 $('#writingTone').val(data.request.WRITING_TONE)
                 $('#sections').val(data.completion).attr('data-sections',data.completion);
+
+                sectionUpdate();
             }
         })
     }
@@ -72,9 +80,11 @@ function submitForm(formSelector) {
         $('.keyword-badge').each(function() {
             keywords.push($(this).data('keyword'));
         });
-    
-        let sections = $('#sections').val() || '';
-        sections = sections.trim().split(',').filter(title => title.length);
+        var sections = [];
+        $('.section-badge').each(function() {
+            sections.push($(this).data('section'));
+        });
+
         if (sections.length === 0) {
             sections = [''];
         }
@@ -94,6 +104,7 @@ function submitForm(formSelector) {
                 METADESCRIPTION_COUNT : $('#metaDescriptionCount').val(),
                 COUNT:$('#count').val(),
                 TITLE : $('#title').val(),
+                DESCRIPTION: $('#description').val(),
                 CONTENT : $('#articleContent').val(),
                 WRITING_STYLE : $('#writingStyle').val(),
                 LANGUAGE : $('#language').val(),
@@ -183,7 +194,7 @@ function convertResponse(sourceSelector,stream_data) {
         });
         $(sourceSelector).html(list);
 
-        $.each(stream_data.completion, function(index, title) {
+        $.each(JSON.parse(stream_data.completion), function(index, title) {
             var listItem = $('<li>', {
                 'class': 'list-group-item', 
             });
@@ -206,14 +217,14 @@ function convertResponse(sourceSelector,stream_data) {
         });
         $(sourceSelector).html(list);
 
-        $.each(stream_data.completion, function(index, title) {
+        $.each(JSON.parse(stream_data.completion), function(index, description) {
             var listItem = $('<li>', {
                 'class': 'list-group-item', 
             });
             
             var hyperlink = $('<a>',{
-                'href':`/dashboard/app/generator/2?id=${stream_data.id}&title=${title}`,
-                text: title,
+                'href':`/dashboard/app/generator/2?id=${stream_data.id}&description=${description}&title=${$('#title').val()}`,
+                text: description,
                 target:'_blank'
             })
     
@@ -367,6 +378,57 @@ function updateInput(){
     $('#keywords').attr('required',true)
 }
 
+// Section Behavior
+function handleSectionsBehavior(){
+    if($('#sections').length == 0){
+        return
+    }
+    $('#sections').on('keydown', function(e) {
+        // When Enter key is pressed, comma, or Japanese comma is entered
+        if (e.key === 'Enter' || e.key === ',' || e.key === '、') {
+            e.preventDefault(); // Stop the press! No default behavior allowed here.
+            sectionUpdate();
+        }
+    });
+    
+    
+
+    // Functionality to remove a tag when the remove button is clicked
+    $(document).on('click', '.remove-tag', function() {
+        $(this).parent('.section-badge').remove();
+        sectionUpdate()
+    });
+}
+function sectionUpdate(){
+    var inputValue = $('#sections').val().trim(); // Trim the input like it's a bonsai tree.
+    if (inputValue) { // If there's some juicy input...
+        // Split the input into an array of sections, catering to both English and Japanese commas
+        var sections = inputValue.split(/,|、/).map(function(section) {
+            return section.trim(); // Trim each section with the precision of a sushi chef.
+        }).filter(function(section) {
+            return section !== ""; // We only want the meaty sections, no empty shells.
+        });
+
+        // For each section, whether it's from Tokyo or Texas, let's give it a tag!
+        sections.forEach(function(section) {
+            var html = '<span class="col btn section-badge shadow-0 position-relative m-0 border border-dark rounded-0 text-start" data-section="' + section + '">' + section +
+                       '<i type="button" class="remove-tag fa fa-times position-absolute" style="top:3px;right:5px;"></i></span>';
+            $('#sections').before(html); // Place our newly minted tags like jewels before the crown.
+        });
+
+        $('#sections').val(''); // Clear the stage, our input's job here is done.
+    }
+    // Update the input required status
+    updateSectionInput();
+}
+function updateSectionInput(){
+    const sections = $('.section-badge').length
+    if(sections>0){
+        $('#sections').attr('required',false)
+        return
+    }
+    $('#sections').attr('required',true)
+}
 function createListSearch(response){
     console.log(response)
     $.each(response.data, function(index, item) {

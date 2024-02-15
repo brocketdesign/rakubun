@@ -10,13 +10,13 @@ function generatePrompt(data, type) {
         case '1':
             // Setting up for title generation
             const { KEYWORDS,COUNT:titleCount, LANGUAGE : titleLanguage,WRITING_STYLE: titleStyle, WRITING_TONE : titleTone } = data;
-            result.prompt = `Generate ${titleCount} creative and SEO-friendly ${titleCount>1?'titles':'title'} in ${titleLanguage} for a blog post related to the following keywords: ${KEYWORDS}. Style: ${titleStyle}. Use a ${titleTone} tone. Use Markdown for the title (# ).`;
+            result.prompt = `Generate ${titleCount} creative and SEO-friendly ${titleCount>1?'titles':'title'} in ${titleLanguage} for a blog post related to the following keywords: ${KEYWORDS}. Style: ${titleStyle}. Use a ${titleTone} tone.Return a javascript array.`;
             result.max_tokens = 100 * titleCount; // Titles are usually short and sweet
             break;
         case '2':
             // Setting up for section heading generation
-            const { SECTIONS_COUNT,SECTION_SUBJECT, TITLE: sectionTitle, WRITING_STYLE: sectionStyle, LANGUAGE: sectionLanguage, WRITING_TONE: sectionTone } = data;
-            result.prompt = `I’m writing a blog post with the title [${sectionTitle}]. Write ${SECTIONS_COUNT} headings for a blog post outline in ${sectionLanguage}.${SECTION_SUBJECT[0].length>0?`The heading subjects are : ${SECTION_SUBJECT}`:''} Style: ${sectionStyle}. Tone: ${sectionTone}. Each heading is between 40 and 60 characters. Use Markdown for the headings (# ).`;
+            const { SECTIONS_COUNT,SECTION_SUBJECT, TITLE:sectionTitle, DESCRIPTION, WRITING_STYLE: sectionStyle, LANGUAGE: sectionLanguage, WRITING_TONE: sectionTone } = data;
+            result.prompt = `Write ${SECTIONS_COUNT} headings for a blog post titled "${sectionTitle}" about ${DESCRIPTION} in ${sectionLanguage}.${SECTION_SUBJECT[0].length>0?`The heading subjects are : ${SECTION_SUBJECT}`:''} Style: ${sectionStyle}. Tone: ${sectionTone}. Each heading is between 40 and 60 characters. Use Markdown for the headings (# ).`;
             result.max_tokens = 500 * SECTIONS_COUNT; // Approximation for section headings
             break;
         case '3':
@@ -57,7 +57,7 @@ function generatePrompt(data, type) {
         case '7':
             // Setting up for article paragraph generation
             const { METADESCRIPTION_COUNT, TITLE: metaTitle, WRITING_STYLE: metaStyle, LANGUAGE: metaLanguage, WRITING_TONE: metaTone } = data;
-            result.prompt = `Write ${METADESCRIPTION_COUNT} description for a blog post about "${metaTitle}" in ${metaLanguage}. Try to make shorter sentences, using less difficult words to improve readability. Add a heading at each paragraph beginning. Use Markdown for formatting. Style: ${metaStyle}. Tone: ${metaTone}.`;
+            result.prompt = `Write ${METADESCRIPTION_COUNT} appealing and creative introduction for an article about "${metaTitle}" in ${metaLanguage}. Try to make shorter sentences, using less difficult words to improve readability. Style: ${metaStyle}. Tone: ${metaTone}. Return a javascript array.`;
             result.max_tokens = 600 * METADESCRIPTION_COUNT; // A decent length for a paragraph
             break;
             

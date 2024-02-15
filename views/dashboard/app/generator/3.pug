@@ -13,16 +13,22 @@ block mainContent
                             h3.mb-0 ここに魔法の材料を入力してください！
                         .card-body
                             .form-group.my-2
-                                label(for="title") 魅力的なタイトル
+                                label.fw-bold(for="title") 魅力的なタイトル
                                 input#title.form-control(type="text", name="title", placeholder="素晴らしいタイトルを入力してください")
+                            
                             .form-group.my-2
-                                label(for="sections") あなたのセクション
-                                textarea#sections.form-control(name="sections", placeholder="1行ごとにセクションを入力してください", required)
+                                label.fw-bold(for="description") 魅力的なDESCRIPTION
+                                textarea#description.form-control(name="description", placeholder="素敵なタイトルを入力してください", rows=3, required)
+
+                            .form-group.my-2
+                                label.fw-bold(for="sections") あなたのセクション
+                                .sections.form-box.rounded.row.row-cols-1
+                                    textarea#sections.form-control(name="sections", placeholder="1行ごとにセクションを入力してください", required)
 
                             .row 
                                 .col-md-4.my-2
                                     .form-group
-                                        label(for="language") 言語
+                                        label.fw-bold(for="language") 言語
                                         select#language.form-control(name="language")
                                             option(value="japanese" selected) 日本語
                                             option(value="english") 英語
@@ -31,7 +37,7 @@ block mainContent
                                             // 必要に応じて他の言語を追加
                                 .col-md-4.my-2
                                     .form-group
-                                        label(for="writingStyle") 書き方
+                                        label.fw-bold(for="writingStyle") 書き方
                                         select#writingStyle.form-control(name="writingStyle")
                                             option(value="narrative") 物語性
                                             option(value="expository") 説明的
@@ -40,7 +46,7 @@ block mainContent
 
                                 .col-md-4.my-2
                                     .form-group
-                                        label(for="writingTone") トーン
+                                        label.fw-bold(for="writingTone") トーン
                                         select#writingTone.form-control(name="writingTone")
                                             option(value="formal") フォーマル
                                             option(value="friendly") フレンドリー
