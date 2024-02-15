@@ -15,10 +15,10 @@ const fetchOpenAICompletion = async (messages,max_tokens, res) => {
                     model: "gpt-3.5-turbo-16k",
                     messages,
                     max_tokens,
-                    temperature: 0.75,
+                    temperature: 1.2,
                     top_p: 0.95,
-                    frequency_penalty: 0.75, // Adjust if you want to penalize frequent tokens
-                    presence_penalty: 0.75, // Adjust if you want to penalize new tokens
+                    frequency_penalty: 2, // Adjust if you want to penalize frequent tokens
+                    presence_penalty: 2, // Adjust if you want to penalize new tokens
                     stream: true,
                     n: 1,
                 }),

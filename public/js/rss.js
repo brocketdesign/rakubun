@@ -156,6 +156,7 @@
             <h5><a href="${article.articleUrl}" target="_blank">${article.title}</a></h5>
             <p>${article.metaDescription.substring(0, 100)}...</p>
             <button class="btn btn-info btn-sm view-article" data-article-id="${article._id}">View</button>
+            <a class="btn btn-info btn-sm" href="/dashboard/app/generator/1?articleId=${article._id}">More</a>
           </li>`);
         });
       },

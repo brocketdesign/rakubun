@@ -24,6 +24,15 @@ $(document).ready(function(){
             }
         })
     }
+
+    const articleId = getQueryParam('articleId');
+
+    if(articleId){
+        $.get('/api/rss/articles/'+articleId,function(data){
+            $('#keywords').val(data.title);
+            keywordUpdate();
+        });
+    }
 });
 // Function to grab query params from the URL
 function getQueryParam(param) {
@@ -82,6 +91,7 @@ function submitForm(formSelector) {
                 SECTION : section,
                 SECTION_SUBJECT:sectionsSubject,
                 SECTIONS_COUNT : $('#sectionsCount').val(),
+                METADESCRIPTION_COUNT : $('#metaDescriptionCount').val(),
                 COUNT:$('#count').val(),
                 TITLE : $('#title').val(),
                 CONTENT : $('#articleContent').val(),
@@ -167,6 +177,29 @@ function udpateSendButton(containerID,completionId){
 function convertResponse(sourceSelector,stream_data) {
     const type = parseInt($('form#generator').data('type'))
     if(type == 1){
+        var list = $('<ul>', {
+            'class': 'list-group', 
+            'id':`list-${stream_data.id}`
+        });
+        $(sourceSelector).html(list);
+
+        $.each(stream_data.completion, function(index, title) {
+            var listItem = $('<li>', {
+                'class': 'list-group-item', 
+            });
+            
+            var hyperlink = $('<a>',{
+                'href':`/dashboard/app/generator/7?id=${stream_data.id}&title=${title}`,
+                text: title,
+                target:'_blank'
+            })
+    
+            $(document).find(`#list-${stream_data.id}`).append(listItem.append(hyperlink))
+
+        });
+        return
+    }
+    if(type == 7){
         var list = $('<ul>', {
             'class': 'list-group', 
             'id':`list-${stream_data.id}`
@@ -288,28 +321,42 @@ function handleKeywordsBehavior(){
         return
     }
     $('#keywords').on('keydown', function(e) {
-        // When Enter key is pressed or comma is entered
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault(); // Prevent default behavior
-            
-            var input = $(this).val().trim(); // Get the input value and trim whitespace
-            if (input) { // If there's some input
-                input = input.replace(/,$/, ""); // Remove trailing comma if present
-                // Create the tag (you need to style it with CSS)
-                var html = '<span class="col btn keyword-badge shadow-0 position-relative m-0 border border-dark rounded-0" data-keyword="' + input + '">' + input + 
-                           '<i type="button" class="remove-tag fa fa-times position-absolute" style="top:3px;right:5px;"></i></span>';
-                $(this).before(html); // Insert the tag before the input field
-                $(this).val(''); // Clear the input field
-            }
+        // When Enter key is pressed, comma, or Japanese comma is entered
+        if (e.key === 'Enter' || e.key === ',' || e.key === '、') {
+            e.preventDefault(); // Stop the press! No default behavior allowed here.
+            keywordUpdate();
         }
-        updateInput();
     });
+    
+    
 
     // Functionality to remove a tag when the remove button is clicked
     $(document).on('click', '.remove-tag', function() {
         $(this).parent('.keyword-badge').remove();
         updateInput()
     });
+}
+function keywordUpdate(){
+    var inputValue = $('#keywords').val().trim(); // Trim the input like it's a bonsai tree.
+    if (inputValue) { // If there's some juicy input...
+        // Split the input into an array of keywords, catering to both English and Japanese commas
+        var keywords = inputValue.split(/,|、| |　/).map(function(keyword) {
+            return keyword.trim(); // Trim each keyword with the precision of a sushi chef.
+        }).filter(function(keyword) {
+            return keyword !== ""; // We only want the meaty keywords, no empty shells.
+        });
+
+        // For each keyword, whether it's from Tokyo or Texas, let's give it a tag!
+        keywords.forEach(function(keyword) {
+            var html = '<span class="col btn keyword-badge shadow-0 position-relative m-0 border border-dark rounded-0" data-keyword="' + keyword + '">' + keyword +
+                       '<i type="button" class="remove-tag fa fa-times position-absolute" style="top:3px;right:5px;"></i></span>';
+            $('#keywords').before(html); // Place our newly minted tags like jewels before the crown.
+        });
+
+        $('#keywords').val(''); // Clear the stage, our input's job here is done.
+    }
+    // Update the input required status
+    updateInput();
 }
 function updateInput(){
     const keywords = $('.keyword-badge').length
