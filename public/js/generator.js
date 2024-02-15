@@ -217,7 +217,7 @@ function handleStreamFinally() {
 
 function updateUIAfterStream() {
     $(`form#generator`).removeClass('busy');
-    $(`#generation .text`).text('提案されるトピック');
+    $(`#generation .text`).text('新しく生成する');
 }
 
 function udpateSendButton(containerID,completionId){
