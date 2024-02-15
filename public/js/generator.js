@@ -36,6 +36,9 @@ $(document).ready(function(){
                 $('#language').val(data.request.LANGUAGE)
                 $('#writingTone').val(data.request.WRITING_TONE)
                 
+                if($('#list-titles').length > 0){
+                    listTitles(data)
+                }
                 if($('#sections').length > 0){
                     sectionUpdate();
                 }
@@ -75,7 +78,9 @@ function hideForm(){
     })
     $('#generation').css({
         "position": "absolute",
-        "top": "0"
+        "top": "0",
+        "right":"0",
+        "left":"0"
       })
     $('form#generator .form-group button#generation').parent().show()
 }
@@ -156,6 +161,8 @@ function submitForm(formSelector) {
     }
    
 function handleFormSubmit(type, data) {
+
+    $('#result').html('')
     generateStream(type, data, handleStreamSuccess(type, data), handleStreamError(), handleStreamFinally());
     if($('#seoSearch').length>0){
         seoSearch(data)
@@ -173,8 +180,8 @@ function appendMessageToContainer(type, data, response) {
         const containerID = `response-${type}-${response.insertedId}-${data.INDEX}`;
         if ($(`#${containerID}`).length == 0) {
             const initialCardHtml = `
-                <div class="card mb-3">
-                    <div class="card-body">
+                <div class="card-container mb-3">
+                    <div class="card-inner-body">
                         <div id=${containerID}></div>
                         <div class="row">
                             <div data-id=${containerID} class="action-button"></div>
@@ -216,13 +223,35 @@ function updateUIAfterStream() {
 function udpateSendButton(containerID,completionId){
     const type = parseInt($('form#generator').data('type'))
     const next_type = type + 1
-    if(type == 0 || type == 1 || type == 7){ return }
+    if(type == 0 || type == 1 || type == 7 || type == 8){ return }
     if($(`.send-${completionId}`).length == 0){
         $(`#result .action-button[data-id="${containerID}"]`)
         .append(`<a class="col-12 btn btn-primary send-${completionId}" href="/dashboard/app/generator/${next_type}?id=${completionId}" target="_blank">USE THIS CONTENT</a>`)
     }
 }
+function listTitles(stream_data){
+    var list = $('<ul>', {
+        'class': 'list-group', 
+        'id':`list-${stream_data._id}`
+    });
+    $('#list-titles').html(list);
+    
+    $.each(stream_data.completion[0], function(index, title) {
+        console.log(title)
+        var listItem = $('<li>', {
+            'class': 'list-group-item', 
+        });
+        
+        var hyperlink = $('<a>',{
+            'href':`/dashboard/app/generator/8?id=${stream_data._id}&title=${title}`,
+            text: title.replace(/"/g, '').trim(),
+            target:'_blank'
+        })
 
+        $(document).find(`#list-${stream_data._id}`).append(listItem.append(hyperlink))
+
+    });
+}
 function convertResponse(sourceSelector,stream_data) {
     const type = parseInt($('form#generator').data('type'))
     if(type == 1 || type == 0){
@@ -238,7 +267,7 @@ function convertResponse(sourceSelector,stream_data) {
             });
             
             var hyperlink = $('<a>',{
-                'href':`/dashboard/app/generator/7?id=${stream_data.id}&title=${title}`,
+                'href':`/dashboard/app/generator/8?id=${stream_data.id}&title=${title}`,
                 text: title.replace(/"/g, '').trim(),
                 target:'_blank'
             })

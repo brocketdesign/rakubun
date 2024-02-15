@@ -66,6 +66,12 @@ function generatePrompt(data, type) {
             result.prompt = `Write ${METADESCRIPTION_COUNT} appealing and creative introduction for an article about "${metaTitle}" in ${metaLanguage}. Try to make shorter sentences, using less difficult words to improve readability. Style: ${metaStyle}. Tone: ${metaTone}. Return a javascript array.`;
             result.max_tokens = 600 * METADESCRIPTION_COUNT; // A decent length for a paragraph
             break;
+        case '8':
+            // Setting up for article paragraph generation
+            const { TITLE: finalTitle, WRITING_STYLE: finalStyle, LANGUAGE: finalLanguage, WRITING_TONE: finalTone } = data;
+            result.prompt = `Write an short blog post about "${finalTitle}" in ${finalLanguage}.Make short sentences, using simple words to improve readability. Style: ${finalStyle}. Tone: ${finalTone}. Use Markdown.`;
+            result.max_tokens = 1000 ; // A decent length for a paragraph
+            break;
             
             
     }
