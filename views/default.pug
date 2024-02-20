@@ -25,15 +25,16 @@ html
                 ul.navbar-nav.ms-auto.mb-2.mb-md-0
                   li.nav-item
                     if user
-                      a.nav-link.btn.shadow-0(href="/user/setting") Settings
+                      a.nav-link.btn.shadow-0(href="/user/setting") 設定
                     if user
                       li.nav-item
-                          button.nav-link.btn.shadow-0(type='button', onclick='logout()') Logout
+                          button.nav-link.btn.shadow-0(type='button', onclick='logout()') ログアウト
                     else
                       li.nav-item
-                          a.nav-link.shadow-0(href="#" onclick="displayLogin()") Login
+                          a.nav-link.shadow-0(href="#" onclick="displayLogin()") ログイン
                       li.nav-item
-                          buttom.btn.btn-outline-warning.btn-lg.shadow-0(onclick="displayLogin()" role="button") Start Now For Free
+                          button.btn.btn-outline-warning.btn-lg.shadow-0(onclick="displayLogin()" role="button") 今すぐ無料で始める
+
       else 
         .top-nav.auto-hide
             nav.navbar.navbar-expand-md.navbar-white.bg-white.py-0.shadow-0.border-bottom

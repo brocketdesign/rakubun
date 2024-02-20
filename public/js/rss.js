@@ -30,8 +30,10 @@
                 <a href="/dashboard/app/feed?feedId=${response.id}">  ${name} </a>
                 <div class="btn-group" role="group">
                 <button class="btn btn-secondary update-feed" data-id="${response.id}">Update</button>
-                <button class="btn btn-success change-status" data-id="${response.id}" data-status="active">Start</button>
-                <button class="btn btn-warning change-status" data-id="${response.id}" data-status="paused">Pause</button>
+
+                <button class="btn btn-success change-status " data-id="${response.id}" data-status="active">Start</button>
+                <button class="btn btn-warning change-status d-none" data-id="${response.id}" data-status="paused">Pause</button>
+
                 <button class="btn btn-danger delete-feed" data-id="${response.id}">Delete</button>
                 </div>
             </li>`);
@@ -54,10 +56,12 @@
         feeds.forEach(feed => {
           $('#feedsList').append(`<li class="list-group-item d-flex justify-content-between flex-column">
           <a href="/dashboard/app/feed?feedId=${feed._id}">  ${feed.name} </a>
-            <div class="btn-group d-none" role="group">
+            <div class="btn-group" role="group">
               <button class="btn btn-secondary update-feed" data-id="${feed._id}">Update</button>
-              <button class="btn btn-success change-status" data-id="${feed._id}" data-status="active">Start</button>
-              <button class="btn btn-warning change-status" data-id="${feed._id}" data-status="paused">Pause</button>
+
+              <button class="btn btn-success change-status ${feed.status=='active'?'d-none':''}" data-id="${feed._id}" data-status="active">Start</button>
+              <button class="btn btn-warning change-status ${feed.status=='paused'?'d-none':''}" data-id="${feed._id}" data-status="paused">Pause</button>
+
               <button class="btn btn-danger delete-feed" data-id="${feed._id}">Delete</button>
             </div>
           </li>`);

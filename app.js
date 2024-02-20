@@ -4,7 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const compression = require('compression');
-
+const myCronJobs = require('./modules/cronJobs')
 const http = require('http');
 const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
@@ -29,7 +29,7 @@ function startServer() {
 
       const db = client.db(dbName); // Use the database name from .env file
       global.db = db; // Save the db connection in a global variable
-      
+      myCronJobs(db)
       // Use the express-session middleware
       app.use(
         session({

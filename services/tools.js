@@ -1,5 +1,8 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
 const { premiumPlan } = require('../modules/products');
+const axios = require('axios');
+const cheerio = require('cheerio');
+const imageSize = require('image-size');
 
 /**
  * Add a user to the freePlan on Stripe.
@@ -33,7 +36,80 @@ function formatDateToDDMMYYHHMMSS() {
   return ddmmyyhhmmss;
 }
 
+async function getSearchResult(query) {
+  const google = {
+      api_id: process.env.GOOGLE_RAKUBUN_API,
+      engine_id: process.env.GOOGLE_SEARCH_ENGINE_ID
+  };
+
+  const url = new URL(`https://www.googleapis.com/customsearch/v1?key=${google.api_id}&cx=${google.engine_id}&q=${query}&num=10`).href;
+
+  try {
+      const response = await axios.get(url);
+      return processSearchResults(response.data); // Contains the search results
+  } catch (error) {
+      console.error('Error fetching search results:', error);
+      return null; // Or handle the error as needed
+  }
+}
+function processSearchResults(data) {
+  if (!data || !data.items) {
+      console.error('Invalid or empty search data');
+      return [];
+  }
+  return data.items.map(item => {
+    return {title:item.title,link:item.link};
+  });
+}
+async function getImageDimensions(url) {
+  try {
+    const response = await axios.get(url, { responseType: 'arraybuffer' });
+    const dimensions = imageSize(response.data);
+    return dimensions;
+  } catch (error) {
+    console.error('Error fetching image dimensions:', error);
+    return null;
+  }
+}
+
+async function getImageSearchResult(url) {
+  try {
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+    const images = [];
+
+    $('img').each((i, element) => {
+      const imgSrc = $(element).attr('src') || $(element).attr('data-src');
+      if (imgSrc) {
+        const fullImgSrc = imgSrc.startsWith('http') ? imgSrc : new URL(imgSrc, url).href; // Handle relative URLs
+        images.push(fullImgSrc);
+      }
+    });
+
+    // Filter large images
+    const largeImages = [];
+    for (let imgSrc of images) {
+      const dimensions = await getImageDimensions(imgSrc);
+      if (dimensions && dimensions.height > 400) { // Example size criteria
+        largeImages.push({
+          title: $(`img[src='${imgSrc}']`).attr('alt') || '', // Use alt attribute as title, fallback to 'Large Image'
+          link: imgSrc,
+          thumbnail: imgSrc, // Assuming the original image serves as a thumbnail; adjust as needed
+        });
+      }
+    }
+
+    return largeImages;
+  } catch (error) {
+    console.error('Error fetching the page or images:', error);
+    return [];
+  }
+}
+
+
 module.exports = {
   addUsertoFreePlan,
-  formatDateToDDMMYYHHMMSS
+  formatDateToDDMMYYHHMMSS,
+  getSearchResult,
+  getImageSearchResult
 };
