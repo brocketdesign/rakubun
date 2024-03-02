@@ -1,0 +1,24 @@
+extends ../../base
+
+block mainContent
+    h1 Blog Information
+    .card.toolbar.btn-toolbar.my-2
+        .card-body
+            a.btn.btn-success.me-2(type="button", href="/dashboard/app/autoblog/info/")
+                i.fas.fa-plus 
+    each blog in blogData
+        .card.mb-3(data-id=blog._id)
+            .card-body
+                h5.card-title #{blog.blogName}
+                h6.card-subtitle.mb-2.text-muted Blog ID: #{blog._id}
+                p.card-text #{blog.blogDescription.substring(0, 200)}...
+                a.btn.btn-primary.mx-2(href=`/dashboard/app/autoblog/info/${blog._id}`) View More
+                // Toggle Button for Activating/Deactivating Blog
+                if blog.isActive
+                    button.toggle-blog-btn.btn.btn-success.mx-2(data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', false)`) Deactivate
+                else
+                    button.toggle-blog-btn.btn.btn-secondary.mx-2(data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', true)`) Activate
+                button.delete-blog-btn.btn.btn-danger.float-end.mx-2(data-id=blog._id)
+                    i.fas.fa-trash-alt
+
+    script(src="/js/autoblog.js")

@@ -4,7 +4,7 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const compression = require('compression');
-const myCronJobs = require('./modules/cronJobs')
+const {initializeCronJobs} = require('./modules/cronJobs')
 const http = require('http');
 const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
@@ -29,7 +29,7 @@ function startServer() {
 
       const db = client.db(dbName); // Use the database name from .env file
       global.db = db; // Save the db connection in a global variable
-      myCronJobs(db)
+      initializeCronJobs(db)
       // Use the express-session middleware
       app.use(
         session({
@@ -71,6 +71,7 @@ function startServer() {
       const dashboard= require('./routers/dashboard/index');
       const generator = require('./routers/api/generator');
       const rss = require('./routers/api/rss');
+      const autoblog = require('./routers/api/autoblog');
       
       app.use('/', index); 
       app.use('/user', user); 
@@ -79,11 +80,13 @@ function startServer() {
       app.use('/dashboard', dashboard);
       app.use('/api/generator', generator);
       app.use('/api/rss', rss);
+      app.use('/api/autoblog', autoblog);
 
 
 
       server.listen(port, () => 
       console.log(`Express running → PORT http://${ip.address()}:${port}`));
+
     })
     .catch(err => {
       console.log('Error occurred while connecting to MongoDB...\n', err);
