@@ -1,5 +1,18 @@
 var wordpress = require("wordpress");
 
+async function getCategoryId(type, option) {
+  const client = wordpress.createClient(option);
+
+  return new Promise((resolve, reject) => {
+    client.getTerms(type, function(err, terms) {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(terms);
+      }
+    });
+  });
+}
 async function categoryExists(name,type, option) {
   const client = wordpress.createClient(option);
 
@@ -98,4 +111,4 @@ async function post(title, content, categories, tags, option) {
   }
 }
 
-module.exports = { categoryExists,ensureCategory,getTermDetails, post };
+module.exports = { getCategoryId, categoryExists,ensureCategory,getTermDetails, post };

@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { ObjectId } = require('mongodb');
-const {fetchOpenAICompletion}=require('../../modules/openai')
+const {fetchOpenAICompletion,fetchOllamaCompletion}=require('../../modules/openai')
 const {generatePrompt} =require('../../services/prompt')
 
 

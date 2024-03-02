@@ -1,0 +1,217 @@
+extends ../../base
+
+block mainContent
+    h1 Blog Information Form
+    .card.toolbar.btn-toolbar.my-2
+        .card-body
+            a.btn.btn-primary.me-2(type="button", href="/dashboard/app/autoblog/")
+                i.fas.fa-list 
+            a.btn.btn-success.me-2(type="button", href="/dashboard/app/autoblog/info/")
+                i.fas.fa-plus 
+            if blogId
+                button.btn.btn-info.text-white.me-2.duplicate-blog-btn(data-id=blogId)
+                    i.far.fa-copy
+            button.btn.btn-warning.me-2(type="button")
+                i.fas.fa-edit 
+            button.btn.btn-info.me-2(type="button")
+                i.fas.fa-cog 
+            if blogId
+                button.delete-blog-btn.btn.btn-danger.float-end.mx-2(data-id=blogId) 
+                        i.fas.fa-trash-alt
+            // Add more buttons with icons as needed
+    form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
+        .row.row-cols-2
+            .col
+                input#blogId(type="hidden", name="blogId", data-id=(blogId ? blogId : ""))
+                .card.my-2
+                    .card-header
+                        h5 Blog Information
+                    .card-body
+                        .row
+                            
+                            div.form-group.col-12.col-sm-6
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogName", class="form-label") Blog Name:
+                                input#blogName(type="text", name="blogName", required=true class="form-control")
+                                div.invalid-feedback Blog name is required.
+                            div.form-group.col-12.col-sm-6
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogUrl", class="form-label") Blog URL:
+                                input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
+                                div.invalid-feedback Blog URL is required.
+                            .col-12
+                                div.form-group
+                                    label.text-muted.fw-bold.text-muted.fw-bold(for="blogDescription", class="form-label") Blog Description:
+                                    textarea#blogDescription(name="blogDescription", required=true class="form-control", rows=5)
+                                    div.invalid-feedback Blog description is required.
+                .card.my-2
+                    .card-header
+                        h5 Blog Authentification
+                    .card-body
+                        .row
+                            div.form-group.col-12.col-sm-6
+                                label.text-muted.fw-bold(for='blogUsername') User Name
+                                input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
+                            div.form-group.col-12.col-sm-6
+                                label.text-muted.fw-bold(for='blogPassword') Password
+                                input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
+                .card.my-2
+                    .card-header
+                        h5 Post Information
+                    .card-body
+                        .row
+
+                            div.form-group
+                                label.text-muted.fw-bold(for="postCategory", class="form-label") Post Category:
+                                select#postCategory(name="postCategory", class="form-select", multiple=true)
+                .card.my-2
+                    .card-header
+                        h5 Articles Information
+                    .card-body
+                        .row
+
+                            div.form-group
+                                label.text-muted.fw-bold(for="articleLength", class="form-label") Article Length:
+                                select#articleLength(name="articleLength" class="form-select")
+                                    option(value="~500") ~500 words
+                                    option(value="500-1000") 500-1000 words
+                                    option(value="1000-2000") 1000-2000 words
+                            div.form-group
+                                label.text-muted.fw-bold(class="form-label") Article Categories:
+                                // Add your options or dynamically generate them
+                                select#articleCategories(name="articleCategories", multiple=true, class="form-select")
+                                    option(value="Technology") Technology
+                                    option(value="Travel") Travel
+                                    option(value="Food") Food
+                                    option(value="Health & Fitness") Health & Fitness
+                                    option(value="Fashion") Fashion
+                                    option(value="Lifestyle") Lifestyle
+                                    option(value="Beauty") Beauty
+                                    option(value="Sports") Sports
+                                    option(value="Entertainment") Entertainment
+                                    option(value="Finance") Finance
+                                    option(value="Business") Business
+                                    option(value="Marketing") Marketing
+                                    option(value="Education") Education
+                                    option(value="Parenting") Parenting
+                                    option(value="Home & Garden") Home & Garden
+                                    option(value="DIY & Crafts") DIY & Crafts
+                                    option(value="Photography") Photography
+                                    option(value="Art & Design") Art & Design
+                                    option(value="Books & Literature") Books & Literature
+                                    option(value="Science") Science
+                                    option(value="History") History
+                                    option(value="Politics") Politics
+                                    option(value="Travel & Tourism") Travel & Tourism
+                                    option(value="Nature") Nature
+                                    option(value="Pets") Pets
+                                    option(value="Relationships") Relationships
+                                    option(value="Self Improvement") Self Improvement
+                                    option(value="Spirituality") Spirituality
+                                    option(value="Technology & Gadgets") Technology & Gadgets
+                                    option(value="Video Games") Video Games
+                                    option(value="Film & TV") Film & TV
+                                    option(value="Music") Music
+                                    option(value="Cooking & Recipes") Cooking & Recipes
+                                    option(value="Gardening") Gardening
+                                    option(value="Home Improvement") Home Improvement
+                                    option(value="Crafts & DIY") Crafts & DIY
+                                    option(value="Fashion & Beauty") Fashion & Beauty
+                                    option(value="Parenting & Family") Parenting & Family
+                                    option(value="Finance & Money") Finance & Money
+                                    option(value="Career & Work") Career & Work
+                                    option(value="Education & Learning") Education & Learning
+                                    option(value="Health & Wellness") Health & Wellness
+                                    option(value="Fitness & Exercise") Fitness & Exercise
+                                    option(value="Sports & Outdoors") Sports & Outdoors
+                                    option(value="Travel & Adventure") Travel & Adventure
+                                    option(value="Art & Creativity") Art & Creativity
+                                    option(value="Books & Writing") Books & Writing
+                                    option(value="Science & Technology") Science & Technology
+                                    option(value="History & Culture") History & Culture
+                                    option(value="Politics & Society") Politics & Society
+                                    option(value="Nature & Environment") Nature & Environment
+                                    option(value="Animals & Pets") Animals & Pets
+                                    option(value="Relationships & Love") Relationships & Love
+                                    option(value="Self-Improvement & Motivation") Self-Improvement & Motivation
+                                    option(value="Spirituality & Religion") Spirituality & Religion
+
+                            div.form-group
+                                label.text-muted.fw-bold(for="targetAudience", class="form-label") Target Audience:
+                                select#targetAudience(name="targetAudience[]" multiple class="form-select")
+                                    option(value="Men") Men
+                                    option(value="Women") Women
+                                    option(value="Children") Children
+                                    option(value="Teenagers") Teenagers
+                                    option(value="Young Adults") Young Adults
+                                    option(value="Elderly") Elderly
+                                    option(value="Students") Students
+                                    option(value="Professionals") Professionals
+                                    option(value="Parents") Parents
+                                    option(value="Entrepreneurs") Entrepreneurs
+                                    option(value="Tech Enthusiasts") Tech Enthusiasts
+                                    option(value="Fitness Enthusiasts") Fitness Enthusiasts
+                                    option(value="Food Enthusiasts") Food Enthusiasts
+                                    option(value="Travel Enthusiasts") Travel Enthusiasts
+                                    option(value="Fashion Enthusiasts") Fashion Enthusiasts
+
+            .col.position-sticky
+                .card.my-2
+                    .card-header
+                        h5 Options of content
+                    .card-body
+                        .row
+                            div.form-group
+                                label.text-muted.fw-bold(for="postLanguage", class="form-label") Language of the text:
+                                select#postLanguage(name="postLanguage" class="form-select")
+                                    option(value="french") Français
+                                    option(value="japanese") 日本語
+                                    option(value="english") 英語
+                                    option(value="spanish") スペイン語
+                                    // Add more options as needed
+                            div.form-group
+                                label.text-muted.fw-bold(for="postFrequency", class="form-label") Frequency of Posts:
+                                select#postFrequency(name="postFrequency" class="form-select")
+                                    option(value="0 0,12 * * *") Twice a day
+                                    option(value="0 * * * *") Every hour
+                                    option(value="*/30 * * * *") Every 30 minutes
+                                    option(value="*/10 * * * *") Every 10 minutes
+                                    option(value="0 0 * * *") Daily
+                                    option(value="0 0 * * 0") Weekly
+
+                            div.form-group
+                                label.text-muted.fw-bold(for="writingStyle", class="form-label") Preferred Writing Style:
+                                select#writingStyle(name="writingStyle" class="form-select")
+                                    option(value="Descriptive", selected) Descriptive
+                                    option(value="Informative") Informative
+                                    option(value="Creative") Creative
+                                    option(value="Narrative") Narrative
+                                    option(value="Persuasive") Persuasive
+                                    option(value="Reflective") Reflective
+                                    option(value="Argumentative") Argumentative
+                                    option(value="Analytical") Analytical
+                                    option(value="Technical") Technical
+                                    option(value="Journalistic") Journalistic
+                                    option(value="Neutral", selected) Neutral
+                            div.form-group
+                                label.text-muted.fw-bold(for="writingTone", class="form-label") Preferred Writing Tone:
+                                select#writingTone(name="writingTone" class="form-select")
+                                    option(value="Formal") Formal
+                                    option(value="Assertive") Assertive
+                                    option(value="Cheerful") Cheerful
+                                    option(value="Humorous") Humorous
+                                    option(value="Informal") Informal
+                                    option(value="Inspirational") Inspirational
+                                    option(value="Professional") Professional
+                                    option(value="Coincidental") Coincidental
+                                    option(value="Emotional") Emotional
+                                    option(value="Persuasive") Persuasive
+                                    option(value="Supportive") Supportive
+                                    option(value="Sarcastic") Sarcastic
+                                    option(value="Condescending") Condescending
+                                    option(value="Skeptical") Skeptical
+                                    option(value="Narrative") Narrative
+                                    option(value="Journalistic") Journalistic
+
+
+                button.w-100.my-2(type="submit" class="btn btn-primary") Submit
+
+    script(src="/js/autoblog.js")
