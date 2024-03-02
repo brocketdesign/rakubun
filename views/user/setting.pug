@@ -4,6 +4,8 @@ block mainContent
     ul.nav.nav-tabs
         li.nav-item
             a.nav-link(href='#personalInfo' data-bs-toggle='tab') Account settings
+        li.nav-item
+            a.nav-link(href='#wordpressInfo' data-bs-toggle='tab') Wordpress
         li.nav-item.d-none
             a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') Password update
     .tab-content.pb-5#updateProfile(style="display:none")
@@ -22,6 +24,14 @@ block mainContent
                     label(for='bannerImage') Banner image
                     .input-group
                         input#bannerImage.form-control(type='file', name="bannerImage", value=user.bannerImage)
+                hr.my-3.d-none
+                .form-group.col-12
+                    label(for='language') 言語
+                    select#language.form-control(name="language")
+                        option(value="japanese" selected) 日本語
+                        option(value="english") 英語
+                        option(value="spanish") スペイン語
+                        option(value="french") Français
                 hr.my-3.d-none
                 .form-group.col-12.d-none
                     label(for='username') Nickname
@@ -59,6 +69,22 @@ block mainContent
                     label(for='country') Country
                     select#country.form-control(name="country")
                     option(value=user.country) Select your country
+                button.btn.btn-primary.my-4(type='submit') Send
+        #wordpressInfo.tab-pane.fade
+            form.row.mt-3
+                .form-group.col-12.col-sm-6
+                    label(for='blogUrl') Blog URL
+                    input#blogUrl.form-control(name="blogUrl", type='url', placeholder='', required)
+                .form-group.col-12.col-sm-6
+                    label(for='blogTheme') Blog Theme
+                    input#blogTheme.form-control(name="blogTheme", type='text', placeholder='What is it about', required)
+                hr.my-3
+                .form-group.col-12.col-sm-6
+                    label(for='blogUsername') User Name
+                    input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
+                .form-group.col-12.col-sm-6
+                    label(for='blogPassword') Password
+                    input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
                 button.btn.btn-primary.my-4(type='submit') Send
         #passwordUpdate.tab-pane.fade.d-none
             form.row.mt-3

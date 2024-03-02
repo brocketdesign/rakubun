@@ -19,7 +19,6 @@ const scrapeArticle = async (articleUrl) => {
 };
 
 const fetchAndScrapeFeed = async (feedUrl) => {
-    console.log(`fetchAndScrapeFeed ${feedUrl}`)
   try {
     const feed = await rssParser.parseURL(feedUrl);
     const articlesPromises = feed.items.map(item => scrapeArticle(item.link));
@@ -37,12 +36,11 @@ async function getOrUpdateArticles(feedId) {
 
   // Check if the feed has been scraped lately (e.g., within the last 24 hours)
   const lastScraped = feed.lastScraped || 0;
-  const oneDayAgo = Date.now() - (6 * 60 * 60 * 1000);
+  const oneHourAgo = Date.now() - (1 * 60 * 60 * 1000);
 
-  if (true) {
-    // Feed needs to be scraped again
+  if (lastScraped < oneHourAgo) {
+    //console.log("Feed is stale. Commencing scraping operation with the zest of a lemon!");    // Feed needs to be scraped again
     const scrapedArticles = await fetchAndScrapeFeed(feed.url);
-    console.log({scrapedArticles})
     // Update the database with the new articles and the last scraped timestamp
     const updates = scrapedArticles.map(article => ({
       updateOne: {
@@ -54,8 +52,9 @@ async function getOrUpdateArticles(feedId) {
 
     await global.db.collection('articles').bulkWrite(updates);
     await global.db.collection('feeds').updateOne({ _id: new ObjectId(feedId) }, { $set: { lastScraped: Date.now() } });
+  }else{
+    //console.log("The feed is as fresh as a morning breeze. No need to scrape just yet!");
   }
-  console.log(`Feed is up to date`)
   // Return the articles from the database
   return global.db.collection('articles').find({ feedId: new ObjectId(feedId) }).sort({_id:-1}).limit(10).toArray();
 }

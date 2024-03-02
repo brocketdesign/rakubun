@@ -6,7 +6,10 @@ block mainContent
     hr.my-4
     .container.mt-5
         .row.justify-content-center
-            .col-md-8
+            .col-md-6.col-12.my-2.order-2
+                h3 生成されたセクション
+                ul#result.list-group
+            .col-md-6.col-12.my-2.order-1
                 form#generator(data-type="4")
                     .card
                         .card-header
@@ -55,8 +58,5 @@ block mainContent
                                     span.load.spinner-border.spinner-border-sm.me-2(role="status", style="display:none")
                                     span.text 作成しましょう！
 
-        .row.justify-content-center
-            .col-md-8.my-2
-                h3 生成されたセクション
-                ul#result.list-group
+        
     script(src="/js/generator.js")

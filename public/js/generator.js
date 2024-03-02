@@ -57,13 +57,13 @@ $(document).ready(function(){
             $('#metaDescription').val(data.metaDescription);
         });
     }
-    hideForm(); // Assuming hideForm is a function you want to call regardless
+    //hideForm(); // Assuming hideForm is a function you want to call regardless
 
     // Captain (you) making the call
     $.when(request1, request2).done(function () {
         // Both AJAX calls have returned, check the form type before proceeding
         if ($('form#generator').data('type') !== 3) {
-            $('form#generator').submit();
+            //$('form#generator').submit();
         } else {
             // Maybe the form needs a last-minute check or you need to show a message
             console.log("Arrr, we're not ready to set sail yet!");

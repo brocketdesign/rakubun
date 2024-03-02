@@ -1,35 +1,36 @@
-  const faq = [
-        {
-        "question": "What is RAKUBUN?",
-        "answer": "RAKUBUN is a web application that offers a variety of tools. Users can access basic tools on a free plan, or subscribe to a monthly plan for premium features."
-        },
-        {
-        "question": "How do I subscribe to the monthly plan?",
-        "answer": "To subscribe to the monthly plan, navigate to the 'Subscription' section on our platform. From there, you can select the monthly plan and proceed with the payment using Stripe."
-        },
-        {
-        "question": "What payment methods do you accept?",
-        "answer": "We process our payments through Stripe, which accepts major credit and debit cards. You can also use other payment methods that Stripe supports."
-        },
-        {
-        "question": "How can I access the free tools?",
-        "answer": "Once you create an account on RAKUBUN, you'll automatically be on the free plan. Simply log in to your account and navigate to the 'Tools' section to access the free tools."
-        },
-        {
-        "question": "I've subscribed to the monthly plan. How do I access premium tools?",
-        "answer": "Once your subscription is active, log in to your RAKUBUN account. The premium tools will be unlocked in the 'Tools' section. Navigate there to start using them."
-        },
-        {
-        "question": "How can I modify my payment information?",
-        "answer": "To modify your payment details, go to the 'Account' or 'Profile' section. There, you'll find an option to 'Edit Payment Information'. Follow the prompts to update your details securely via Stripe."
-        },
-        {
-        "question": "How do I change my personal information on RAKUBUN?",
-        "answer": "Navigate to the 'Account' or 'Profile' section after logging in. There you'll find options to modify your personal details. Make the necessary changes and save."
-        },
-        {
-        "question": "Can I cancel my subscription at any time?",
-        "answer": "Yes, you can cancel your subscription at any time. Go to the 'Subscription' section in your account and follow the prompts to cancel. Once canceled, you'll revert back to the free plan."
-        }
-    ]  
-    module.exports = faq
+const faq = [
+  {
+    question: "RAKUBUNとは何ですか？",
+    answer: "RAKUBUNはさまざまなツールを提供するウェブアプリケーションです。ユーザーは無料プランで基本的なツールを利用でき、月額プランに加入するとプレミアム機能を利用できます。"
+  },
+  {
+    question: "月額プランにはどのように加入できますか？",
+    answer: "月額プランに加入するには、プラットフォームの「サブスクリプション」セクションに移動します。そこで月額プランを選択し、Stripeを使用した支払い手続きを進めます。"
+  },
+  {
+    question: "どのような支払い方法が利用できますか？",
+    answer: "支払い処理はStripeを通じて行われます。Stripeは主要なクレジットカードとデビットカードに対応しています。他にもStripeがサポートしている他の支払い方法も利用できます。"
+  },
+  {
+    question: "無料ツールにはどのようにアクセスできますか？",
+    answer: "RAKUBUNでアカウントを作成すると、自動的に無料プランになります。アカウントにログインして「ツール」セクションに移動するだけで、無料ツールにアクセスできます。"
+  },
+  {
+    question: "月額プランに加入しましたが、プレミアムツールにはどのようにアクセスできますか？",
+    answer: "サブスクリプションがアクティブになると、RAKUBUNアカウントにログインします。プレミアムツールは「ツール」セクションでロックが解除されます。そこに移動して使い始めることができます。"
+  },
+  {
+    question: "支払い情報を変更するにはどうすればよいですか？",
+    answer: "支払い情報を変更するには、「アカウント」または「プロフィール」セクションに移動します。そこには「支払い情報を編集」というオプションがあります。プロンプトに従って、Stripeを通して安全に詳細情報を更新してください。"
+  },
+  {
+    question: "RAKUBUNで個人情報を変更するにはどうすればよいですか？",
+    answer: "ログイン後、「アカウント」または「プロフィール」セクションに移動します。そこで個人情報を変更するためのオプションがあります。必要な変更を行い、保存してください。"
+  },
+  {
+    question: "いつでもサブスクリプションをキャンセルできますか？",
+    answer: "はい、サブスクリプションはいつでもキャンセルできます。アカウントの「サブスクリプション」セクションに移動し、プロンプトに従ってキャンセルします。キャンセルされると、無料プランに戻ります。"
+  }
+];
+
+module.exports = faq;

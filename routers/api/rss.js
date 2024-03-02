@@ -19,7 +19,7 @@ router.post('/feeds', async (req, res) => {
     }
 
     // Insert new feed
-    const result = await global.db.collection('feeds').insertOne({ url, name, status: 'active' });
+    const result = await global.db.collection('feeds').insertOne({ url, name, userId: req.user._id, status: 'active' });
     res.status(201).send({ message: 'Feed added successfully', id: result.insertedId });
   } catch (error) {
     res.status(500).send({ message: 'Server error', error });
@@ -28,7 +28,7 @@ router.post('/feeds', async (req, res) => {
 
 router.get('/feeds', async (req, res) => {
     try {
-      const feeds = await global.db.collection('feeds').find({}).toArray();
+      const feeds = await global.db.collection('feeds').find({userId:new ObjectId(req.user._id)}).toArray();
       res.status(200).send(feeds);
     } catch (error) {
       res.status(500).send({ message: 'Server error', error });
