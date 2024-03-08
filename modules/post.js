@@ -1,7 +1,5 @@
-var wordpress = require("wordpress");
 
-async function getCategoryId(type, option) {
-  const client = wordpress.createClient(option);
+async function getCategoryId(type, client) {
 
   return new Promise((resolve, reject) => {
     client.getTerms(type, function(err, terms) {
@@ -13,8 +11,7 @@ async function getCategoryId(type, option) {
     });
   });
 }
-async function categoryExists(name,type, option) {
-  const client = wordpress.createClient(option);
+async function categoryExists(name,type, client) {
 
   return new Promise((resolve, reject) => {
     client.getTerms(type, function(err, terms) {
@@ -28,12 +25,11 @@ async function categoryExists(name,type, option) {
   });
 }
 
-async function ensureCategory(category,type, option) {
+async function ensureCategory(category,type, client) {
   try {
-    const existingCategoryId = await categoryExists(category.name,type, option);
+    const existingCategoryId = await categoryExists(category.name,type, client);
     if (existingCategoryId) return existingCategoryId; // If exists, return the ID
     // If the category doesn't exist, create a new one
-    const client = wordpress.createClient(option);
     return new Promise((resolve, reject) => {
       client.newTerm({
         name: category.name,
@@ -50,17 +46,16 @@ async function ensureCategory(category,type, option) {
   }
 }
 
-async function createCategories(categories,type, option) {
+async function createCategories(categories,type, client) {
   const categoryIds = [];
   for (let category of categories) {
-    const categoryId = await ensureCategory(category,type, option);
+    const categoryId = await ensureCategory(category,type, client);
     categoryIds.push(categoryId);
   }
   return categoryIds;
 }
 
-async function getTermDetails(id, type, option) {
-  const client = wordpress.createClient(option);
+async function getTermDetails(id, type, client) {
 
   return new Promise((resolve, reject) => {
     client.getTerms(type, function(err, terms) {
@@ -78,12 +73,11 @@ async function getTermDetails(id, type, option) {
   });
 }
 
-async function post(title, content, categories, tags, option) {
+async function post(title, content, categories, tags, image, client) {
   try {
-    const categoryIds = await createCategories(categories,'category',option);
-    const tagIds = await createCategories(tags, 'post_tag', option);
+    const categoryIds = await createCategories(categories,'category',client);
+    const tagIds = await createCategories(tags, 'post_tag', client);
     // Create a new post with all the category IDs
-    const client = wordpress.createClient(option);
     return new Promise((resolve, reject) => {
       client.newPost({
         title: title,
@@ -94,14 +88,15 @@ async function post(title, content, categories, tags, option) {
           'post_tag': tagIds 
         },        
         commentStatus: 'closed',
-        content: content
-      }, function(error, data) {
+        content: content,
+        thumbnail:image?image.attachment_id:null
+      }, function(error, id) {
         if (error) {
           console.error(`Error creating new post: ${error}`);
           reject(error);
         } else {
-          console.log(`Post created successfully: ${data}`);
-          resolve(data);
+          console.log(`Post created successfully: ${id}`);
+          resolve(id);
         }
       });
     });

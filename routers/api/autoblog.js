@@ -5,6 +5,7 @@ const axios = require('axios');
 const { ObjectId } = require('mongodb');
 const { getCategoryId } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs');
+var wordpress = require("wordpress");
 
 router.post('/info', async (req, res) => {
   const userId = req.user._id;
@@ -13,7 +14,7 @@ router.post('/info', async (req, res) => {
   try {
     const blogId = await saveBlogInfo(userId, blogData);
     const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(blogId) });
-    await setCronJobForUser(blogId,blogInfo.postFrequency)
+    await setCronJobForUser(db, blogId,blogInfo.postFrequency)
     res.status(201).send({ message: 'Blog info saved successfully', blogId });
   } catch (error) {
     console.log(error);
@@ -34,8 +35,9 @@ router.get('/info/category/:blogId', async (req, res) => {
     blogInfo.username = blogInfo.blogUsername
     blogInfo.url = blogInfo.blogUrl
     blogInfo.password = blogInfo.blogPassword
+    const client = wordpress.createClient(blogInfo);
 
-    const categoryIds = await getCategoryId('category',blogInfo)
+    const categoryIds = await getCategoryId('category',client)
 
     res.json(categoryIds);
   }catch (error){

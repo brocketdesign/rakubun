@@ -3,10 +3,14 @@ const { getOrUpdateArticles } = require('./feedScraper.js');
 const { generatePrompt } = require('../services/prompt.js')
 const { moduleCompletion, moduleCompletionOllama } = require('./openai.js');
 const { getSearchResult, getImageSearchResult } = require('../services/tools.js')
+const { txt2img } = require('../modules/sdapi.js')
 const { ObjectId } = require('mongodb');
 const fetch = require('node-fetch');
 const marked = require('marked');
 const axios = require('axios');
+var wordpress = require("wordpress");
+const fs = require('fs');
+
 require('dotenv').config({ path: './.env' });
 
 async function autoBlog(blogInfo,db){
@@ -15,7 +19,8 @@ async function autoBlog(blogInfo,db){
   blogInfo.url = blogInfo.blogUrl
   blogInfo.password = blogInfo.blogPassword
   const language = blogInfo.postLanguage
-  
+  const client = wordpress.createClient(blogInfo);
+
   if(!isBlogInfoComplete(blogInfo)){
     console.log('You need to provide the blog informations')
     return
@@ -23,63 +28,87 @@ async function autoBlog(blogInfo,db){
   
   console.log(`Generating article for: ${blogInfo.blogName}`);
 
-  let myCategories = await addTaxonomy(['RAKUBUN'],'category',blogInfo,language)
-  let newCategories = blogInfo.postCategory
-  myCategories = await updateCategories(myCategories,newCategories,'category',blogInfo)
+  // Categories
+  let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language)
+    .then(myCategories => {
+      let newCategories = blogInfo.postCategory;
+      return updateCategories(myCategories, newCategories, 'category', client);
+    });
 
-  const promptDataTitle = `Provide an interesting subject that could be discuss in relation to : ["${blogInfo.blogDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose a concrete and specific subject for the main categories are ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. Provide only one the title without anything else,without prefix "Titre: ".`;
-  const fetchTitle = await moduleCompletion({prompt:promptDataTitle,max_tokens:100});
+  // Title
+  const promptDataTitle = titlePromptGen(blogInfo)
+  const untreatedTitle = await moduleCompletion({model:"gpt-3.5-turbo-instruct",prompt:promptDataTitle,max_tokens:100});
+  const fetchTitle = untreatedTitle.trim()
   console.log(`Generated title : ${fetchTitle}`)
 
-  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
-  const fetchTag= await moduleCompletion({prompt:tagPrompt,max_tokens:600});
-  const parsedTags = JSON.parse(fetchTag)
-  parsedTags.push('RAKUBUN')
 
-  const myTags = await addTaxonomy(parsedTags,'post_tag',blogInfo,language)
+  // Image Generation
+  const promptDataImage = imagePromptGen(fetchTitle)
+  let promise_image = moduleCompletion({model:"gpt-3.5-turbo-instruct",role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
+  .then(fetchPromptImage => {
+    return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
+  })
+  .then(imageData => {
+    const imagePath = imageData.imagePath;
+    const imageBits = fs.readFileSync(imagePath);
+    // Wrap the callback in a promise
+    return new Promise((resolve, reject) => {
+      client.uploadFile({
+        name: `${imageData.imageID}.png`,
+        type: 'image/png',
+        bits: imageBits,
+      }, (error, file) => {
+        if (error) {
+          console.log(error);
+          console.log('Error when adding the thumbnail');
+          reject(error); // Reject the promise on error
+        } else {
+          resolve(file); // Resolve the promise with the file on success
+        }
+      });
+    });
+  })
+  .catch(error => {
+    // Handle any errors in the promise chain
+    console.error("Error in image processing:", error);
+  });
 
-  const promptDataContent = `Write an interesting blog post about "${fetchTitle}". The blog aims to ${blogInfo.blogDescription}. This post should cater to ${blogInfo.targetAudience} with content that fits within the categories of ${blogInfo.articleCategories}. The language of the post should be ${blogInfo.postLanguage}. Aim to make short sentences, using simple words to improve readability and a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
-  const fetchContent = await moduleCompletion({prompt:promptDataContent,max_tokens:3000});
-  const convertContentHTML = markdownToHtml(fetchContent);
-
-  const finalContent = convertContentHTML + '<br>' + disclaimer(language);
   
-  try {
-        // Post the concocted content to the mystical web
-        await post(fetchTitle, finalContent, myCategories, myTags, blogInfo);
-        
-        // Mark the article as published in the grand book of articles
-        saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, blogInfo);
-  } catch (error) {
-    console.log('Could not publish the article')
-    console.log(error)
-  }
-}
-async function updateCategories(myCategories,newCategories,type,option) {
-  // Let's handle the case where we need to fetch details first
-  if (Array.isArray(newCategories)) {
-    // It's an array, time for a group adventure
-    const promises = newCategories.map(cat => getTermDetails(cat, type, option));
-    const details = await Promise.all(promises);
-    // Using map to transform the details into a list of names (or whatever property you need)
-    myCategories.push(...details);
-  } else {
-    // It's a single string, a solo mission
-    const detail = await getTermDetails(newCategories, type, option);
-    myCategories.push(detail);
-  }
-  return myCategories
-}
+  // Tags
+  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
+  let promise_tags = moduleCompletion({prompt:tagPrompt,max_tokens:600})
+    .then(fetchTag =>{
+      let parsedTags = extractArrayFromString(fetchTag.trim());
+      if (parsedTags !== null) {
+        console.log("Behold, your tags:", parsedTags.toString());
+        parsedTags.push('RAKUBUN')
+        return addTaxonomy(parsedTags,'post_tag',client,language)
+      }else{
+        return []
+      }
+    })
 
-function isAutoBlogInfoComplete(blogInfo) {
-  // A list of ingredients we expect in our potion
-  const requiredIngredients = ['blogPassword', 'blogUrl', 'blogUsername'];
+  // Content
+  const promptDataContent = contentPromptGen(fetchTitle,blogInfo)
+  let promise_content = moduleCompletion({prompt:promptDataContent,max_tokens:3000})
+    .then(fetchContent => {
+      const convertContentHTML = markdownToHtml(fetchContent);
+      return convertContentHTML + '<br>' + disclaimer(language)
+    })
+  
+  // Post
+  let promise_post = Promise.all([promise_content, promise_categories, promise_tags, promise_image])
+    .then(([content, categories, tags, image]) => {
+      return post(fetchTitle, content, categories, tags, image, client)
+      //await saveArticleUpdateBlog(fetchTitle, content, categories, tags, images, blogInfo);
+    })
+    .catch(err=>{
+      console.log(err)
+    })
+    
 
-  // Checking every ingredient for its presence and clarity
-  return requiredIngredients.every(key => blogInfo[key] !== undefined && blogInfo[key] !== '');
 }
-
-async function autorsspost(db) {
+async function rsspost(db) {
   // Summon the active feeds from the ethereal database realms
   const feeds = await findActiveFeeds(db);
   
@@ -107,10 +136,13 @@ async function autorsspost(db) {
   // For each first unpublished article, we embark on a posting journey
   for (const article of firstUnpublishedArticles) {
     const blogInfo = await getBlogInfo(db, article.userId);
+    
     if(!isBlogInfoComplete(blogInfo)){
       console.log('You need to provide the blog informations')
       return
     }   
+
+    const client = wordpress.createClient(blogInfo);
     const language = await getLanguage(db, article.userId)
     // Prepare the data scroll for the article generation ritual
     let data = {
@@ -120,52 +152,176 @@ async function autorsspost(db) {
       WRITING_TONE: 'friendly',
       THEME:blogInfo.theme
     };
-    
-    console.log(`Generating article for: ${article._id}`);
-
-    let myCategories = await addTaxonomy(['AI Content',article.feedName ],'category',blogInfo,language)
-
-    const tagPrompt = categoryPromptGen(data.TITLE, 'post_tag',language)
-    const fetchTag= await moduleCompletion({prompt:tagPrompt,max_tokens:600});
-    const parsedTags = JSON.parse(fetchTag)
-    parsedTags.push('AI Content')
-
-    const myTags = await addTaxonomy(parsedTags,'post_tag',blogInfo,language)
-
-    const promptDataTitle = generatePrompt(data, "0");
-    const fetchTitle = await moduleCompletion(promptDataTitle);
-    data.TITLE = fetchTitle;
-    console.log(`Generated title : ${fetchTitle}`)
-
+    console.log(`Generating article for: ${article.title}`);
+ // Content
     const promptDataContent = generatePrompt(data, "8");
-    const fetchContent = await moduleCompletion(promptDataContent);
-    const convertContentHTML = markdownToHtml(fetchContent);
-
+    console.log(promptDataContent)
+    let promise_content = moduleCompletion(promptDataContent)
+    .then(fetchContent => {
+      const convertContentHTML = markdownToHtml(fetchContent);
+      return convertContentHTML
+    })
+    // Categories
+        let promise_categories = addTaxonomy(['RAKUBUN',article.feedName ], 'category', client, language)
+    // Tags
+        const tagPrompt = categoryPromptGen(data.TITLE, 'post_tag',language)
+        let promise_tags = moduleCompletion({prompt:tagPrompt,max_tokens:600})
+        .then(fetchTag =>{
+          let parsedTags = extractArrayFromString(fetchTag.trim());
+          if (parsedTags !== null) {
+            console.log("Behold, your tags:", parsedTags.toString());
+            parsedTags.push('RAKUBUN')
+            return addTaxonomy(parsedTags,'post_tag',client,language)
+          }else{
+            return []
+          }
+        })
+    // Title
+        const promptDataTitle = generatePrompt(data, "0");
+        let promise_title = moduleCompletion(promptDataTitle)
+          .then(fetchTitle=>{
+            data.TITLE = fetchTitle;
+            console.log(`Generated title : ${fetchTitle}`)
+            return fetchTitle
+          })
     //const seoSearch = await getSearchResult(data.TITLE);
     //const seoSearchHTML = searchResultsToHtml(seoSearch);
+// Image
+    let promise_images = getImageSearchResult(article.articleUrl)
+      .then(imageSearch => {
+        if (imageSearch.length > 0) {
+          const imageSearchHTML = imageSearchToHTML(imageSearch, article.articleUrl);
+          return imageSearchHTML
+        }else{
 
-    const imageSearch = await getImageSearchResult(article.articleUrl);
-    const imageSearchHTML = imageSearchToHTML(imageSearch,article.articleUrl);
+        }
 
-    const finalContent = convertContentHTML + '<br>' + imageSearchHTML + '<br>' + disclaimer(language);
-    
+      })
+    // Image Generation
+    const promptDataImage = imagePromptGen(article.title)
+    let promise_imageGeneration = moduleCompletion({model:"gpt-3.5-turbo-instruct",role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
+    .then(fetchPromptImage => {
+    return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
+    })
+    .then(imageData => {
+      const imagePath = imageData.imagePath;
+      const imageBits = fs.readFileSync(imagePath);
+      // Wrap the callback in a promise
+      return new Promise((resolve, reject) => {
+        client.uploadFile({
+          name: `${imageData.imageID}.png`,
+          type: 'image/png',
+          bits: imageBits,
+        }, (error, file) => {
+          if (error) {
+            console.log(error);
+            console.log('Error when adding the thumbnail');
+            reject(error); // Reject the promise on error
+          } else {
+            resolve(file); // Resolve the promise with the file on success
+          }
+        });
+      });
+    })
+
+    let promise_final  = Promise.all([promise_content,promise_images]) 
+    .then(([convertContentHTML,imageSearchHTML]) => {
+      return convertContentHTML + '<br>' + imageSearchHTML + '<br>' + disclaimer(language);
+    })
+    // Post 
+    Promise.all([promise_title,promise_final,promise_categories,promise_tags,promise_imageGeneration])
+      .then(([fetchTitle, finalContent, myCategories, myTags, image])=>{
+        post(fetchTitle, finalContent, myCategories, myTags, image, client);
+        updateArticleStatus(article._id);
+      }) 
+      .catch(err=>{
+        console.log(err)
+      })
+  }
+}
+function imagePromptGen(fetchTitle){
+  return `I will provide a title and you will respond with a JS array list of descriptive words to describe a person  in relation with the title so I can draw an image.be specific,lots of details.The keyword categories are : 
+  Subject
+  Example: a beautiful and powerful mysterious sorceress, smile, sitting on a rock, lightning magic, hat, detailed leather clothing with gemstones, dress, castle background
+  Medium
+  Example: digital art
+  Style
+  Example:, hyperrealistic, fantasy, dark art
+  image Resolution 
+  Example: highly detailed, sharp focus
+  Additional details
+  Example:sci-fi, dystopian
+  Color
+  Example: iridescent gold
+  Lighting
+  Example:  studio lighting
+  
+  Provide at least 5 keywords per category.
+  Provide a short description of what you plan to describe then provide the list of words.
+  
+  Title: ${fetchTitle}.`;
+}
+function contentPromptGen(fetchTitle,blogInfo){
+  return  `Write a detailed blog post about "${fetchTitle}". The blog aims to ${blogInfo.blogDescription}. This post should cater to ${blogInfo.targetAudience} with content that fits within the categories of ${blogInfo.articleCategories}. The language of the post should be ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
+}
+function titlePromptGen(blogInfo) {
+  return `Provide one specific subject relating to : ["${blogInfo.blogDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. Respond with the title string only.`;
+}  
+
+function extractArrayFromString(fetchTag) {
+  const arrayExtractor = /\[.*?\]/; // The spell to locate our array
+  const matched = fetchTag.match(arrayExtractor);
+
+  if (matched) {
     try {
-          // Post the concocted content to the mystical web
-          await post(fetchTitle, finalContent, myCategories, myTags, blogInfo);
-          
-          // Mark the article as published in the grand book of articles
-          updateArticleStatus(article._id);
-    } catch (error) {
-      console.log('Could not publish the article')
-      console.log(error)
+      // Attempting to transform the string into a noble array
+      const arrayString = matched[0];
+      const actualArray = JSON.parse(arrayString);
+      return actualArray; // The quest is a success!
+    } catch (e) {
+      // The spell backfired, alas! The array was a mirage.
+      console.error("Oops! Something went wrong during the transformation:", e);
+      return null; // Returning a solemn null, as a sign of our failed quest.
     }
+  } else {
+    // The array was but a legend, nowhere to be found.
+    console.log("No array detected in the string. Are you sure it's the right scroll?");
+    console.log({fetchTag})
+    return null; // A respectful null, acknowledging the absence of our quest's goal.
   }
 }
 
 
+async function updateCategories(myCategories,newCategories,type,client) {
+  // Let's handle the case where we need to fetch details first
+  if (Array.isArray(newCategories)) {
+    // It's an array, time for a group adventure
+    const promises = newCategories.map(cat => getTermDetails(cat, type, client));
+    const details = await Promise.all(promises);
+    // Using map to transform the details into a list of names (or whatever property you need)
+    myCategories.push(...details);
+  } else {
+    if(!newCategories){
+      return myCategories
+    }
+    // It's a single string, a solo mission
+    const detail = await getTermDetails(newCategories, type, client);
+    myCategories.push(detail);
+  }
+  return myCategories
+}
+
+function isAutoBlogInfoComplete(blogInfo) {
+  // A list of ingredients we expect in our potion
+  const requiredIngredients = ['blogPassword', 'blogUrl', 'blogUsername'];
+
+  // Checking every ingredient for its presence and clarity
+  return requiredIngredients.every(key => blogInfo[key] !== undefined && blogInfo[key] !== '');
+}
+
 // Tools
 
-async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, blogInfo) {
+async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, myImages, blogInfo) {
   try {
     // Step 1: Save the article in the articles collection
     const article = {
@@ -300,22 +456,22 @@ function categoryPromptGen(title,type,language){
 function categoryDescriptionPromptGen(category,type,language){
   return  `For a blog ${type}: '${category}', provide a description. Respond in ${language} only.`
 }
-async function addTaxonomy(taxonomyArray,type,blogInfo,language){
+async function addTaxonomy(taxonomyArray,type,client,language){
   const result = []
   for(let tag of taxonomyArray){
     try {
-      const checkTag = await categoryExists(tag,type,blogInfo);
+      const checkTag = await categoryExists(tag,type,client);
       
       if(!checkTag){
         console.log(`Creating new taxonomy (${type}) : ${tag}`)
-        const catObj = await createTaxonomy(tag,type,language,blogInfo)
+        const catObj = await createTaxonomy(tag,type,language,client)
         result.push(catObj)
       }else{
-        console.log(`Already exist : ${tag}`)
-        let categoryDetails = await getTermDetails(checkTag, type, blogInfo)
+        //console.log(`Already exist ${type}: ${tag} ${checkTag}`)
+        let categoryDetails = await getTermDetails(checkTag, type, client)
         const isComplete = isTaxonomyComplete(categoryDetails)
         if(!isComplete){
-          categoryDetails = await createTaxonomy(categoryDetails.name, type, language, blogInfo)
+          categoryDetails = await createTaxonomy(categoryDetails.name, type, language, client)
         }
         result.push(categoryDetails)
       }
@@ -325,15 +481,15 @@ async function addTaxonomy(taxonomyArray,type,blogInfo,language){
   }
   return result
 }
-async function createTaxonomy(taxonomyName,type,language, blogInfo){
+async function createTaxonomy(taxonomyName,type,language, client){
   const tagDescriptionPrompt = categoryDescriptionPromptGen(taxonomyName,type,language)
-  const fetchtagDescription = await moduleCompletion({prompt:tagDescriptionPrompt,max_tokens:600});
+  const fetchtagDescription = await moduleCompletion({model:"gpt-3.5-turbo-instruct",prompt:tagDescriptionPrompt,max_tokens:600});
   const catObj = {name:capitalizeFirstLetter(taxonomyName),description:fetchtagDescription}
-  await ensureCategory(catObj, type, blogInfo)
+  await ensureCategory(catObj, type, client)
   return catObj
 }
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-module.exports = {autorsspost,autoBlog}
+module.exports = {autoBlog,rsspost}

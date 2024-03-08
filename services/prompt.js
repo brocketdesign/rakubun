@@ -10,7 +10,7 @@ function generatePrompt(data, type) {
         case '0':
             // Setting up for title generation
             const { TITLE:feedTitle,THEME:feedTheme ,METADESCRIPTION:feedDescription, LANGUAGE : feedLanguage,WRITING_STYLE: feedStyle, WRITING_TONE : feedTone } = data;
-            result.prompt = `Invent a compelling title for a narrative on : ["${feedTitle}"] tailored to a ${feedLanguage}-speaking audience.${feedTheme ?`The main theme is ${feedTheme}`:'' }. Aim for originality and ensure the title does not mimic existing blog names or titles. The tone should be ${feedTone}, aligning with the article's ${feedStyle} style. Please respond in ${feedLanguage} and prioritize freshness and appeal in your suggestions. Provide only the title without "|" or "-"`;
+            result.prompt = `Provide a SEO title in ${feedLanguage} about : ["${feedTitle}"] tailored to a ${feedLanguage}-speaking audience.${feedTheme ?`The main theme is ${feedTheme}`:'' }. The tone should be ${feedTone}, aligning with the article's ${feedStyle} style. You MUST respond in ${feedLanguage} .`;
             result.max_tokens = 100 ; // Titles are usually short and sweet
             break;
         case '1':
@@ -69,7 +69,7 @@ function generatePrompt(data, type) {
         case '8':
             // Setting up for article paragraph generation
             const { TITLE: finalTitle,THEME:finalTheme, WRITING_STYLE: finalStyle, LANGUAGE: finalLanguage, WRITING_TONE: finalTone } = data;
-            result.prompt = `Write an short blog post about "${finalTitle}" in ${finalLanguage}.${finalTheme ?`The main theme is ${finalTheme}`:'' }.Make short sentences, using simple words to improve readability. Style: ${finalStyle}. Tone: ${finalTone}. Use Markdown.`;
+            result.prompt = `Write a blog post about "${finalTitle}" in ${finalLanguage}.${finalTheme ?`The main theme is ${finalTheme}`:'' }.Provide a well structured and readable article. Style: ${finalStyle}. Tone: ${finalTone}. Use Markdown. you MUST respond in ${finalLanguage}`;
             result.max_tokens = 1000 ; // A decent length for a paragraph
             break;
             

@@ -12,7 +12,7 @@ const fetchOpenAICompletion = async (messages,max_tokens, res) => {
                 },
                 method: "POST",
                 body: JSON.stringify({
-                    model: "gpt-3.5-turbo-16k",
+                    model: "gpt-3.5-turbo-0125",
                     messages,
                     max_tokens,
                     temperature: 1.2,
@@ -75,27 +75,50 @@ const moduleCompletion = async (promptData) => {
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  const messages = [
-    {"role": "system", "content": "You are a proficient blog writer."},
-    {"role": "user", "content": promptData.prompt}
-  ]
 
-  const response = await getChatResponse(messages, promptData.max_tokens)
-  return response.choices[0].message.content
+  const response = await getChatResponse(promptData, promptData.max_tokens)
+  if(promptData.model && promptData.model.includes('gpt-3.5-turbo-instruct')){
+    return response.choices[0].text
+  }else{
+    return response.choices[0].message.content
+  }
 
-    async function getChatResponse(messages, max_tokens) {
+    async function getChatResponse(promptData, max_tokens) {
       try {
-        const response = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo-16k",
-          messages: messages,
-          max_tokens: max_tokens,
-          temperature: 1.2,
-          top_p: 0.95,
-          frequency_penalty: 1.1, // Adjust if you want to penalize frequent tokens
-          presence_penalty: 1.1, // Adjust if you want to penalize new tokens
-          stream: false,
-          n: 1,
-        });
+
+        let response
+        if(promptData.model && promptData.model.includes('gpt-3.5-turbo-instruct')){
+          const options = {
+            model: promptData.model || "gpt-3.5-turbo-0125",
+            prompt: promptData.prompt,
+            max_tokens: max_tokens,
+            temperature: 1.2,
+            top_p: 0.95,
+            frequency_penalty: 1.1, // Adjust if you want to penalize frequent tokens
+            presence_penalty: 1.1, // Adjust if you want to penalize new tokens
+            stream: false,
+            n: 1,
+          }
+          response = await openai.completions.create(options);
+        }else{
+          const messages = [
+            {"role": "system", "content": "You are a proficient blog writer."},
+            {"role": "user", "content": promptData.prompt}
+          ]
+
+          const options = {
+            model:"gpt-3.5-turbo-0125",
+            messages: messages,
+            max_tokens: max_tokens,
+            temperature: 1,
+            top_p: 0.95,
+            frequency_penalty: 0.75, // Adjust if you want to penalize frequent tokens
+            presence_penalty: 0.75, // Adjust if you want to penalize new tokens
+            stream: false,
+            n: 1,
+          }
+          response = await openai.chat.completions.create(options);
+        }
 
         return response;
       } catch (error) {
@@ -175,7 +198,7 @@ const moduleCompletionOllama = async (promptData) => {
   ];
 
   try {
-    const response = await getChatResponse(messages, promptData.max_tokens);
+    const response = await getChatResponseOllama(messages, promptData.max_tokens);
     if (!response.ok) {
       console.error("Ollama returned an error:", await response.text());
       throw new Error('Failed to fetch chat response from Ollama.');
@@ -188,7 +211,7 @@ const moduleCompletionOllama = async (promptData) => {
   }
 };
 
-async function getChatResponse(messages, max_tokens) {
+async function getChatResponseOllama(messages, max_tokens) {
   try {
     const response = await fetch(
       "http://localhost:11434/api/chat",

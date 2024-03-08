@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/brocketdesign/rakubun#readme",
   "dependencies": {
+    "a1111-webui-api": "^1.6.10002",
     "axios": "^1.6.5",
     "bcrypt": "^5.1.1",
     "compression": "^1.7.4",
