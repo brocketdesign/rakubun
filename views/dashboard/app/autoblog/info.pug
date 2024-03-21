@@ -20,7 +20,7 @@ block mainContent
                         i.fas.fa-trash-alt
             // Add more buttons with icons as needed
     form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
-        .row.row-cols-2
+        .row.row-cols-1.row-cols-sm-2
             .col
                 input#blogId(type="hidden", name="blogId", data-id=(blogId ? blogId : ""))
                 .card.my-2

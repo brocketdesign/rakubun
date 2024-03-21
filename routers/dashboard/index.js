@@ -43,6 +43,7 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
     // Fetching blog data for the current user
     const blogData = await global.db.collection('blogInfos')
                             .find({userId: new ObjectId(req.user._id)})
+                            .sort({_id:-1})
                             .toArray(); // Convert cursor to an array
 
     // Now 'blogData' contains an array of blog information objects for the current user

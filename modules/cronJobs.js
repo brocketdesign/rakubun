@@ -7,6 +7,11 @@ let cronJobsMap = {};
 
 // Function to set a cron job for a user
 const setCronJobForUser = async (db, blogId, schedule) => {
+
+  if (process.env.NODE_ENV !== 'local') {
+    return
+  } 
+  
   const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(blogId) });
 
   if (cronJobsMap[blogId] ) {
@@ -30,14 +35,22 @@ const setCronJobForUser = async (db, blogId, schedule) => {
 
 // Function to initialize all cron jobs from database at app start
 const initializeCronJobs = async (db) => {
+  if (process.env.NODE_ENV !== 'local') {
+    return
+  } 
+
   // Assuming you have a function to get all user schedules from your database
   const blogs = await db.collection('blogInfos').find({ isActive: true }).toArray(); // You'll need to implement this
   blogs.forEach(blog => {
     setCronJobForUser(db, blog._id, blog.postFrequency);
   });
   //RSS auto blog post
-  //rsspost(db)
+  rsspost(db)
+  let rssJob = cron.schedule('*/30 * * * *', () => {
+    rsspost(db)
+  });
 };
+
 
 module.exports = { setCronJobForUser, initializeCronJobs };
 

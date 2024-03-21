@@ -109,6 +109,11 @@ async function autoBlog(blogInfo,db){
 
 }
 async function rsspost(db) {
+
+  if (process.env.NODE_ENV !== 'local') {
+    return
+  } 
+  
   // Summon the active feeds from the ethereal database realms
   const feeds = await findActiveFeeds(db);
   
