@@ -40,7 +40,6 @@ router.get('/app/feed', ensureAuthenticated,ensureMembership, async (req, res) =
 
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
   const blogUrl = req.query.blogUrl
-  console.log({blogUrl})
   let blogData
   try {
     // Fetching blog data for the current user
@@ -53,10 +52,6 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
     }else{
       blogData = listOfBlogs(blogData,blogUrl)
     }
-
-    console.log(blogData)
-    // Now 'blogData' contains an array of blog information objects for the current user
-    // Pass this data to the template
     res.render('dashboard/app/autoblog/list', {
       user: req.user,
       blogData, 
