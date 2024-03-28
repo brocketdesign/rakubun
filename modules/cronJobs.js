@@ -42,12 +42,12 @@ const initializeCronJobs = async (db) => {
   // Assuming you have a function to get all user schedules from your database
   const blogs = await db.collection('blogInfos').find({ isActive: true }).toArray(); // You'll need to implement this
   blogs.forEach(blog => {
-    setCronJobForUser(db, blog._id, blog.postFrequency);
+    //setCronJobForUser(db, blog._id, blog.postFrequency);
   });
   //RSS auto blog post
-  rsspost(db)
-  let rssJob = cron.schedule('*/30 * * * *', () => {
-    rsspost(db)
+  //rsspost(db)
+  let rssJob = cron.schedule('*/10 * * * *', () => {
+    //rsspost(db)
   });
 };
 

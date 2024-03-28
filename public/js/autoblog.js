@@ -34,6 +34,7 @@ $(document).ready(function() {
                         $input.val(blogInfo[key]);
                     }
                 });
+                $('a#list').attr('href',`/dashboard/app/autoblog?blogUrl=${blogInfo.blogUrl}`)
             },
             error: function(xhr, status, error) {
                 // Handle errors

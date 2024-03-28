@@ -38,7 +38,7 @@ async function autoBlog(blogInfo,db){
   // Title
   const promptDataTitle = titlePromptGen(blogInfo)
   const untreatedTitle = await moduleCompletion({model:"gpt-3.5-turbo-instruct",prompt:promptDataTitle,max_tokens:100});
-  const fetchTitle = untreatedTitle.trim()
+  const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
   console.log(`Generated title : ${fetchTitle}`)
 
 
