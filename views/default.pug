@@ -38,12 +38,12 @@ html
       else 
         .top-nav.auto-hide
             nav.navbar.navbar-expand-md.navbar-white.bg-white.py-0.shadow-0.border-bottom
-              .container-fluid.text-start.p-0(style="justify-content: flex-start !important;")
+              .container-fluid.text-start.p-0.w-auto.m-0(style="justify-content: flex-start !important;")
                 a.navbar-brand(href='/')
                     img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 30px;")
                     | RAKUBUN
-              button#sidebarMenuToggleSmall.btn.rounded-0.shadow-0(type="button")
-                .text-center(style="cursor:pointer")
+              button#sidebarMenuToggleSmall.btn.rounded-0.shadow-0.col(type="button")
+                .text-end(style="cursor:pointer")
                   img.border.border-dark(src=user.profileImage || 'https://placehold.co/51x76', alt='User Profile Image' style="object-fit: contain; width: 45px; height: 45px; border-radius: 50%; object-fit: cover;")
       #back-alert.alert-container.container.position-relative(style="cursor:pointer")
         if messages.error

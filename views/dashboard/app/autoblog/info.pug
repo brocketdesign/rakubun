@@ -2,22 +2,24 @@ extends ../../base
 
 block mainContent
     h1 Blog Information Form
-    .card.toolbar.btn-toolbar.my-2
-        .card-body
-            a.btn.btn-dark.me-2#list(type="button", href="#")
-                i.fas.fa-robot 
-            a.btn.btn-success.me-2(type="button", href="/dashboard/app/autoblog/info/")
-                i.fas.fa-plus 
-            if blogId
-                button.btn.btn-info.text-white.me-2.duplicate-blog-btn(data-id=blogId)
-                    i.far.fa-copy
-            button.btn.btn-warning.me-2(type="button")
-                i.fas.fa-edit 
-            button.btn.btn-info.me-2(type="button")
-                i.fas.fa-cog 
-            if blogId
-                button.delete-blog-btn.btn.btn-danger.float-end.mx-2(data-id=blogId) 
-                        i.fas.fa-trash-alt
+    .toolbar.btn-toolbar.my-2
+        .toolbar-body.py-3.px-2.row.w-100
+            .col-10
+                a.btn.btn-dark.shadow-none.m-2#list(type="button", href="#")
+                    i.fas.fa-robot 
+                a.btn.btn-success.shadow-none.m-2(type="button", href="/dashboard/app/autoblog/info/")
+                    i.fas.fa-plus 
+                if blogId
+                    button.btn.btn-info.shadow-none.text-white.m-2.duplicate-blog-btn(data-id=blogId)
+                        i.far.fa-copy
+                button.btn.btn-warning.shadow-none.m-2(type="button")
+                    i.fas.fa-edit 
+                button.btn.btn-info.shadow-none.m-2(type="button")
+                    i.fas.fa-cog 
+            .col-2
+                if blogId
+                    button.delete-blog-btn.btn.btn-danger.shadow-none.float-end.my-2(data-id=blogId) 
+                            i.fas.fa-trash-alt
             // Add more buttons with icons as needed
     form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
         .row.row-cols-1.row-cols-sm-2

@@ -1,12 +1,15 @@
 extends ../../base
 
 block mainContent
-    h1 Blog Information
-    .card.toolbar.btn-toolbar.my-2
-        .card-body
-            a.btn.btn-dark(type="button", href="/dashboard/app/autoblog/")
+    div.col.d-flex.align-items-center.justify-content-center.mb-4
+        i.fa.fa-robot.mx-3.display-6
+        i.fa.fa-arrow-right
+        i.fab.fa-wordpress.mx-3.display-6
+    .toolbar.btn-toolbar.my-2
+        .toolbar-body.py-3.px-2
+            a.btn.btn-dark.shadow-none(type="button", href="/dashboard/app/autoblog/")
                 i.fas.fa-list 
-            a.btn.btn-success.mx-2(type="button", href="/dashboard/app/autoblog/info/")
+            a.btn.btn-success.shadow-none.mx-2(type="button", href="/dashboard/app/autoblog/info/")
                 i.fas.fa-plus 
 
     if !blogUrl
@@ -15,9 +18,10 @@ block mainContent
                 .col 
                     .card.mb-3(data-id=blog._id)
                         .card-body
+                            i.fab.fa-wordpress
                             h5.card-title #{blog.blogName}
                             p.card-text #{blog.blogUrl}
-                            a.btn.btn-primary.mx-2(href=`/dashboard/app/autoblog/info/${blog._id}`) 
+                            a.btn.btn-primary.me-2(href=`#`) 
                                 i.fa.fa-cog
                             a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogUrl=${blog.blogUrl}`) 
                                 i.fa.fa-robot
@@ -25,10 +29,11 @@ block mainContent
         each blog in blogData
             .card.mb-3(data-id=blog._id)
                 .card-body
+                    i.fa.fa-robot
                     h5.card-title #{blog.blogName}
                     h6.card-subtitle.mb-2.text-muted Blog ID: #{blog._id}
                     p.card-text #{blog.blogDescription.substring(0, 200)}...
-                    a.btn.btn-primary.mx-2(href=`/dashboard/app/autoblog/info/${blog._id}`)
+                    a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/info/${blog._id}`)
                         i.fa.fa-cog
                     // Toggle Button for Activating/Deactivating Blog
                     if blog.isActive
