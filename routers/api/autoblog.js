@@ -7,23 +7,10 @@ const { getCategoryId } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs');
 var wordpress = require("wordpress");
 
-router.post('/info', async (req, res) => {
-  const userId = req.user._id;
-  const blogData = req.body;
-
-  try {
-    const blogId = await saveBlogInfo(userId, blogData);
-    const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(blogId) });
-    await setCronJobForUser(db, blogId,blogInfo.postFrequency)
-    res.status(201).send({ message: 'Blog info saved successfully', blogId });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send('Internal server error');
-  }
-});
 
 router.get('/info/category/:blogId', async (req, res) => {
   const { blogId } = req.params;
+
   try{
     const blogInfo = await global.db.collection('blogInfos')
                              .findOne({_id: new ObjectId(blogId), userId: new ObjectId(req.user._id)});
@@ -35,6 +22,8 @@ router.get('/info/category/:blogId', async (req, res) => {
     blogInfo.username = blogInfo.blogUsername
     blogInfo.url = blogInfo.blogUrl
     blogInfo.password = blogInfo.blogPassword
+
+
     const client = wordpress.createClient(blogInfo);
 
     const categoryIds = await getCategoryId('category',client)
@@ -47,7 +36,8 @@ router.get('/info/category/:blogId', async (req, res) => {
   }
 
 });
-router.get('/info/:blogId', async (req, res) => {
+
+router.get('/blog-info/:blogId', async (req, res) => {
   const { blogId } = req.params;
 
   try {
@@ -64,7 +54,20 @@ router.get('/info/:blogId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-router.delete('/info/:blogId', async (req, res) => {
+router.post('/blog-info', async (req, res) => {
+  const userId = req.user._id;
+  const blogData = req.body;
+
+  try {
+    const blogId = await saveBlogInfo(userId, blogData);
+
+    res.status(201).send({ message: 'Blog info saved successfully', blogId });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('Internal server error');
+  }
+});
+router.delete('/blog/:blogId', async (req, res) => {
   const { blogId } = req.params;
 
   try {
@@ -82,8 +85,7 @@ router.delete('/info/:blogId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-
-router.post('/duplicate/:blogId', async (req, res) => {
+router.post('/duplicate-blog/:blogId', async (req, res) => {
   const { blogId } = req.params;
   try {
     // Fetch the existing blog info
@@ -111,6 +113,87 @@ router.post('/duplicate/:blogId', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
+router.get('/bot-info/:botId', async (req, res) => {
+  const { botId } = req.params;
+
+  try {
+    const botInfo = await global.db.collection('botInfos')
+                             .findOne({_id: new ObjectId(botId), userId: new ObjectId(req.user._id)});
+
+    if (!botInfo) {
+      return res.status(404).json({ message: 'Blog information not found or access denied.' });
+    }
+    botInfo.botId = botId
+    res.json(botInfo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+router.post('/bot-info', async (req, res) => {
+  const userId = req.user._id;
+  const botData = req.body;
+
+  try {
+    const botId = await saveBotInfo(userId, botData);
+    const botInfo = await db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
+
+    await setCronJobForUser(db, botId, botInfo.postFrequency)
+    res.status(201).send({ message: 'Bot info saved successfully', botId });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('Internal server error');
+  }
+});
+router.delete('/bot/:botId', async (req, res) => {
+  const { botId } = req.params;
+
+  try {
+    // Optional: Check if the blog info belongs to the user before deletion
+    const deletionResult = await global.db.collection('botInfos')
+                                  .deleteOne({_id: new ObjectId(botId), userId: new ObjectId(req.user._id)});
+    
+    if (deletionResult.deletedCount === 0) {
+      return res.status(404).json({ message: 'Blog information not found or access denied.' });
+    }
+
+    res.json({ message: 'Blog information deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+router.post('/duplicate-bot/:botId', async (req, res) => {
+  const { botId } = req.params;
+  console.log({botId})
+  try {
+    // Fetch the existing blog info
+    const botInfo = await global.db.collection('botInfos')
+                        .findOne({_id: new ObjectId(botId), userId: new ObjectId(req.user._id)});
+
+    if (!botInfo) {
+      return res.status(404).send('Blog information not found.');
+    }
+
+    // Remove the _id property to ensure MongoDB assigns a new _id when inserting
+    delete botInfo._id;
+    botInfo.botName = botInfo.botName + '(DUPLICATE)'
+    // Insert the duplicated blog info as a new document
+    const insertResult = await global.db.collection('botInfos').insertOne(botInfo);
+
+    if (insertResult.acknowledged) {
+      // Successfully duplicated, you can redirect or send back success response
+      res.send({ message: 'Blog duplicated successfully', newBotId: insertResult.insertedId });
+    } else {
+      res.status(500).send('Failed to duplicate blog info.');
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal server error');
+  }
+});
+
 //TOOLS
 async function saveBlogInfo(userId, blogData) {
   try {
@@ -146,6 +229,41 @@ async function saveBlogInfo(userId, blogData) {
     throw error; // Rethrow the error to be handled by the caller
   }
 }
+async function saveBotInfo(userId, botData) {
 
+  try {
+    // Check if blogData contains blogId
+    if (botData.botId && botData.botId != '') {
+      // Attempt to update the existing blog info
+      const botId = botData.botId;
+      delete botData.botId; // Remove blogId from botData to prevent it from being updated in the document
+
+      const updateResult = await global.db.collection('botInfos').updateOne(
+        { _id: new ObjectId(botId), userId: new ObjectId(userId) }, // Ensure that the blog belongs to the user
+        { $set: botData }
+      );
+
+      // Check if the document to update was found and modified
+      if (updateResult.matchedCount === 0) {
+        throw new Error('No matching document found to update');
+      }
+
+      return botId;
+    } else {
+      console.log(`New blog`)
+      // Insert a new blog info document
+      const botInfo = {
+        userId: new ObjectId(userId),
+        ...botData
+      };
+      
+      const insertResult = await global.db.collection('botInfos').insertOne(botInfo);
+      return insertResult.insertedId;
+    }
+  } catch (error) {
+    console.error("Error saving blog info:", error);
+    throw error; // Rethrow the error to be handled by the caller
+  }
+}
 
 module.exports = router

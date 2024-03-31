@@ -39,23 +39,24 @@ router.get('/app/feed', ensureAuthenticated,ensureMembership, async (req, res) =
 // Assuming 'ensureAuthenticated' and 'ensureMembership' middleware functions are correctly setting up 'req.user'
 
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
-  const blogUrl = req.query.blogUrl
+  const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null
+  const userId = new ObjectId(req.user._id)
   let blogData
+  let botData
   try {
     // Fetching blog data for the current user
-    blogData = await global.db.collection('blogInfos')
-                            .find({userId: new ObjectId(req.user._id)})
-                            .sort({_id:-1})
-                            .toArray(); 
-    if(blogUrl){
-      blogData = getDataFor(blogData,blogUrl)
-    }else{
-      blogData = listOfBlogs(blogData,blogUrl)
+    blogData = await global.db.collection('blogInfos').find({userId: userId}).toArray()                  
+
+    if(blogId != null){
+      blogData = await global.db.collection('blogInfos').findOne({_id : blogId})
+      botData = await global.db.collection('botInfos').find({blogId : req.query.blogId}).toArray();
     }
+
     res.render('dashboard/app/autoblog/list', {
       user: req.user,
       blogData, 
-      blogUrl,
+      botData,
+      blogId,
       title: "RAKUBUN - Dashboard"
     });
   } catch (error) {
@@ -64,41 +65,34 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
   }
 });
 
-function listOfBlogs(blogData) {
-  // Use a Map to keep track of unique URLs and their corresponding names
-  const blogMap = new Map();
+router.get('/app/autoblog/bot/', async (req, res) => {
+  let { blogId, botId } =  req.query || null
+  try {
 
-  // Loop through each blog in blogData
-  blogData.forEach(blog => {
-    // If the URL isn't already in the map, add it with its name
-    if (!blogMap.has(blog.blogUrl)) {
-      blogMap.set(blog.blogUrl, blog.blogName);
+    if(!blogId){
+      blogId = await global.db.collection('botInfos').findOne({_id:new ObjectId(botId)})
+      .then((botInfo)=>{
+        return botInfo.blogId
+      })
     }
-  });
 
-  // Now, let's convert our map back into an array of objects as requested
-  const uniqueBlogsArray = Array.from(blogMap, ([blogUrl, blogName]) => ({
-    blogUrl,
-    blogName
-  }));
+    res.render('dashboard/app/autoblog/bot', {
+      user: req.user,
+      blogId, 
+      botId,
+      title: "RAKUBUN - Dashboard"
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('Internal server error');
+  }
+});
 
-  return uniqueBlogsArray;
-}
-
-
-function getDataFor(blogData, blogUrl) {
-  // Filter the blogData array to find objects where the blogUrl matches
-  const matchingBlogs = blogData.filter(blog => blog.blogUrl === blogUrl);
-
-  // Return the array of objects that have the matching blogUrl
-  return matchingBlogs;
-}
-
-router.get('/app/autoblog/info/:blogId?', async (req, res) => {
+router.get('/app/autoblog/blog-info/:blogId?', async (req, res) => {
   const { blogId } = req.params || null; // Extract blogId from URL parameters, if available
 
   try {
-    res.render('dashboard/app/autoblog/info', {
+    res.render('dashboard/app/autoblog/blog-info', {
       user: req.user,
       blogId, // Pass the specific blog info or null to the template
       title: "RAKUBUN - Dashboard"
@@ -108,6 +102,5 @@ router.get('/app/autoblog/info/:blogId?', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
-
 
 module.exports = router;

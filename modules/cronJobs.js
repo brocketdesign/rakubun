@@ -6,30 +6,33 @@ const {autoBlog,rsspost} = require('./autoblog')
 let cronJobsMap = {};
 
 // Function to set a cron job for a user
-const setCronJobForUser = async (db, blogId, schedule) => {
+const setCronJobForUser = async (db, botId, schedule) => {
 
   if (process.env.NODE_ENV !== 'local') {
     return
   } 
   
-  const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(blogId) });
+  const botInfo = await db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
+  const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(botInfo.blogId) });
 
-  if (cronJobsMap[blogId] ) {
-    cronJobsMap[blogId].stop();
+  if (cronJobsMap[botId] ) {
+    cronJobsMap[botId].stop();
   }
   
-  if(!blogInfo || !blogInfo.isActive){
-    if (cronJobsMap[blogId] ) {
-      cronJobsMap[blogId].stop();
+  if(!botInfo || !botInfo.isActive){
+    if (cronJobsMap[botId] ) {
+      cronJobsMap[botId].stop();
     }
-    console.log(`Stop job for blog ${blogId}`)
+    console.log(`Stop job for blog ${botId}`)
     return
   }
-  autoBlog(blogInfo,db)
-  console.log(`Set job for blog ${blogId} at ${blogInfo.postFrequency}`)
-  cronJobsMap[blogId] = cron.schedule(blogInfo.postFrequency, () => {
-    console.log(`Doing something for blog ${blogId}`);
-    autoBlog(blogInfo,db)
+  const combinedPowers = { ...botInfo, ...blogInfo };
+
+  autoBlog(combinedPowers,db)
+  console.log(`Set job for blog ${botId} at ${botInfo.postFrequency}`)
+  cronJobsMap[botId] = cron.schedule(botInfo.postFrequency, () => {
+    console.log(`Doing something for blog ${botId}`);
+    autoBlog(botInfo,db)
   });
 };
 

@@ -9,10 +9,14 @@ block mainContent
         .toolbar-body.py-3.px-2
             a.btn.btn-dark.shadow-none(type="button", href="/dashboard/app/autoblog/")
                 i.fas.fa-list 
-            a.btn.btn-success.shadow-none.mx-2(type="button", href="/dashboard/app/autoblog/info/")
+            if blogId
+                - url = `/dashboard/app/autoblog/bot?blogId=${blogId}`
+            else 
+                - url = `/dashboard/app/autoblog/blog-info/`
+            a.btn.btn-success.shadow-none.mx-2(type="button", href=url)
                 i.fas.fa-plus 
 
-    if !blogUrl
+    if !blogId
         .row.row-cols-1.row-cols-md-3.my-5
             each blog in blogData
                 .col 
@@ -21,28 +25,34 @@ block mainContent
                             i.fab.fa-wordpress
                             h5.card-title #{blog.blogName}
                             p.card-text #{blog.blogUrl}
-                            a.btn.btn-primary.me-2(href=`#`) 
+                            a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/blog-info/${blog._id}`) 
                                 i.fa.fa-cog
-                            a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogUrl=${blog.blogUrl}`) 
+                            a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
                                 i.fa.fa-robot
     else
-        each blog in blogData
-            .card.mb-3(data-id=blog._id)
-                .card-body
-                    i.fa.fa-robot
-                    h5.card-title #{blog.blogName}
-                    h6.card-subtitle.mb-2.text-muted Blog ID: #{blog._id}
-                    p.card-text #{blog.blogDescription.substring(0, 200)}...
-                    a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/info/${blog._id}`)
-                        i.fa.fa-cog
-                    // Toggle Button for Activating/Deactivating Blog
-                    if blog.isActive
-                        button.toggle-blog-btn.btn.btn-success.mx-2(data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', false)`) 
-                            i.fas.fa-toggle-on
-                    else
-                        button.toggle-blog-btn.btn.btn-secondary.mx-2(data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', true)`) 
-                            i.fas.fa-toggle-off
-                    button.delete-blog-btn.btn.btn-danger.float-end.mx-2(data-id=blog._id)
-                        i.fas.fa-trash-alt
+        span 
+            i.fab.fa-wordpress
+            span.mx-2 #{blogData.blogName}
+        if botData
+            .row.row-cols-1.row-cols-md-3.my-5
+                each bot in botData
+                    .col 
+                        .card.mb-3(data-id=bot._id)
+                            .card-body
+                                i.fa.fa-robot
+                                h5.card-title #{bot.botName}
+                                h6.card-subtitle.mb-2.text-muted Bot ID: #{bot._id}
+                                p.card-text #{bot.botDescription ? bot.botDescription.substring(0, 200) : ''}...
+                                a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}`)
+                                    i.fa.fa-cog
+                                // Toggle Button for Activating/Deactivating Blog
+                                if bot.isActive
+                                    button.toggle-bot-btn.btn.btn-success.mx-2(data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', false)`) 
+                                        i.fas.fa-toggle-on
+                                else
+                                    button.toggle-bot-btn.btn.btn-secondary.mx-2(data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', true)`) 
+                                        i.fas.fa-toggle-off
+                                button.delete-bot-btn.btn.btn-danger.float-end.mx-2(data-id=bot._id)
+                                    i.fas.fa-trash-alt
 
     script(src="/js/autoblog.js")

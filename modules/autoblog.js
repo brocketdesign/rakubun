@@ -18,15 +18,18 @@ async function autoBlog(blogInfo,db){
   blogInfo.username = blogInfo.blogUsername
   blogInfo.url = blogInfo.blogUrl
   blogInfo.password = blogInfo.blogPassword
+
   const language = blogInfo.postLanguage
   const client = wordpress.createClient(blogInfo);
+  const modelGPT = blogInfo.postgpt == 'gpt3' ? 'gpt-3.5-turbo-0125' : 'gpt-4-0125-preview'
 
+  console.log({modelGPT})
   if(!isBlogInfoComplete(blogInfo)){
     console.log('You need to provide the blog informations')
     return
   }   
   
-  console.log(`Generating article for: ${blogInfo.blogName}`);
+  console.log(`Generating article for: ${blogInfo.botName}`);
 
   // Categories
   let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language)
@@ -37,14 +40,14 @@ async function autoBlog(blogInfo,db){
 
   // Title
   const promptDataTitle = titlePromptGen(blogInfo)
-  const untreatedTitle = await moduleCompletion({model:"gpt-3.5-turbo-instruct",prompt:promptDataTitle,max_tokens:100});
+  const untreatedTitle = await moduleCompletion({model:modelGPT,prompt:promptDataTitle,max_tokens:100});
   const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
   console.log(`Generated title : ${fetchTitle}`)
 
 
   // Image Generation
   const promptDataImage = imagePromptGen(fetchTitle)
-  let promise_image = moduleCompletion({model:"gpt-3.5-turbo-instruct",role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
+  let promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
   .then(fetchPromptImage => {
     return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
   })
@@ -76,7 +79,7 @@ async function autoBlog(blogInfo,db){
   
   // Tags
   const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
-  let promise_tags = moduleCompletion({prompt:tagPrompt,max_tokens:600})
+  let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600})
     .then(fetchTag =>{
       let parsedTags = extractArrayFromString(fetchTag.trim());
       if (parsedTags !== null) {
@@ -90,7 +93,7 @@ async function autoBlog(blogInfo,db){
 
   // Content
   const promptDataContent = contentPromptGen(fetchTitle,blogInfo)
-  let promise_content = moduleCompletion({prompt:promptDataContent,max_tokens:3000})
+  let promise_content = moduleCompletion({model:modelGPT, prompt:promptDataContent,max_tokens:3000})
     .then(fetchContent => {
       const convertContentHTML = markdownToHtml(fetchContent);
       return convertContentHTML + '<br>' + disclaimer(language)
@@ -267,10 +270,10 @@ function imagePromptGen(fetchTitle){
   Title: ${fetchTitle}.`;
 }
 function contentPromptGen(fetchTitle,blogInfo){
-  return  `Write a detailed blog post about "${fetchTitle}". The blog aims to ${blogInfo.blogDescription}. This post should cater to ${blogInfo.targetAudience} with content that fits within the categories of ${blogInfo.articleCategories}. The language of the post should be ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
+  return  `Write a detailed blog post about "${fetchTitle}". The blog aims to ${blogInfo.botDescription}. This post should cater to ${blogInfo.targetAudience} with content that fits within the categories of ${blogInfo.articleCategories}. The language of the post should be ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
 }
 function titlePromptGen(blogInfo) {
-  return `Provide one specific subject relating to : ["${blogInfo.blogDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. Respond with the title string only.`;
+  return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. Respond with the title string only.`;
 }  
 
 function extractArrayFromString(fetchTag) {

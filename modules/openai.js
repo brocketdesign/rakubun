@@ -85,11 +85,12 @@ const moduleCompletion = async (promptData) => {
 
     async function getChatResponse(promptData, max_tokens) {
       try {
+        let modelGPT = promptData.model
 
         let response
         if(promptData.model && promptData.model.includes('gpt-3.5-turbo-instruct')){
           const options = {
-            model: promptData.model || "gpt-3.5-turbo-0125",
+            model: modelGPT || "gpt-3.5-turbo-0125",
             prompt: promptData.prompt,
             max_tokens: max_tokens,
             temperature: 1.2,
@@ -107,7 +108,7 @@ const moduleCompletion = async (promptData) => {
           ]
 
           const options = {
-            model:"gpt-3.5-turbo-0125",
+            model:modelGPT,
             messages: messages,
             max_tokens: max_tokens,
             temperature: 1,

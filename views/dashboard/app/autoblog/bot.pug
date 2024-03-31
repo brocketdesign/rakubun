@@ -5,56 +5,27 @@ block mainContent
     .toolbar.btn-toolbar.my-2
         .toolbar-body.py-3.px-2.row.w-100
             .col-10
-                a.btn.btn-dark.shadow-none.m-2#list(type="button", href="#")
+                a.btn.btn-dark.shadow-none.m-2#list(type="button", href=`/dashboard/app/autoblog?botId=${botId}&blogId=${blogId}`)
                     i.fas.fa-robot 
                 a.btn.btn-success.shadow-none.m-2(type="button", href="/dashboard/app/autoblog/info/")
                     i.fas.fa-plus 
-                if blogId
-                    button.btn.btn-info.shadow-none.text-white.m-2.duplicate-blog-btn(data-id=blogId)
+                if botId
+                    button.btn.btn-info.shadow-none.text-white.m-2.duplicate-bot-btn(data-id=botId)
                         i.far.fa-copy
                 button.btn.btn-warning.shadow-none.m-2(type="button")
                     i.fas.fa-edit 
                 button.btn.btn-info.shadow-none.m-2(type="button")
                     i.fas.fa-cog 
             .col-2
-                if blogId
-                    button.delete-blog-btn.btn.btn-danger.shadow-none.float-end.my-2(data-id=blogId) 
+                if botId
+                    button.delete-blog-btn.btn.btn-danger.shadow-none.float-end.my-2(data-id=botId) 
                             i.fas.fa-trash-alt
             // Add more buttons with icons as needed
-    form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
+    form#botForm(method="post", action="/submit-bot-info" class="needs-validation" novalidate)
         .row.row-cols-1.row-cols-sm-2
             .col
                 input#blogId(type="hidden", name="blogId", data-id=(blogId ? blogId : ""))
-                .card.my-2
-                    .card-header
-                        h5 Blog Information
-                    .card-body
-                        .row
-                            
-                            div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogName", class="form-label") Blog Name:
-                                input#blogName(type="text", name="blogName", required=true class="form-control")
-                                div.invalid-feedback Blog name is required.
-                            div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogUrl", class="form-label") Blog URL:
-                                input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
-                                div.invalid-feedback Blog URL is required.
-                            .col-12
-                                div.form-group
-                                    label.text-muted.fw-bold.text-muted.fw-bold(for="blogDescription", class="form-label") Blog Description:
-                                    textarea#blogDescription(name="blogDescription", required=true class="form-control", rows=5)
-                                    div.invalid-feedback Blog description is required.
-                .card.my-2
-                    .card-header
-                        h5 Blog Authentification
-                    .card-body
-                        .row
-                            div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold(for='blogUsername') User Name
-                                input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
-                            div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold(for='blogPassword') Password
-                                input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
+                input#botId(type="hidden", name="botId", data-id=(botId ? botId : ""))
                 .card.my-2
                     .card-header
                         h5 Post Information
@@ -64,6 +35,14 @@ block mainContent
                             div.form-group
                                 label.text-muted.fw-bold(for="postCategory", class="form-label") Post Category:
                                 select#postCategory(name="postCategory", class="form-select", multiple=true)
+                            div.form-group
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="botName", class="form-label") Blog Name:
+                                input#botName(type="text", name="botName", required=true class="form-control")
+                                div.invalid-feedback Bot name is required.
+                            div.form-group
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="botDescription", class="form-label") Bot Description:
+                                textarea#botDescription(name="botDescription", required=true class="form-control", rows=5)
+                                div.invalid-feedback Bot description is required.
                 .card.my-2
                     .card-header
                         h5 Articles Information
@@ -161,15 +140,19 @@ block mainContent
                         h5 Options of content
                     .card-body
                         .row
-                            div.form-group
+                            div.form-group.col-12.col-sm-6
                                 label.text-muted.fw-bold(for="postLanguage", class="form-label") Language of the text:
                                 select#postLanguage(name="postLanguage" class="form-select")
                                     option(value="french") Français
                                     option(value="japanese") 日本語
-                                    option(value="english") 英語
-                                    option(value="spanish") スペイン語
-                                    // Add more options as needed
-                            div.form-group
+                                    option(value="english") English
+                                    option(value="spanish") Spanish
+                            div.form-group.col-12.col-sm-6
+                                label.text-muted.fw-bold(for="postgpt", class="form-label") GPT
+                                select#postgpt(name="postgpt" class="form-select")
+                                    option(value="gpt3") GPT-3
+                                    option(value="gpt4") GPT-4
+                            div.form-group.col-12
                                 label.text-muted.fw-bold(for="postFrequency", class="form-label") Frequency of Posts:
                                 select#postFrequency(name="postFrequency" class="form-select")
                                     option(value="0 0,12 * * *") Twice a day
@@ -179,7 +162,7 @@ block mainContent
                                     option(value="0 0 * * *") Daily
                                     option(value="0 0 * * 0") Weekly
 
-                            div.form-group
+                            div.form-group.col-12.col-sm-6
                                 label.text-muted.fw-bold(for="writingStyle", class="form-label") Preferred Writing Style:
                                 select#writingStyle(name="writingStyle" class="form-select")
                                     option(value="Descriptive", selected) Descriptive
@@ -193,7 +176,7 @@ block mainContent
                                     option(value="Technical") Technical
                                     option(value="Journalistic") Journalistic
                                     option(value="Neutral", selected) Neutral
-                            div.form-group
+                            div.form-group.col-12.col-sm-6
                                 label.text-muted.fw-bold(for="writingTone", class="form-label") Preferred Writing Tone:
                                 select#writingTone(name="writingTone" class="form-select")
                                     option(value="Formal") Formal
