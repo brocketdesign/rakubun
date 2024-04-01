@@ -102,8 +102,14 @@ async function autoBlog(blogInfo,db){
   // Post
   let promise_post = Promise.all([promise_content, promise_categories, promise_tags, promise_image])
     .then(([content, categories, tags, image]) => {
+      try {
+        saveArticleUpdateBlog(fetchTitle, content, categories, tags, image, blogInfo);
+      } catch (error) {
+        console.log(error)
+        console.log(`Error Saving Article`)
+      }
       return post(fetchTitle, content, categories, tags, image, client)
-      //await saveArticleUpdateBlog(fetchTitle, content, categories, tags, images, blogInfo);
+      
     })
     .catch(err=>{
       console.log(err)
@@ -330,6 +336,7 @@ function isAutoBlogInfoComplete(blogInfo) {
 // Tools
 
 async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, myImages, blogInfo) {
+
   try {
     // Step 1: Save the article in the articles collection
     const article = {
@@ -337,8 +344,11 @@ async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myT
       content: finalContent,
       categories: myCategories,
       tags: myTags,
-      blogId: new ObjectId(blogInfo._id), // Assuming blogInfo contains blogId
-      createdAt: new Date() // Capture the creation date of the article
+      blogId: new ObjectId(blogInfo.blogId), // Assuming blogInfo contains blogId
+      botId: new ObjectId(blogInfo.botId), // Assuming blogInfo contains blogId
+      createdAt: new Date(), // Capture the creation date of the article
+      thumbnail:myImages?myImages.attachment_id:null
+
     };
 
     const articleResult = await global.db.collection('articles').insertOne(article);

@@ -16,7 +16,7 @@ block mainContent
             a.btn.btn-success.shadow-none.mx-2(type="button", href=url)
                 i.fas.fa-plus 
 
-    if !blogId
+    if !blogId && !botId
         .row.row-cols-1.row-cols-md-3.my-5
             each blog in blogData
                 .col 
@@ -29,7 +29,7 @@ block mainContent
                                 i.fa.fa-cog
                             a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
                                 i.fa.fa-robot
-    else
+    if blogId
         span 
             i.fab.fa-wordpress
             span.mx-2 #{blogData.blogName}
@@ -42,6 +42,7 @@ block mainContent
                                 i.fa.fa-robot
                                 h5.card-title #{bot.botName}
                                 h6.card-subtitle.mb-2.text-muted Bot ID: #{bot._id}
+                                h6.card-subtitle.mb-2.text-muted #{bot.postgpt ? bot.postgpt.toUpperCase() : ''}
                                 p.card-text #{bot.botDescription ? bot.botDescription.substring(0, 200) : ''}...
                                 a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}`)
                                     i.fa.fa-cog
@@ -52,7 +53,27 @@ block mainContent
                                 else
                                     button.toggle-bot-btn.btn.btn-secondary.mx-2(data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', true)`) 
                                         i.fas.fa-toggle-off
+                                a.btn.btn-secondary.mx-2(href=`/dashboard/app/autoblog?botId=${bot._id}`)
+                                    i.fa.fa-file-alt
                                 button.delete-bot-btn.btn.btn-danger.float-end.mx-2(data-id=bot._id)
                                     i.fas.fa-trash-alt
+    if botId
+        span 
+            i.fa.fa-robot
+            span.mx-2 #{botData.botName}
+        if postData
+            .row.row-cols-1.row-cols-md-3.my-5
+                each post in postData
+                    .col 
+                        .card.mb-3(data-id=post._id)
+                            .card-body
+                                i.fa.fa-robot
+                                h5.card-title #{post.title}
+                                h6.card-subtitle.mb-2.text-muted Bot ID: #{post._id}
+                                .col.mb-2
+                                    each tag in post.tags
+                                        span.me-2.mb-1.fw-bold #{tag.name}
+                                - var title = post.content ? post.content.split('</h1>').pop().substring(0, 200)+'...' : ''
+                                != title
 
     script(src="/js/autoblog.js")

@@ -78,19 +78,20 @@ async function post(title, content, categories, tags, image, client) {
     const categoryIds = await createCategories(categories,'category',client);
     const tagIds = await createCategories(tags, 'post_tag', client);
     // Create a new post with all the category IDs
+    const postObject = {
+      title: title,
+      status: 'publish',
+      type: 'post',
+      terms: {
+        'category': categoryIds, 
+        'post_tag': tagIds 
+      },        
+      commentStatus: 'closed',
+      content: content,
+      thumbnail:image?image.attachment_id:null
+    }
     return new Promise((resolve, reject) => {
-      client.newPost({
-        title: title,
-        status: 'publish',
-        type: 'post',
-        terms: {
-          'category': categoryIds, 
-          'post_tag': tagIds 
-        },        
-        commentStatus: 'closed',
-        content: content,
-        thumbnail:image?image.attachment_id:null
-      }, function(error, id) {
+      client.newPost(postObject, function(error, id) {
         if (error) {
           console.error(`Error creating new post: ${error}`);
           reject(error);

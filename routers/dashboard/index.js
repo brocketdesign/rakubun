@@ -40,9 +40,11 @@ router.get('/app/feed', ensureAuthenticated,ensureMembership, async (req, res) =
 
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
   const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null
+  const botId = req.query.botId ? new ObjectId(req.query.botId) : null
   const userId = new ObjectId(req.user._id)
   let blogData
   let botData
+  let postData
   try {
     // Fetching blog data for the current user
     blogData = await global.db.collection('blogInfos').find({userId: userId}).toArray()                  
@@ -52,10 +54,17 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       botData = await global.db.collection('botInfos').find({blogId : req.query.blogId}).toArray();
     }
 
+    if(botId != null){
+      botData = await global.db.collection('botInfos').findOne({_id : botId})
+      postData = await global.db.collection('articles').find({botId}).toArray();
+    }
+
     res.render('dashboard/app/autoblog/list', {
       user: req.user,
       blogData, 
       botData,
+      postData,
+      botId,
       blogId,
       title: "RAKUBUN - Dashboard"
     });
