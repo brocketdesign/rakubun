@@ -276,7 +276,7 @@ function imagePromptGen(fetchTitle){
   Title: ${fetchTitle}.`;
 }
 function contentPromptGen(fetchTitle,blogInfo){
-  return  `Write a detailed blog post about "${fetchTitle}". The blog aims to ${blogInfo.botDescription}. This post should cater to ${blogInfo.targetAudience} with content that fits within the categories of ${blogInfo.articleCategories}. The language of the post should be ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
+  return  `Write a detailed blog post about "${fetchTitle}".THe main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
 }
 function titlePromptGen(blogInfo) {
   return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. Respond with the title string only.`;

@@ -40,7 +40,8 @@ router.get('/app/feed', ensureAuthenticated,ensureMembership, async (req, res) =
 
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
   const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null
-  const botId = req.query.botId ? new ObjectId(req.query.botId) : null
+  const botId = req.query.botId && req.query.botId != 'undefined'
+  ? new ObjectId(req.query.botId) : null
   const userId = new ObjectId(req.user._id)
   let blogData
   let botData
