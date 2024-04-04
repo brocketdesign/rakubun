@@ -22,15 +22,17 @@ block mainContent
                 .col 
                     .card.mb-3(data-id=blog._id)
                         .card-body
-                            i.fab.fa-wordpress
-                            h5.card-title #{blog.blogName}
-                            p.card-text #{blog.blogUrl}
-                            a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/blog-info/${blog._id}`) 
-                                i.fa.fa-cog
-                            a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
-                                i.fa.fa-robot
+                            a(href=blog.blogUrl, target="_blank") 
+                                i.fab.fa-wordpress
+                                span.mx-2.mb-2.card-title #{blog.blogName}
+                                p.card-text #{blog.blogUrl}
+                            .col.mt-2
+                                a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/blog-info/${blog._id}`) 
+                                    i.fa.fa-cog
+                                a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
+                                    i.fa.fa-robot
     if blogId
-        span 
+        a(href=blogData.blogUrl, target="_blank") 
             i.fab.fa-wordpress
             span.mx-2 #{blogData.blogName}
         if botData
@@ -40,8 +42,8 @@ block mainContent
                         .card.mb-3(data-id=bot._id)
                             .card-body
                                 i.fa.fa-robot
-                                h5.card-title #{bot.botName}
-                                h6.card-subtitle.mb-2.text-muted Bot ID: #{bot._id}
+                                span.mx-2.mb-2.card-title #{bot.botName}
+                                h6.card-subtitle.my-2.text-muted Bot ID: #{bot._id}
                                 h6.card-subtitle.mb-2.text-muted #{bot.postgpt ? bot.postgpt.toUpperCase() : ''}
                                 p.card-text #{bot.botDescription ? bot.botDescription.substring(0, 200) : ''}...
                                 a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}`)
@@ -68,8 +70,8 @@ block mainContent
                         .card.mb-3(data-id=post._id)
                             .card-body
                                 i.fa.fa-robot
-                                h5.card-title #{post.title}
-                                h6.card-subtitle.mb-2.text-muted Bot ID: #{post._id}
+                                span.mx-2.mb-2.card-title #{post.title}
+                                h6.card-subtitle.my-2.text-muted Bot ID: #{post._id}
                                 .col.mb-2
                                     each tag in post.tags
                                         span.me-2.mb-1.fw-bold #{tag.name}
