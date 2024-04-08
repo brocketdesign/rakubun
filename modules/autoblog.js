@@ -93,7 +93,7 @@ async function autoBlog(blogInfo,db){
 
   // Content
   const promptDataContent = contentPromptGen(fetchTitle,blogInfo)
-  let promise_content = moduleCompletion({model:modelGPT, prompt:promptDataContent,max_tokens:3000})
+  let promise_content = moduleCompletion({model:modelGPT, prompt:promptDataContent,max_tokens:4000}) // replace max_token by promptDataContent.articleLength
     .then(fetchContent => {
       const convertContentHTML = markdownToHtml(fetchContent);
       return convertContentHTML + '<br>' + disclaimer(language)

@@ -1,7 +1,7 @@
 extends ../../base
 
 block mainContent
-    h1 Blog Information Form
+    h1 ブログ情報フォーム
     .toolbar.btn-toolbar.my-2
         .toolbar-body.py-3.px-2.row.w-100
             .col-10
@@ -29,31 +29,34 @@ block mainContent
                 input#blogId(type="hidden", name="blogId", data-id=(blogId ? blogId : ""))
                 .card.my-2
                     .card-header
-                        h5 Blog Information
+                        h5 ブログ情報
                     .card-body
                         .row
                             
                             div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogName", class="form-label") Blog Name:
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogName", class="form-label") ブログ名:
                                 input#blogName(type="text", name="blogName", required=true class="form-control")
-                                div.invalid-feedback Blog name is required.
+                                div.invalid-feedback ブログ名は必須です。
+
                             div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogUrl", class="form-label") Blog URL:
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="blogUrl", class="form-label") ブログURL:
                                 input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
-                                div.invalid-feedback Blog URL is required.
+                                div.invalid-feedback ブログURLは必須です。
+
                 .card.my-2
                     .card-header
-                        h5 Blog Authentification
+                        h5 ブログ認証
                     .card-body
                         .row
                             div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold(for='blogUsername') User Name
+                                label.text-muted.fw-bold(for='blogUsername') ユーザー名
                                 input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
                             div.form-group.col-12.col-sm-6
-                                label.text-muted.fw-bold(for='blogPassword') Password
+                                label.text-muted.fw-bold(for='blogPassword') パスワード
                                 input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
 
 
-                button.w-100.my-2(type="submit" class="btn btn-primary") Submit
+
+                button.w-100.my-2(type="submit" class="btn btn-primary") 送信
 
     script(src="/js/autoblog.js")
