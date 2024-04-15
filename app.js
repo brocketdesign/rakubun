@@ -60,6 +60,8 @@ function startServer() {
       app.use(express.json());
       app.use(express.urlencoded({ extended: true }));
 
+      app.use(cors());
+
       app.set('view engine', 'pug');
       app.set('views', './views');
 
