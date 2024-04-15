@@ -32,7 +32,7 @@ router.get('/check-plugin-status', async (req, res) => {
     }
 });
 
-app.get('/affiliate-data', async (req, res) => {
+router.get('/affiliate-data', async (req, res) => {
     try {
         const userId = new ObjectId(req.query.userId); // Assuming you pass the userId as a query parameter
         if (!userId) {
@@ -50,7 +50,7 @@ app.get('/affiliate-data', async (req, res) => {
     }
 });
 
-app.post('/affiliate-data', async (req, res) => {
+router.post('/affiliate-data', async (req, res) => {
     try {
         const userId = new ObjectId(req.body.userId); // The ID of the user to update
         const updates = req.body.updates; // The data to update
@@ -70,7 +70,7 @@ app.post('/affiliate-data', async (req, res) => {
     }
 });
 
-app.post('/receive-affiliate-data', async (req, res) => {
+router.post('/receive-affiliate-data', async (req, res) => {
     try {
         const userData = req.body; // Data sent from the form
         if (!userData) {
