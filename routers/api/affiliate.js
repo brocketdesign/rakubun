@@ -42,6 +42,7 @@ router.get('/check-plugin-status', async (req, res) => {
 router.get('/all-affiliate-data', async (req, res) => {
     try {
         const affiliates = await global.db.collection('affiliate').find({}).toArray();
+        console.log(affiliates)
         res.status(200).json(affiliates);
     } catch (error) {
         res.status(500).send({ message: 'Error fetching affiliate data', error: error.message });
@@ -87,14 +88,17 @@ router.post('/affiliate-data', async (req, res) => {
 
 router.post('/receive-affiliate-data', async (req, res) => {
     try {
+        console.log(req.body);  // Log the body to see what is received
+        console.log(req.headers);  // Log headers to check the Content-Type
+
         const userData = req.body; // Data sent from the form
-        if (!userData) {
+        if (Object.keys(userData).length === 0) {
             return res.status(400).send({ message: 'No user data provided' });
         }
 
         // Optional: Validate userData here before inserting into the database
         console.log(userData)
-        
+
         const result = await global.db.collection('affiliate').insertOne(userData);
         res.status(201).send({ message: 'User data added successfully', userId: result.insertedId });
     } catch (error) {
