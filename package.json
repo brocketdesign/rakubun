@@ -25,6 +25,7 @@
     "compression": "^1.7.4",
     "connect-flash": "^0.1.1",
     "connect-mongodb-session": "^2.2.0",
+    "cors": "^2.8.5",
     "cron": "^3.1.6",
     "dotenv": "^16.4.4",
     "email-templates": "^11.1.1",
