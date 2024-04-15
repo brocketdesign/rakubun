@@ -16,7 +16,7 @@ const path = require('path'); // Add path module
 const ip = require('ip');
 const app = express();
 const server = http.createServer(app);
-
+const cors = require('cors');
 const port = process.env.PORT || 3000;
 
 const url = process.env.MONGODB_URL; // Use MONGODB_URL from .env file
