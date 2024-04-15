@@ -21,7 +21,10 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-
+//Route for handling '/affiliate/'
+router.get('/app/affiliate/status', ensureAuthenticated,ensureMembership, async (req, res) => {  
+  res.render('dashboard/app/affiliate/status',{user:req.user,title:"RAKUBUN - Dashboard"});
+});
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
   const appname = req.params.appname

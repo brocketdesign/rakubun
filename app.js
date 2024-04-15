@@ -72,6 +72,7 @@ function startServer() {
       const generator = require('./routers/api/generator');
       const rss = require('./routers/api/rss');
       const autoblog = require('./routers/api/autoblog');
+      const affiliate = require('./routers/api/affiliate');
       
       app.use('/', index); 
       app.use('/user', user); 
@@ -81,6 +82,7 @@ function startServer() {
       app.use('/api/generator', generator);
       app.use('/api/rss', rss);
       app.use('/api/autoblog', autoblog);
+      app.use('/api/affiliate', affiliate);
 
 
 
