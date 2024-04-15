@@ -36,22 +36,26 @@ $(document).ready(function() {
         });
     }
 
-    // Function to populate the table with affiliate data
+
+
     function populateTable(affiliates) {
         const tableBody = $('#affiliateTableBody');
         tableBody.empty(); // Clear existing table rows
-
+    
         affiliates.forEach(affiliate => {
             const row = `
-                <tr>
+                <tr id="row-${affiliate._id}">
                     <td>${affiliate.name}</td>
                     <td>${affiliate.email}</td>
-                    <td><a href="${affiliate.websiteUrl}" target="_blank">${affiliate.websiteUrl}</a></td>
+                    <td><a href="${affiliate.wordpressUrl}" target="_blank">${affiliate.wordpressUrl}</a></td>
                     <td><button class="btn btn-info" onclick="checkStatus('${affiliate._id}')">Check Status</button></td>
                     <td>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" ${affiliate.isActive ? 'checked' : ''} onchange="toggleActivation('${affiliate._id}', this.checked)">
                         </div>
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteAffiliate('${affiliate._id}')">Delete</button>
                     </td>
                 </tr>
             `;
@@ -59,33 +63,89 @@ $(document).ready(function() {
         });
     }
 
+    
     window.checkStatus = function(affiliateId) {
         $.ajax({
-        url: '/api/affiliate/check-status/' + affiliateId,
-        success: function(response) {
-            alert('Status: ' + response.status);
-        },
-        error: function() {
-            alert('Failed to check status.');
-        }
+            url: '/api/affiliate/check-plugin-status?affiliateId=' + affiliateId,
+            success: function(response) {
+                Swal.fire({
+                    title: 'Status:',
+                    text: response.status,
+                    icon: 'success',
+                    confirmButtonText: 'Cool'
+                });
+            },
+            error: function() {
+                Swal.fire({
+                    title: 'Oops...',
+                    text: 'Failed to check status.',
+                    icon: 'error',
+                    confirmButtonText: 'Got it'
+                });
+            }
         });
     };
-    
     window.toggleActivation = function(affiliateId, isActive) {
+        console.log({isActive})
         $.ajax({
-        url: '/api/affiliate/activate-affiliate',
-        method: 'POST',
-        data: JSON.stringify({ affiliateId, isActive }),
-        contentType: 'application/json',
-        success: function(response) {
-            alert('Activation changed');
-        },
-        error: function() {
-            alert('Failed to change activation.');
-        }
+            url: '/api/affiliate/affiliate-data',
+            method: 'POST',
+            data: JSON.stringify({ affiliateId, updates: { isActive } }),
+            contentType: 'application/json',
+            success: function(response) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Activation changed',
+                    icon: 'success',
+                    confirmButtonText: 'Awesome!'
+                });
+            },
+            error: function() {
+                Swal.fire({
+                    title: 'Oops...',
+                    text: 'Failed to change activation.',
+                    icon: 'error',
+                    confirmButtonText: 'I\'ll try again'
+                });
+            }
         });
     };
+        
       
     // Fetch affiliates on document ready
     fetchAffiliates();
 });
+
+function deleteAffiliate(affiliateId) {
+    Swal.fire({
+        title: 'Are you sure?',
+        text: "You won't be able to revert this!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Yes, delete it!'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            $.ajax({
+                url: `/api/affiliate/delete-affiliate/${affiliateId}`,
+                method: 'DELETE',
+                success: function(response) {
+                    $(`#row-${affiliateId}`).remove();
+                    Swal.fire(
+                        'Deleted!',
+                        'Affiliate has been deleted.',
+                        'success'
+                    );
+                },
+                error: function() {
+                    Swal.fire(
+                        'Failed!',
+                        'Failed to delete affiliate.',
+                        'error'
+                    );
+                }
+            });
+        }
+    });
+}
