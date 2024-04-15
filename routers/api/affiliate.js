@@ -5,19 +5,26 @@ const { ObjectId } = require('mongodb');
 
 // Route to check the plugin activation status from WordPress
 router.get('/check-plugin-status', async (req, res) => {
-    // Retrieve the WordPress site URL from query parameters
-    const { wordpressUrl } = req.query;  // Example: /check-plugin-status?wordpressUrl=http://example.com
-    if (!wordpressUrl) {
-        return res.status(400).json({ message: 'WordPress site URL is required as a query parameter.' });
+    const { affiliateId } = req.query; // Get affiliateId from query parameters
+
+    if (!affiliateId) {
+        return res.status(400).json({ message: 'Affiliate ID is required as a query parameter.' });
     }
 
-    const apiKey = 'MIICXAIBAAKBgQCqGSM44QXyqES1b45TqJiWaqR5WQj86fTpTnmvXopbEwq7XQ6h'; // The API Key, securely handled
-
     try {
+        // Find the affiliate in the database using ObjectId
+        const affiliate = await global.db.collection('affiliate').findOne({ _id: new ObjectId(affiliateId) });
+
+        if (!affiliate || !affiliate.wordpressUrl) {
+            return res.status(404).json({ message: 'Affiliate not found or WordPress URL missing' });
+        }
+
+        const wordpressUrl = affiliate.wordpressUrl;
+        const apiKey = 'MIICXAIBAAKBgQCqGSM44QXyqES1b45TqJiWaqR5WQj86fTpTnmvXopbEwq7XQ6h'; // The API Key, securely handled
+
+        // Make the API request to the WordPress URL
         const response = await axios.get(`${wordpressUrl}/wp-json/custompopup/v1/status/`, {
-            params: {
-                api_key: apiKey
-            }
+            params: { api_key: apiKey }
         });
 
         res.status(200).json({
@@ -27,11 +34,19 @@ router.get('/check-plugin-status', async (req, res) => {
     } catch (error) {
         res.status(error.response?.status || 500).json({
             message: 'Error fetching plugin status from the provided URL',
-            //error: error.message
+            error: error.message
         });
     }
 });
-
+// Route to get all affiliate data
+router.get('/all-affiliate-data', async (req, res) => {
+    try {
+        const affiliates = await global.db.collection('affiliate').find({}).toArray();
+        res.status(200).json(affiliates);
+    } catch (error) {
+        res.status(500).send({ message: 'Error fetching affiliate data', error: error.message });
+    }
+});
 router.get('/affiliate-data', async (req, res) => {
     try {
         const userId = new ObjectId(req.query.userId); // Assuming you pass the userId as a query parameter
@@ -78,7 +93,8 @@ router.post('/receive-affiliate-data', async (req, res) => {
         }
 
         // Optional: Validate userData here before inserting into the database
-
+        console.log(userData)
+        
         const result = await global.db.collection('affiliate').insertOne(userData);
         res.status(201).send({ message: 'User data added successfully', userId: result.insertedId });
     } catch (error) {

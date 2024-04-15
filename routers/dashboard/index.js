@@ -22,6 +22,9 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
   }
 });
 //Route for handling '/affiliate/'
+router.get('/app/affiliate/', ensureAuthenticated,ensureMembership, async (req, res) => {  
+  res.render('dashboard/app/affiliate/list',{user:req.user,title:"RAKUBUN - Dashboard"});
+});
 router.get('/app/affiliate/status', ensureAuthenticated,ensureMembership, async (req, res) => {  
   res.render('dashboard/app/affiliate/status',{user:req.user,title:"RAKUBUN - Dashboard"});
 });
