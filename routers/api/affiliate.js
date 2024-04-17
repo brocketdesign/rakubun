@@ -109,6 +109,39 @@ router.get('/log-popup-event', async (req, res) => {
     }
 });
 
+router.get('/fetch-popup-data', async (req, res) => {
+    const { affiliateId, action, today } = req.query;
+
+    if (!affiliateId || !action || !today) {
+        return res.status(400).send({ message: "Missing required parameters: affiliateId, action, or today" });
+    }
+
+    try {
+        const yearMonth = today.slice(0, 7); // Extract YYYY-MM for the month
+
+        // Fetch daily data
+        const dailyData = await global.db.collection('affiliate-analytic').findOne({
+            affiliateId: new ObjectId(affiliateId),
+            date: today,
+            action: action
+        });
+
+        // Fetch monthly data
+        const monthlyData = await global.db.collection('affiliate-monthly-analytic').findOne({
+            affiliateId: new ObjectId(affiliateId),
+            month: yearMonth,
+            action: action
+        });
+        
+        res.send({
+            daily: dailyData ? dailyData.count : 0, // Provide 0 if no record is found
+            monthly: monthlyData ? monthlyData.count : 0 // Provide 0 if no record is found
+        });
+    } catch (error) {
+        console.error("Error fetching popup data:", error);
+        res.status(500). send({ message: "Failed to fetch popup data" });
+    }
+});
 
 
 // Route to get all affiliate data

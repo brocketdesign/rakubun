@@ -36,7 +36,25 @@ $(document).ready(function() {
         });
     }
 
-
+    function fetchAndDisplayAnalytics(affiliates) {
+        const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
+        affiliates.forEach(affiliate => {
+            ['opened', 'interacted'].forEach(action => {
+                $.get(`/api/affiliate/fetch-popup-data`, { affiliateId: affiliate._id, action: action, today: today })
+                    .done((data) => {
+                        // Update the table cells for daily and monthly data
+                        $(`#row-${affiliate._id} .analytics-${action}`).html(`
+                            本日: ${data.daily} | 今月: ${data.monthly}
+                        `);
+                    })
+                    .fail((error) => {
+                        console.error(`Failed to fetch analytics for ${action}:`, error);
+                        $(`#row-${affiliate._id} .analytics-${action}`).html('Error fetching data');
+                    });
+            });
+        });
+    }
 
     function populateTable(affiliates) {
         const tableBody = $('#affiliateTableBody');
@@ -46,14 +64,15 @@ $(document).ready(function() {
             const row = `
                 <tr id="row-${affiliate._id}">
                     <td>${affiliate.name}</td>
-                    <td>${affiliate.email}</td>
                     <td><a href="${affiliate.wordpressUrl}" target="_blank">${affiliate.wordpressUrl}</a></td>
-                    <td><button class="btn btn-info" onclick="checkStatus('${affiliate._id}')"><i class="fas fa-bolt"></i></button></td>
+                    <td class="analytics-opened"></td>
+                    <td class="analytics-interacted"></td>
                     <td>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" ${affiliate.isActive ? 'checked' : ''} onchange="toggleActivation('${affiliate._id}', this.checked)">
                         </div>
                     </td>
+                    <td><button class="btn btn-info" onclick="checkStatus('${affiliate._id}')"><i class="fas fa-bolt"></i></button></td>
                     <td>
                         <button class="btn btn-danger" onclick="deleteAffiliate('${affiliate._id}')"><i class="far fa-trash-alt"></i></button>
                     </td>
@@ -61,6 +80,8 @@ $(document).ready(function() {
             `;
             tableBody.append(row);
         });
+
+        fetchAndDisplayAnalytics(affiliates);
     }
 
     
