@@ -48,14 +48,14 @@ $(document).ready(function() {
                     <td>${affiliate.name}</td>
                     <td>${affiliate.email}</td>
                     <td><a href="${affiliate.wordpressUrl}" target="_blank">${affiliate.wordpressUrl}</a></td>
-                    <td><button class="btn btn-info" onclick="checkStatus('${affiliate._id}')">Check Status</button></td>
+                    <td><button class="btn btn-info" onclick="checkStatus('${affiliate._id}')"><i class="fas fa-bolt"></i></button></td>
                     <td>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" ${affiliate.isActive ? 'checked' : ''} onchange="toggleActivation('${affiliate._id}', this.checked)">
                         </div>
                     </td>
                     <td>
-                        <button class="btn btn-danger" onclick="deleteAffiliate('${affiliate._id}')">Delete</button>
+                        <button class="btn btn-danger" onclick="deleteAffiliate('${affiliate._id}')"><i class="far fa-trash-alt"></i></button>
                     </td>
                 </tr>
             `;
