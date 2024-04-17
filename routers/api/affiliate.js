@@ -58,7 +58,7 @@ router.get('/check-popup-authorization', async (req, res) => {
 
         // Check if the affiliate is active
         if (affiliate.isActive) {
-            res.json({ authorized: true });
+            res.json({ authorized: true, affiliateId:affiliate._id });
         } else {
             res.json({ authorized: false });
         }
@@ -67,6 +67,50 @@ router.get('/check-popup-authorization', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+// Route to log popup events
+router.get('/log-popup-event', async (req, res) => {
+    const { affiliateId, action } = req.query;
+
+    if (!affiliateId || !action) {
+        return res.status(400).send({ message: "Missing affiliateId or action parameter" });
+    }
+
+    try {
+        // Find the affiliate in the database
+        const affiliate = await global.db.collection('affiliate').findOne({ _id: new ObjectId(affiliateId) });
+        if (!affiliate) {
+            return res.status(404).send({ message: "Affiliate not found" });
+        }
+
+        // Prepare the date in YYYY-MM-DD format for daily logging
+        const today = new Date().toISOString().split('T')[0];
+        // Extract the year and month for monthly logging
+        const yearMonth = today.slice(0, 7); // YYYY-MM
+
+        // Log the event in affiliate-analytic for daily counts
+        await global.db.collection('affiliate-analytic').updateOne(
+            { affiliateId: new ObjectId(affiliateId), date: today, action },
+            { $inc: { count: 1 } },
+            { upsert: true }
+        );
+
+        // Log or update the monthly event count in a separate monthly analytics collection
+        await global.db.collection('affiliate-monthly-analytic').updateOne(
+            { affiliateId: new ObjectId(affiliateId), month: yearMonth, action },
+            { $inc: { count: 1 } },
+            { upsert: true }
+        );
+
+        res.send({ message: "Popup event logged successfully" });
+    } catch (error) {
+        console.error("Error logging popup event:", error);
+        res.status(500).send({ message: "Failed to log popup event" });
+    }
+});
+
+
+
 // Route to get all affiliate data
 router.get('/all-affiliate-data', async (req, res) => {
     try {
