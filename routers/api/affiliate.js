@@ -83,14 +83,21 @@ router.get('/log-popup-event', async (req, res) => {
             return res.status(404).send({ message: "Affiliate not found" });
         }
 
+        // Get the current date in Japan time zone
+        const today = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' });
+
+        // Convert to a Date object to standardize
+        const dateObj = new Date(today);
+
         // Prepare the date in YYYY-MM-DD format for daily logging
-        const today = new Date().toISOString().split('T')[0];
+        const formattedDate = dateObj.toISOString().split('T')[0];
+
         // Extract the year and month for monthly logging
-        const yearMonth = today.slice(0, 7); // YYYY-MM
+        const yearMonth = formattedDate.slice(0, 7); // YYYY-MM
 
         // Log the event in affiliate-analytic for daily counts
         await global.db.collection('affiliate-analytic').updateOne(
-            { affiliateId: new ObjectId(affiliateId), date: today, action },
+            { affiliateId: new ObjectId(affiliateId), date: formattedDate, action },
             { $inc: { count: 1 } },
             { upsert: true }
         );
