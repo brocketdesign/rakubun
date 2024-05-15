@@ -72,7 +72,10 @@ $(document).ready(function() {
                             <input class="form-check-input" type="checkbox" ${affiliate.isActive ? 'checked' : ''} onchange="toggleActivation('${affiliate._id}', this.checked)">
                         </div>
                     </td>
-                    <td><button class="btn btn-info" onclick="checkStatus('${affiliate._id}')"><i class="fas fa-bolt"></i></button></td>
+                    <td>
+                    <button class="btn btn-info" onclick="checkStatus('${affiliate._id}')"><i class="fas fa-bolt"></i></button>
+                    <button class="btn btn-primary" onclick="showDetail('${affiliate._id}')"><i class="fas fa-info"></i></button>
+                    </td>
                     <td>
                         <button class="btn btn-danger" onclick="deleteAffiliate('${affiliate._id}')"><i class="far fa-trash-alt"></i></button>
                     </td>
@@ -167,6 +170,78 @@ function deleteAffiliate(affiliateId) {
                     );
                 }
             });
+        }
+    });
+}
+
+function showDetail(affiliateID) {
+    // Start by showing a loading message
+    Swal.fire({
+        title: 'Loading...',
+        text: 'Please wait while we fetch the details.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading(); // Show loading animation
+
+            // Perform the fetch request
+            fetch(`/api/affiliate/details/${affiliateID}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json(); // Parse JSON data
+                })
+                .then(data => {
+                    console.log(data); // Log data to console
+                    
+                    // Display data in modal
+                    Swal.fire({
+                        html: `
+                        <div class="text-center mb-2">
+                            <img src="${data.favicon}" width="76px">
+                            <h3>パートナーの詳細</h3>
+                        </div>
+                        <div class="text-start m-4">
+                            <strong>ドメイン:</strong> ${data.domain}<br>
+                            <strong>アドレス:</strong> ${data.address}<br>
+                            <strong>メール:</strong> ${data.email}<br>
+                            <strong>名前:</strong> ${data.name}<br>
+                            <strong>電話:</strong> ${data.phone}<br>
+                            <strong>WordpressのURL:</strong> ${data.wordpressUrl}<br>
+                        </div>
+                        <div class="accordion" id="bankInfoAccordion">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="headingOne">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                        銀行情報
+                                    </button>
+                                </h2>
+                                <div id="collapseOne" class="accordion-collapse collapse text-start" aria-labelledby="headingOne" data-bs-parent="#bankInfoAccordion">
+                                    <div class="accordion-body">
+                                        <strong>銀行名:</strong> ${data.bank_name}<br>
+                                        <strong>支店名:</strong> ${data.bank_branch}<br>
+                                        <strong>口座名義:</strong> ${data.bank_account_name}<br>
+                                        <strong>口座番号:</strong> ${data.bank_account_number}<br>
+                                        <strong>口座種類:</strong> ${data.bank_account_type}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `,
+                        icon: false
+                    });
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error); // Log error to console
+
+                    // Show error in modal
+                    Swal.fire({
+                        title: 'Error!',
+                        text: 'Failed to fetch details.',
+                        icon: 'error',
+                        confirmButtonText: 'Close'
+                    });
+                });
         }
     });
 }

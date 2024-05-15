@@ -3,7 +3,7 @@ const router = express.Router();
 const axios = require('axios');
 const { ObjectId } = require('mongodb');
 const url = require('url');
-
+const {updateFavicon} = require('../../services/tools')
 // Route to check the plugin activation status from WordPress
 router.get('/check-plugin-status', async (req, res) => {
     const { affiliateId } = req.query; // Get affiliateId from query parameters
@@ -108,7 +108,6 @@ router.get('/log-popup-event', async (req, res) => {
         res.status(500).send({ message: "Failed to log popup event" });
     }
 });
-
 router.get('/fetch-popup-data', async (req, res) => {
     const { affiliateId, action, today } = req.query;
 
@@ -140,6 +139,22 @@ router.get('/fetch-popup-data', async (req, res) => {
     } catch (error) {
         console.error("Error fetching popup data:", error);
         res.status(500). send({ message: "Failed to fetch popup data" });
+    }
+});
+
+router.get('/details/:affiliateID', async (req, res) => {
+    try {
+        const { affiliateID } = req.params;
+        const affiliate = await global.db.collection('affiliate').findOne({ _id: new ObjectId(affiliateID) });
+        
+        if (!affiliate) {
+            res.status(404).send({ message: 'Affiliate not found' });
+        } else {
+            res.status(200).json(affiliate);
+        }
+    } catch (error) {
+        console.error('Error retrieving affiliate data:', error);
+        res.status(500).send({ message: 'Error retrieving data from database' });
     }
 });
 
@@ -183,7 +198,7 @@ router.post('/affiliate-data', async (req, res) => {
         if (result.modifiedCount === 0) {
             return res.status(404).send({ message: 'User not found or no updates made' });
         }
-
+        updateFavicon();
         res.status(200).send({ message: 'User data updated successfully' });
     } catch (error) {
         res.status(500).send({ message: 'Error updating user data', error: error.message });

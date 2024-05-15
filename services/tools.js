@@ -105,11 +105,58 @@ async function getImageSearchResult(url) {
     return [];
   }
 }
+/**
+ * Fetches the favicon using the favicone.com API.
+ * 
+ * @param {string} domain The domain to fetch the favicon for.
+ * @returns {Promise<object>} A promise that resolves to the favicon information or null if failed.
+ */
+async function fetchFavicon(domain) {
+  try {
+      const encodedDomain = encodeURIComponent(domain);
+      const apiUrl = `https://favicone.com/${encodedDomain}?json`;
+      const response = await axios.get(apiUrl);
+      return response.data;
+  } catch (error) {
+      console.error('Failed to fetch favicon for domain:', domain, error.message);
+      return null;
+  }
+}
+
+/**
+* Updates the favicons for all affiliates in the database if not already updated.
+*/
+async function updateFavicon() {
+  try {
+      const affiliates = await global.db.collection('affiliate').find({}).toArray();
+
+      for (const affiliate of affiliates) {
+          if (!affiliate.hasIcon) {  // Check if favicon is already updated
+              const faviconData = await fetchFavicon(affiliate.domain);
+              if (faviconData && faviconData.hasIcon) {
+                  await global.db.collection('affiliate').updateOne(
+                      { _id: affiliate._id },
+                      { $set: { favicon: faviconData.icon, hasIcon: true } }
+                  );
+                  console.log(`Updated favicon for ${affiliate.domain}`);
+              } else {
+                  console.log(`No favicon found or failed to fetch for ${affiliate.domain}`);
+              }
+          } else {
+              console.log(`Favicon already updated for ${affiliate.domain}`);
+          }
+      }
+  } catch (error) {
+      console.error('Error updating favicons:', error);
+  }
+}
 
 
 module.exports = {
   addUsertoFreePlan,
   formatDateToDDMMYYHHMMSS,
   getSearchResult,
-  getImageSearchResult
+  getImageSearchResult,
+  updateFavicon,
+  fetchFavicon
 };
