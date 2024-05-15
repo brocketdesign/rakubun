@@ -253,4 +253,80 @@ router.delete('/delete-affiliate/:id', async (req, res) => {
         res.status(500).send({ message: 'Failed to delete affiliate', error: error.message });
     }
 });
+
+
+// Route to manage Google Analytics
+const { google } = require('googleapis');
+
+// Google Analytics setup
+const analytics = google.analytics({
+  version: 'v3',
+  auth: new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+    credentials: {
+      client_id: process.env.GOOGLE_ANALYTICS_CLIENT_ID,
+      client_secret: process.env.GOOGLE_ANALYTICS_CLIENT_SECRET,
+    }
+  }),
+});
+
+// API to fetch and save data
+router.get('/fetch-analytics', async (req, res) => {
+  try {
+    const affiliates = await global.db.collection('affiliate').find({analyticsViewId:{$exists:true}}).toArray();
+    const results = [];
+
+    for (let affiliate of affiliates) {
+      const response = await analytics.data.ga.get({
+        'ids': 'ga:' + affiliate.analyticsViewId, // Assumes you store the Google Analytics View ID
+        'start-date': '30daysAgo',
+        'end-date': 'today',
+        'metrics': 'ga:users',
+      });
+
+      const data = {
+        wordpressUrl: affiliate.wordpressUrl,
+        users: response.data.totalsForAllResults['ga:users'],
+      };
+
+      results.push(data);
+      
+      // Save or update the data in MongoDB
+      await global.db.collection('analyticsData').updateOne(
+        { wordpressUrl: affiliate.wordpressUrl },
+        { $set: data },
+        { upsert: true }
+      );
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    res.status(500).send('Failed to fetch data');
+  }
+});
+
+// Scheduled task to refresh data daily
+const cron = require('node-cron');
+cron.schedule('0 0 * * *', () => {
+  console.log('Refreshing data...');
+  app.emit('fetch-analytics');
+});
+
+router.post('/save-ga-view-id', async (req, res) => {
+    const { websiteId, analyticsViewId } = req.body;
+    try {
+        // Assuming 'affiliates' is your collection where you save the data
+        await global.db.collection('affiliates').updateOne(
+            { _id: new ObjectId(websiteId) },
+            { $set: { analyticsViewId: analyticsViewId } },
+            { upsert: true }
+        );
+        res.send({ status: 'success', message: 'GA View ID saved successfully!' });
+    } catch (error) {
+        console.error('Failed to save GA View ID:', error);
+        res.status(500).send({ status: 'error', message: 'Failed to save GA View ID' });
+    }
+});
+
 module.exports = router;
