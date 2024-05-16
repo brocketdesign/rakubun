@@ -33,9 +33,9 @@ block mainContent
                                 label.text-muted.fw-bold(for="postCategory", class="form-label") 投稿カテゴリー：
                                 select#postCategory(name="postCategory", class="form-select", multiple=true)
                             div.form-group
-                                label.text-muted.fw-bold.text-muted.fw-bold(for="botName", class="form-label") ブログ名：
+                                label.text-muted.fw-bold.text-muted.fw-bold(for="botName", class="form-label") ボット名：
                                 input#botName(type="text", name="botName", required=true class="form-control")
-                                div.invalid-feedback ブログ名が必要です。
+                                div.invalid-feedback ボット名が必要です。
                             div.form-group
                                 label.text-muted.fw-bold.text-muted.fw-bold(for="botDescription", class="form-label") ボットの説明：
                                 textarea#botDescription(name="botDescription", required=true class="form-control", rows=5)
@@ -151,6 +151,7 @@ block mainContent
                                 select#postgpt(name="postgpt" class="form-select")
                                     option(value="gpt3") GPT-3
                                     option(value="gpt4") GPT-4
+                                    option(value="gpt4o") GPT-4o
                             div.form-group.col-12
                                 label.text-muted.fw-bold(for="postFrequency", class="form-label") 投稿頻度：
                                 select#postFrequency(name="postFrequency" class="form-select")

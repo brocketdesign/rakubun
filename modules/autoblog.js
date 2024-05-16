@@ -21,7 +21,19 @@ async function autoBlog(blogInfo,db){
 
   const language = blogInfo.postLanguage
   const client = wordpress.createClient(blogInfo);
-  const modelGPT = blogInfo.postgpt == 'gpt3' ? 'gpt-3.5-turbo-0125' : 'gpt-4-0125-preview'
+  let modelGPT;
+
+  switch (blogInfo.postgpt) {
+    case 'gpt4':
+      modelGPT = 'gpt-4-0125-preview';
+      break;
+    case 'gpt4o':
+      modelGPT = 'gpt-4o';
+      break;
+    default:
+      modelGPT = 'gpt-3.5-turbo-0125'; // Default to GPT-3 if no match
+      break;
+  }  
 
   console.log({modelGPT})
   if(!isBlogInfoComplete(blogInfo)){
@@ -43,6 +55,21 @@ async function autoBlog(blogInfo,db){
   const untreatedTitle = await moduleCompletion({model:modelGPT,prompt:promptDataTitle,max_tokens:100});
   const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
   console.log(`Generated title : ${fetchTitle}`)
+    
+  // Tags
+  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
+  let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600})
+    .then(fetchTag =>{
+      let parsedTags = extractArrayFromString(fetchTag.trim());
+      if (parsedTags !== null) {
+        console.log("Behold, your tags:", parsedTags.toString());
+        parsedTags.push('RAKUBUN')
+        return addTaxonomy(parsedTags,'post_tag',client,language)
+      }else{
+        return []
+      }
+    })
+
 
 
   // Image Generation
@@ -62,7 +89,6 @@ async function autoBlog(blogInfo,db){
         bits: imageBits,
       }, (error, file) => {
         if (error) {
-          console.log(error);
           console.log('Error when adding the thumbnail');
           reject(error); // Reject the promise on error
         } else {
@@ -73,31 +99,35 @@ async function autoBlog(blogInfo,db){
   })
   .catch(error => {
     // Handle any errors in the promise chain
-    console.error("Error in image processing:", error);
+    console.error("Error in image processing");
   });
 
-  
-  // Tags
-  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
-  let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600})
-    .then(fetchTag =>{
-      let parsedTags = extractArrayFromString(fetchTag.trim());
-      if (parsedTags !== null) {
-        console.log("Behold, your tags:", parsedTags.toString());
-        parsedTags.push('RAKUBUN')
-        return addTaxonomy(parsedTags,'post_tag',client,language)
-      }else{
-        return []
-      }
-    })
-
   // Content
-  const promptDataContent = contentPromptGen(fetchTitle,blogInfo)
-  let promise_content = moduleCompletion({model:modelGPT, prompt:promptDataContent,max_tokens:4000}) // replace max_token by promptDataContent.articleLength
-    .then(fetchContent => {
-      const convertContentHTML = markdownToHtml(fetchContent);
-      return convertContentHTML + '<br>' + disclaimer(language)
-    })
+  let promise_content = getSearchResult(fetchTitle)
+  .then(search_results => {
+    // Create an array to store all content promises
+    let content_promises = [];
+    
+    // Iterate over search_results using forEach to maintain the scope correctly
+    search_results.forEach((search_result, i) => {
+      const promptDataContent = contentPromptGenForSearch(search_result.title, blogInfo);
+      const content_promise = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 4000})
+        .then(fetchContent => {
+          const convertContentHTML = markdownToHtml(fetchContent);
+          return convertContentHTML + `<a href="${search_result.link}" target="_blank">${search_result.title}</a>`;
+        });
+      content_promises.push(content_promise);
+    });
+
+    // Return a single promise that resolves when all content promises are resolved
+    return Promise.all(content_promises);
+  })
+  .then(contents => {
+    // 'contents' is an array containing the results of each promise
+    // Combine them into a single string or any other structure as needed
+    return contents.join(""); // Join all contents into a single HTML string
+  });
+
   
   // Post
   let promise_post = Promise.all([promise_content, promise_categories, promise_tags, promise_image])
@@ -275,11 +305,15 @@ function imagePromptGen(fetchTitle){
   
   Title: ${fetchTitle}.`;
 }
+function contentPromptGenForSearch(fetchTitle,blogInfo){
+  return `Write a paragraph related to "${fetchTitle}", the paragraph contain a title and a description about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The title you provide must engage a broad audience by combining high-profile personnality name in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
+}
 function contentPromptGen(fetchTitle,blogInfo){
-  return  `Write a detailed blog post about "${fetchTitle}".THe main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
+  return `Write 5 paragraphs related to "${fetchTitle}", a paragraph contain a title and a description about the subject and a link to a REAL up and running ${blogInfo.postLanguage}  website  about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The titles you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
+  return  `Write a detailed blog post about "${fetchTitle}".The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
 }
 function titlePromptGen(blogInfo) {
-  return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. Respond with the title string only.`;
+  return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. The title you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places or else in the audience country. Respond with the title string only.`;
 }  
 
 function extractArrayFromString(fetchTag) {
@@ -501,7 +535,7 @@ async function addTaxonomy(taxonomyArray,type,client,language){
 }
 async function createTaxonomy(taxonomyName,type,language, client){
   const tagDescriptionPrompt = categoryDescriptionPromptGen(taxonomyName,type,language)
-  const fetchtagDescription = await moduleCompletion({model:"gpt-3.5-turbo-instruct",prompt:tagDescriptionPrompt,max_tokens:600});
+  const fetchtagDescription = await moduleCompletion({model:"gpt-4o",prompt:tagDescriptionPrompt,max_tokens:600});
   const catObj = {name:capitalizeFirstLetter(taxonomyName),description:fetchtagDescription}
   await ensureCategory(catObj, type, client)
   return catObj

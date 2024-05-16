@@ -44,7 +44,6 @@ async function txt2img(options){
     //const base64Image = await convertImageToBase64(imagePath);
     return{ imageID, imagePath };
   } catch (err) {
-    console.error(err);
     return
   }
 }
