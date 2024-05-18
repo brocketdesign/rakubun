@@ -80,7 +80,7 @@ $(document).ready(function() {
                     <button class="btn btn-primary" onclick="showDetail('${affiliate._id}')"><i class="fas fa-info"></i></button>
                     </td>
                     <td>
-                        <button class="btn btn-danger" onclick="deleteAffiliate('${affiliate._id}')"><i class="far fa-trash-alt"></i></button>
+                        <button class="btn btn-danger d-none" onclick="deleteAffiliate('${affiliate._id}')"><i class="far fa-trash-alt"></i></button>
                     </td>
                 </tr>
             `;
