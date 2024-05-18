@@ -78,6 +78,7 @@ $(document).ready(function() {
                     <td>
                     <button class="btn btn-info" onclick="checkStatus('${affiliate._id}')"><i class="fas fa-bolt"></i></button>
                     <button class="btn btn-primary" onclick="showDetail('${affiliate._id}')"><i class="fas fa-info"></i></button>
+                    <a class="btn btn-dark" href="/dashboard/app/affiliate/graph/${affiliate._id}" )"><i class="fas fa-chart-line"></i></a>
                     </td>
                     <td>
                         <button class="btn btn-danger d-none" onclick="deleteAffiliate('${affiliate._id}')"><i class="far fa-trash-alt"></i></button>

@@ -204,6 +204,15 @@ li.list-group-item{
   }
 
 }
+
+.container-graph {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 50vh; /* Full viewport height */
+  margin: 0 auto;
+}
 @media (max-width: 768px) {  /* assuming 768px is the breakpoint for mobile view */
     #positionElement { 
       position: absolute !important;

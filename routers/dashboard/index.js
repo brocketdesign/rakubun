@@ -28,6 +28,10 @@ router.get('/app/affiliate/', ensureAuthenticated,ensureMembership, async (req, 
 router.get('/app/affiliate/status', ensureAuthenticated,ensureMembership, async (req, res) => {  
   res.render('dashboard/app/affiliate/status',{user:req.user,title:"RAKUBUN - Dashboard"});
 });
+router.get('/app/affiliate/graph/:affiliateId', ensureAuthenticated,ensureMembership, async (req, res) => {  
+  const affiliateId = req.params.affiliateId
+  res.render('dashboard/app/affiliate/graph',{user:req.user,affiliateId, title:"RAKUBUN - Dashboard"});
+});
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
   const appname = req.params.appname

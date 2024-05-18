@@ -144,6 +144,38 @@ router.get('/fetch-popup-data', async (req, res) => {
         res.status(500). send({ message: "Failed to fetch popup data" });
     }
 });
+router.get('/fetch-popup-data-range', async (req, res) => {
+    const { affiliateId, action, startDate, endDate } = req.query;
+    if (!affiliateId || !action || !startDate || !endDate) {
+        return res.status(400).send({ message: "Missing required parameters" });
+    }
+
+    try {
+        const data = await global.db.collection('affiliate-analytic').aggregate([
+            {
+                $match: {
+                    affiliateId: new ObjectId(affiliateId),
+                    action: action,
+                    date: { $gte: startDate, $lte: endDate }
+                }
+            },
+            {
+                $group: {
+                    _id: "$date",
+                    count: { $sum: "$count" }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            }
+        ]).toArray();
+
+        res.send(data);
+    } catch (error) {
+        console.error("Error fetching range data:", error);
+        res.status(500).send({ message: "Failed to fetch data" });
+    }
+});
 
 router.get('/details/:affiliateID', async (req, res) => {
     try {
