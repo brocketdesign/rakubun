@@ -4,10 +4,9 @@ const router = express.Router();
 const axios = require('axios');
 const { ObjectId } = require('mongodb');
 const { getCategoryId } = require('../../modules/post')
-const { setCronJobForUser } = require('../../modules/cronJobs');
+const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
+const { setCronJobForBlog } = require('../../modules/cronJobs-blog.js');
 var wordpress = require("wordpress");
-
-const {retrieveLatestArticle} = require('../../modules/autoblog')
 
 router.get('/info/category/:blogId', async (req, res) => {
   const { blogId } = req.params;
@@ -48,7 +47,6 @@ router.get('/blog-info/:blogId', async (req, res) => {
       return res.status(404).json({ message: 'Blog information not found or access denied.' });
     }
     blogInfo.blogId=blogId
-    retrieveLatestArticle(blogInfo,db)
     res.json(blogInfo);
   } catch (error) {
     console.error(error);
@@ -60,8 +58,11 @@ router.post('/blog-info', async (req, res) => {
   const blogData = req.body;
 
   try {
+    if(blogData.additionalUrls){
+      blogData.additionalUrls = blogData.additionalUrls.filter(url => url !== "");
+    }
     const blogId = await saveBlogInfo(userId, blogData);
-
+    setCronJobForBlog(db, blogId, blogData.postFrequency)
     res.status(201).send({ message: 'Blog info saved successfully', blogId });
   } catch (error) {
     console.log(error);

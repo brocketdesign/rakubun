@@ -100,12 +100,19 @@ $(document).ready(function() {
                 });
 
                 if (data && data.additionalUrls && data.additionalUrls.length > 0) {
-                    data.additionalUrls.forEach(function(url, index) {
+                    // Load each URL into its own input group
+                    data.additionalUrls.forEach(function(url) {
                         var inputGroup = $('.template').clone().removeClass('template').show();
                         inputGroup.find('input').val(url);
                         $('#blogUrls').append(inputGroup);
                     });
-                    // Enable the remove button for all except the last item if multiple items exist
+                } else {
+                    // Initialize with one empty input group if no URLs exist
+                    var inputGroup = $('.template').clone().removeClass('template').show();
+                    $('#blogUrls').append(inputGroup);
+                }
+                // Always ensure the remove button is functional unless there's only one input group
+                if ($('#blogUrls .input-group').length > 1) {
                     $('.remove-blog-url').attr('disabled', false);
                 }
             },
@@ -116,6 +123,10 @@ $(document).ready(function() {
         });
         updateCategoryList(blogId)
 
+    }else {
+        // Even if there's no blogId, initialize with one empty input group
+        var inputGroup = $('.template').clone().removeClass('template').show();
+        $('#blogUrls').append(inputGroup);
     }
     var botId = $('#botId').data('id');
     if(botId){
@@ -207,6 +218,43 @@ function deleteButton() {
             }
         });
     });
+    $('.delete-blog-btn').on('click', function() {
+        var blogId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
+
+        Swal.fire({
+            title: '本当に削除しますか？',
+            text: "この操作は元に戻せません！",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'はい、削除します！',
+            cancelButtonText: 'キャンセル',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/api/autoblog/blog/' + blogId,
+                    type: 'DELETE',
+                    success: function(response) {
+                        Swal.fire(
+                            '削除されました！',
+                            'ブログ情報が正常に削除されました。',
+                            'success'
+                        );
+                        window.location.href = '/dashboard/app/autoblog/'
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '削除できませんでした',
+                            text: "ブログ情報の削除に失敗しました: " + error
+                        });
+                    }
+                });
+            }
+        });
+    });
 }
 
 
@@ -240,12 +288,35 @@ function toggleBotStatus(botId, newState) {
     .then(data => {
         // Handle response
         console.log(data);
-        window.location.reload(); // Reload the page to see the updated state
+        $(`.toggle-bot-btn[data-id="${botId}"]`).each(function() {
+            $(this).toggleClass('d-none');
+        });        
     })
     .catch((error) => {
         console.error('Error:', error);
     });
 }
+function toggleBlogStatus(blogId, newState) {
+    fetch(`/api/autoblog/blog-info/ `, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ blogId, isActive: newState }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Handle response
+        console.log(data);
+        $(`.toggle-blog-btn[data-id="${blogId}"]`).each(function() {
+            $(this).toggleClass('d-none');
+        });        
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+    });
+}
+
 function updateCategoryList(blogId) {
     $.ajax({
         url: '/api/autoblog/info/category/' + blogId,

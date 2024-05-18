@@ -1,7 +1,7 @@
 // cronjob.js
 const cron = require('node-cron');
 const { ObjectId } = require('mongodb');
-const {autoBlog,rsspost} = require('./autoblog')
+const {autoBlog,rsspost} = require('./init-bot')
 
 let cronJobsMap = {};
 
@@ -23,7 +23,7 @@ const setCronJobForUser = async (db, botId, schedule) => {
     if (cronJobsMap[botId] ) {
       cronJobsMap[botId].stop();
     }
-    console.log(`Stop job for blog ${botId}`)
+    console.log(`Stop job for bot ${botId}`)
     return
   }
   botInfo.botId = botInfo._id

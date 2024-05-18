@@ -31,6 +31,10 @@ block mainContent
                                     i.fa.fa-cog
                                 a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
                                     i.fa.fa-robot
+                                button.toggle-blog-btn.btn.btn-success.mx-2(class=blog.isActive ? '': 'd-none' data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', false)`) 
+                                    i.fas.fa-toggle-on
+                                button.toggle-blog-btn.btn.btn-secondary.mx-2(class=!blog.isActive ? '': 'd-none'  data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', true)`) 
+                                    i.fas.fa-toggle-off
     if blogId
         a(href=blogData.blogUrl, target="_blank") 
             i.fab.fa-wordpress
@@ -48,13 +52,10 @@ block mainContent
                                 p.card-text #{bot.botDescription ? bot.botDescription.substring(0, 200) : ''}...
                                 a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}`)
                                     i.fa.fa-cog
-                                // Toggle Button for Activating/Deactivating Blog
-                                if bot.isActive
-                                    button.toggle-bot-btn.btn.btn-success.mx-2(data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', false)`) 
-                                        i.fas.fa-toggle-on
-                                else
-                                    button.toggle-bot-btn.btn.btn-secondary.mx-2(data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', true)`) 
-                                        i.fas.fa-toggle-off
+                                button.toggle-bot-btn.btn.btn-success.mx-2(class=bot.isActive ? '': 'd-none' data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', false)`) 
+                                    i.fas.fa-toggle-on
+                                button.toggle-bot-btn.btn.btn-secondary.mx-2(class=!bot.isActive ? '': 'd-none' data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', true)`) 
+                                    i.fas.fa-toggle-off
                                 a.btn.btn-secondary.mx-2(href=`/dashboard/app/autoblog?botId=${bot._id}`)
                                     i.fa.fa-file-alt
                                 button.delete-bot-btn.btn.btn-danger.float-end.mx-2(data-id=bot._id)

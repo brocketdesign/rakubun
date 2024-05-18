@@ -4,12 +4,15 @@ const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const compression = require('compression');
-const {initializeCronJobs} = require('./modules/cronJobs')
 const http = require('http');
 const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const { StableDiffusionApi } = require("stable-diffusion-api");
+
+const { initializeCronJobs } = require('./modules/cronJobs-bot.js');
+const { initializeCronJobsForBlogs } = require('./modules/cronJobs-blog.js');
+
 const passport = require("passport");
 const passportConfig = require('./middleware/passport')(passport);
 const path = require('path'); // Add path module
@@ -29,6 +32,7 @@ function startServer() {
 
       const db = client.db(dbName); // Use the database name from .env file
       global.db = db; // Save the db connection in a global variable
+      initializeCronJobsForBlogs(db)
       initializeCronJobs(db)
       // Use the express-session middleware
       app.use(
