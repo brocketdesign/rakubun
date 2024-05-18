@@ -8,21 +8,64 @@ const { ObjectId } = require('mongodb');
 const fetch = require('node-fetch');
 const marked = require('marked');
 const axios = require('axios');
+const cheerio = require('cheerio');
 var wordpress = require("wordpress");
 const fs = require('fs');
-
 require('dotenv').config({ path: './.env' });
 
-async function autoBlog(blogInfo,db){
+// Async function to retrieve and process the latest article using direct URLs
+async function retrieveLatestArticle(blogInfo, db) {
+  try {
+      // Loop through all blog URLs directly from the blogInfo object
+      for (let blogUrl of blogInfo.additionalUrls) {  // Assume blogInfo contains an array of URLs
+          if (!blogUrl) continue; // Skip if no URL is provided
 
+          // Fetch the latest posts from the WordPress blog using the direct URL
+          const response = await axios.get(`${blogUrl}/wp-json/wp/v2/posts`);
+          const posts = response.data;
+
+          // Check each post to find one that hasn't been processed
+          for (let post of posts) {
+              // Check if the post has already been processed
+              const existingPost = await db.collection('posts').findOne({ wordpressId: post.id, status: 'done' });
+
+              // If the post hasn't been processed yet, process it
+              if (!existingPost) {
+                  const articleData = {
+                      title: post.title.rendered,
+                      content: post.content.rendered
+                  };
+
+                  // Fire the generateAndPost function to process and update the post
+                  await generateAndPost(blogInfo, articleData, db);
+
+                  // Update the post status to 'done' to avoid reprocessing
+                  await db.collection('posts').updateOne(
+                      { wordpressId: post.id },
+                      { $set: { status: 'done' } },
+                      { upsert: true }
+                  );
+
+                  return articleData; // Return the processed article data
+              }
+          }
+      }
+  } catch (error) {
+      console.error('Failed to retrieve or process articles:', error);
+  }
+  return null; // Return null if no unprocessed posts are found
+}
+
+
+async function generateAndPost(blogInfo,articleData,db){
+
+  //Blog infod
   blogInfo.username = blogInfo.blogUsername
   blogInfo.url = blogInfo.blogUrl
   blogInfo.password = blogInfo.blogPassword
-
   const language = blogInfo.postLanguage
   const client = wordpress.createClient(blogInfo);
   let modelGPT;
-
   switch (blogInfo.postgpt) {
     case 'gpt4':
       modelGPT = 'gpt-4-0125-preview';
@@ -40,24 +83,30 @@ async function autoBlog(blogInfo,db){
     console.log('You need to provide the blog informations')
     return
   }   
-  
-  console.log(`Generating article for: ${blogInfo.botName}`);
 
+  //Article generation
+  console.log(`Generating article for: ${articleData.title}`);
   // Categories
-  let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language)
+  let promise_categories = addTaxonomy(['ニュース'], 'category', client, language)
     .then(myCategories => {
       let newCategories = blogInfo.postCategory;
       return updateCategories(myCategories, newCategories, 'category', client);
     });
+  //Google search
+  let promise_google = getSearchResult(articleData.title).then((results)=>{
+    const result = searchResultsToHtml(results)
+    return result
+  })
 
-  // Title
-  const promptDataTitle = titlePromptGen(blogInfo)
-  const untreatedTitle = await moduleCompletion({model:modelGPT,prompt:promptDataTitle,max_tokens:100});
-  const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
-  console.log(`Generated title : ${fetchTitle}`)
-    
+  // Content
+  let promise_content =  moduleCompletion({model: modelGPT,role:`You are a profesionnal ${blogInfo.language} blog writer` ,prompt: contentPrompt(articleData.content), max_tokens: 2000})
+  .then(fetchContent => {
+    const convertContentHTML = markdownToHtml(fetchContent);
+    return convertContentHTML
+  });
+
   // Tags
-  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
+  const tagPrompt = categoryPromptGen(articleData.title, 'post_tag',language)
   let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600})
     .then(fetchTag =>{
       let parsedTags = extractArrayFromString(fetchTag.trim());
@@ -70,10 +119,8 @@ async function autoBlog(blogInfo,db){
       }
     })
 
-
-
   // Image Generation
-  const promptDataImage = imagePromptGen(fetchTitle)
+  const promptDataImage = imagePromptGen(articleData.title)
   let promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
   .then(fetchPromptImage => {
     return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
@@ -102,44 +149,21 @@ async function autoBlog(blogInfo,db){
     console.error("Error in image processing");
   });
 
-  // Content
-  let promise_content = getSearchResult(fetchTitle)
-  .then(search_results => {
-    // Create an array to store all content promises
-    let content_promises = [];
-    
-    // Iterate over search_results using forEach to maintain the scope correctly
-    search_results.forEach((search_result, i) => {
-      const promptDataContent = contentPromptGenForSearch(search_result.title, blogInfo);
-      const content_promise = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 4000})
-        .then(fetchContent => {
-          const convertContentHTML = markdownToHtml(fetchContent);
-          return convertContentHTML + `<a href="${search_result.link}" target="_blank">${search_result.title}</a>`;
-        });
-      content_promises.push(content_promise);
-    });
 
-    // Return a single promise that resolves when all content promises are resolved
-    return Promise.all(content_promises);
-  })
-  .then(contents => {
-    // 'contents' is an array containing the results of each promise
-    // Combine them into a single string or any other structure as needed
-    return contents.join(""); // Join all contents into a single HTML string
-  });
 
   
   // Post
-  let promise_post = Promise.all([promise_content, promise_categories, promise_tags, promise_image])
-    .then(([content, categories, tags, image]) => {
+  let promise_post = Promise.all([promise_content,promise_google, promise_categories, promise_tags, promise_image])
+    .then(([content, google, categories, tags, image]) => {
+      const fetchTitle = extractH1orFirstSentence(content)
+      const new_content = content + `</br> ${google}`
       try {
-        saveArticleUpdateBlog(fetchTitle, content, categories, tags, image, blogInfo);
+        saveArticleUpdateBlog(fetchTitle, new_content, categories, tags, image, blogInfo);
       } catch (error) {
         console.log(error)
         console.log(`Error Saving Article`)
       }
-      return post(fetchTitle, content, categories, tags, image, client)
-      
+      return post(fetchTitle, new_content, categories, tags, image, client)
     })
     .catch(err=>{
       console.log(err)
@@ -147,141 +171,33 @@ async function autoBlog(blogInfo,db){
     
 
 }
-async function rsspost(db) {
 
-  if (process.env.NODE_ENV !== 'local') {
-    return
-  } 
-  
-  // Summon the active feeds from the ethereal database realms
-  const feeds = await findActiveFeeds(db);
-  
-  // For each feed, we seek the first unpublished article
-  const firstUnpublishedArticles = await Promise.all(feeds.map(async (feed) => {
-    const articles = await getOrUpdateArticles(feed._id);
-    const firstUnpublishedArticle = articles.find(article => !article.published);
-    
-    // If a hidden gem is found, we morph it with the feed's essence
-    if (firstUnpublishedArticle) {
-      return {
-        ...firstUnpublishedArticle,
-        feedName: feed.name,
-        userId: feed.userId,
-      };
+async function updateCategories(myCategories,newCategories,type,client) {
+  // Let's handle the case where we need to fetch details first
+  if (Array.isArray(newCategories)) {
+    // It's an array, time for a group adventure
+    const promises = newCategories.map(cat => getTermDetails(cat, type, client));
+    const details = await Promise.all(promises);
+    // Using map to transform the details into a list of names (or whatever property you need)
+    myCategories.push(...details);
+  } else {
+    if(!newCategories){
+      return myCategories
     }
-    return null; // If no such article exists, we return a null spell
-  })).then(results => results.filter(Boolean)); // Banish all nulls from our result
-
-  // If our quest finds no articles, we simply return to our quarters
-  if (firstUnpublishedArticles.length === 0) {
-    console.log("No unpublished articles found across all feeds.");
-    return;
+    // It's a single string, a solo mission
+    const detail = await getTermDetails(newCategories, type, client);
+    myCategories.push(detail);
   }
-  // For each first unpublished article, we embark on a posting journey
-  for (const article of firstUnpublishedArticles) {
-    const blogInfo = await getBlogInfo(db, article.userId);
-    
-    if(!isBlogInfoComplete(blogInfo)){
-      console.log('You need to provide the blog informations')
-      return
-    }   
-
-    const client = wordpress.createClient(blogInfo);
-    const language = await getLanguage(db, article.userId)
-    // Prepare the data scroll for the article generation ritual
-    let data = {
-      TITLE: article.metaDescription,
-      WRITING_STYLE: 'narrative',
-      LANGUAGE: language,
-      WRITING_TONE: 'friendly',
-      THEME:blogInfo.theme
-    };
-    console.log(`Generating article for: ${article.title}`);
- // Content
-    const promptDataContent = generatePrompt(data, "8");
-    console.log(promptDataContent)
-    let promise_content = moduleCompletion(promptDataContent)
-    .then(fetchContent => {
-      const convertContentHTML = markdownToHtml(fetchContent);
-      return convertContentHTML
-    })
-    // Categories
-        let promise_categories = addTaxonomy(['RAKUBUN',article.feedName ], 'category', client, language)
-    // Tags
-        const tagPrompt = categoryPromptGen(data.TITLE, 'post_tag',language)
-        let promise_tags = moduleCompletion({prompt:tagPrompt,max_tokens:600})
-        .then(fetchTag =>{
-          let parsedTags = extractArrayFromString(fetchTag.trim());
-          if (parsedTags !== null) {
-            console.log("Behold, your tags:", parsedTags.toString());
-            parsedTags.push('RAKUBUN')
-            return addTaxonomy(parsedTags,'post_tag',client,language)
-          }else{
-            return []
-          }
-        })
-    // Title
-        const promptDataTitle = generatePrompt(data, "0");
-        let promise_title = moduleCompletion(promptDataTitle)
-          .then(fetchTitle=>{
-            data.TITLE = fetchTitle;
-            console.log(`Generated title : ${fetchTitle}`)
-            return fetchTitle
-          })
-    //const seoSearch = await getSearchResult(data.TITLE);
-    //const seoSearchHTML = searchResultsToHtml(seoSearch);
-// Image
-    let promise_images = getImageSearchResult(article.articleUrl)
-      .then(imageSearch => {
-        if (imageSearch.length > 0) {
-          const imageSearchHTML = imageSearchToHTML(imageSearch, article.articleUrl);
-          return imageSearchHTML
-        }else{
-
-        }
-
-      })
-    // Image Generation
-    const promptDataImage = imagePromptGen(article.title)
-    let promise_imageGeneration = moduleCompletion({model:"gpt-3.5-turbo-instruct",role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
-    .then(fetchPromptImage => {
-    return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
-    })
-    .then(imageData => {
-      const imagePath = imageData.imagePath;
-      const imageBits = fs.readFileSync(imagePath);
-      // Wrap the callback in a promise
-      return new Promise((resolve, reject) => {
-        client.uploadFile({
-          name: `${imageData.imageID}.png`,
-          type: 'image/png',
-          bits: imageBits,
-        }, (error, file) => {
-          if (error) {
-            console.log(error);
-            console.log('Error when adding the thumbnail');
-            reject(error); // Reject the promise on error
-          } else {
-            resolve(file); // Resolve the promise with the file on success
-          }
-        });
-      });
-    })
-
-    let promise_final  = Promise.all([promise_content,promise_images]) 
-    .then(([convertContentHTML,imageSearchHTML]) => {
-      return convertContentHTML + '<br>' + imageSearchHTML + '<br>' + disclaimer(language);
-    })
-    // Post 
-    Promise.all([promise_title,promise_final,promise_categories,promise_tags,promise_imageGeneration])
-      .then(([fetchTitle, finalContent, myCategories, myTags, image])=>{
-        post(fetchTitle, finalContent, myCategories, myTags, image, client);
-        updateArticleStatus(article._id);
-      }) 
-      .catch(err=>{
-        console.log(err)
-      })
-  }
+  return myCategories
+}
+function contentPrompt(content){
+  return `Write a blog post on the same subject as  the following :${content} \nProvide a new fresh and well structured blog post.Include the social media post but avoid share links links . Include relevant images. Avoid paraphrasing. Use a friendly tone and respond in japanese. Respond using markdown. Do not include html related to the website. I want to create a new original blog post for my own blog. `
+}
+function categoryPromptGen(title,type,language){
+  return  `For a blog post titled: '${title}', provide 5 ${type} names. Respond in ${language} only with a json string array only.Only include the json string , with no variable declaration`
+}
+function categoryDescriptionPromptGen(category,type,language){
+  return  `For a blog ${type}: '${category}', provide a description. Respond in ${language} only.`
 }
 function imagePromptGen(fetchTitle){
   return `I will provide a title and you will respond with a JS array list of descriptive words to describe a person  in relation with the title so I can draw an image.be specific,lots of details.The keyword categories are : 
@@ -305,70 +221,7 @@ function imagePromptGen(fetchTitle){
   
   Title: ${fetchTitle}.`;
 }
-function contentPromptGenForSearch(fetchTitle,blogInfo){
-  return `Write a paragraph related to "${fetchTitle}", the paragraph contain a title and a description about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The title you provide must engage a broad audience by combining high-profile personnality name in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
-}
-function contentPromptGen(fetchTitle,blogInfo){
-  return `Write 5 paragraphs related to "${fetchTitle}", a paragraph contain a title and a description about the subject and a link to a REAL up and running ${blogInfo.postLanguage}  website  about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The titles you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
-  return  `Write a detailed blog post about "${fetchTitle}".The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
-}
-function titlePromptGen(blogInfo) {
-  return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. The title you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places or else in the audience country. Respond with the title string only.`;
-}  
-
-function extractArrayFromString(fetchTag) {
-  const arrayExtractor = /\[.*?\]/; // The spell to locate our array
-  const matched = fetchTag.match(arrayExtractor);
-
-  if (matched) {
-    try {
-      // Attempting to transform the string into a noble array
-      const arrayString = matched[0];
-      const actualArray = JSON.parse(arrayString);
-      return actualArray; // The quest is a success!
-    } catch (e) {
-      // The spell backfired, alas! The array was a mirage.
-      console.error("Oops! Something went wrong during the transformation:", e);
-      return null; // Returning a solemn null, as a sign of our failed quest.
-    }
-  } else {
-    // The array was but a legend, nowhere to be found.
-    console.log("No array detected in the string. Are you sure it's the right scroll?");
-    console.log({fetchTag})
-    return null; // A respectful null, acknowledging the absence of our quest's goal.
-  }
-}
-
-
-async function updateCategories(myCategories,newCategories,type,client) {
-  // Let's handle the case where we need to fetch details first
-  if (Array.isArray(newCategories)) {
-    // It's an array, time for a group adventure
-    const promises = newCategories.map(cat => getTermDetails(cat, type, client));
-    const details = await Promise.all(promises);
-    // Using map to transform the details into a list of names (or whatever property you need)
-    myCategories.push(...details);
-  } else {
-    if(!newCategories){
-      return myCategories
-    }
-    // It's a single string, a solo mission
-    const detail = await getTermDetails(newCategories, type, client);
-    myCategories.push(detail);
-  }
-  return myCategories
-}
-
-function isAutoBlogInfoComplete(blogInfo) {
-  // A list of ingredients we expect in our potion
-  const requiredIngredients = ['blogPassword', 'blogUrl', 'blogUsername'];
-
-  // Checking every ingredient for its presence and clarity
-  return requiredIngredients.every(key => blogInfo[key] !== undefined && blogInfo[key] !== '');
-}
-
 // Tools
-
 async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, myImages, blogInfo) {
 
   try {
@@ -409,14 +262,6 @@ async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myT
     throw error; // Rethrow or handle as needed
   }
 }
-
-async function updateArticleStatus(articleId){
-  await global.db.collection('articles').updateOne({_id:new ObjectId(articleId)},{$set:{published:true}})
-}
-async function getBlogInfo(db,userId){
-  const user = await db.collection('users').findOne({_id:new ObjectId(userId)})
-  return {password:user.blogPassword,url:user.blogUrl,username:user.blogUsername,theme:user.blogTheme}
-}
 function isBlogInfoComplete(blogInfo) {
   // A list of ingredients we expect in our potion
 
@@ -428,13 +273,6 @@ function isBlogInfoComplete(blogInfo) {
 function isTaxonomyComplete(taxonomy) {
   const requiredFields = ['name', 'description'];
   return requiredFields.every(key => taxonomy[key] !== undefined && taxonomy[key] !== '');
-}
-async function getLanguage(db,userId){
-  const user = await db.collection('users').findOne({_id:new ObjectId(userId)})
-  return user.language || 'japanese'
-}
-async function findActiveFeeds(db){
-  return db.collection('feeds').find({'status':'active'}).toArray()
 }
 function markdownToHtml(markdownString) {
   // Use marked to convert the markdown string to HTML
@@ -451,62 +289,6 @@ function searchResultsToHtml(processedResults) {
 
   // Finally, wrap the list items in a <ul> element
   return `<ul>${listItemsHtml}</ul>`;
-}
-function imageSearchToHTML(imageSearch,articleUrl) {
-  if (!imageSearch || !imageSearch.length) {
-    return '<div>No images found, the gallery is as empty as a cauldron after a potion class.</div>';
-  }
-
-  // Begin our HTML gallery with a touch of responsive style
-  let html = `<style>
-    .image-gallery {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    /* The spell of responsiveness: one column on screens narrower than 600 pixels */
-    @media (max-width: 600px) {
-      .image-gallery {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-  <div class="image-gallery">`;
-
-  // For each image, create a card-like element
-  imageSearch.forEach(image => {
-    html += `
-      <div style="border: 1px solid #ddd; box-shadow: 0px 0px 5px #aaa; margin-bottom: 20px;">
-        <a href="${articleUrl}" target="_blank">
-          <img src="${image.link}" alt="${image.title}" style="width: 100%; height: auto;">
-        </a>
-      </div>
-    `;
-  });
-
-  // Close our gallery div
-  html += '</div>';
-
-  return html;
-}
-function disclaimer(language) {
-  switch (language) {
-    case 'japanese':
-      return '<i>ご注意ください！このページの内容は、私たちのAI仲間によって自動的に生成されました。生成型AIは時に間違った情報を吐き出すこともありますので、この記事の内容を鵜呑みにせず、自分の目で確かめてくださいね。専門的な判断や重要な行動をする前には、信頼できる情報源をチェックすることを忘れずに。</i><br>';
-    case 'french':
-      return '<i>Attention, chers lecteurs ! Le contenu de cette page a été généré automatiquement par notre complice, l\'IA générative. Comme notre ami l\'IA peut parfois se tromper, ne prenez pas tout ce qui est écrit ici pour parole d\'évangile. Vérifiez par vous-même et consultez des sources fiables avant de prendre des décisions spécialisées ou d\'agir.</i><br>';
-    case 'english':
-    default:
-      return `<i>Heads up, folks! The content on this very page was whipped up automatically by our pal, the generative AI. Since our AI buddy can sometimes mix up its facts, please don't swallow everything you read here hook, line, and sinker. Do your own fact-checking and consult trustworthy sources before making any specialized decisions or taking action.</i><br>`;
-  }
-}
-
-function categoryPromptGen(title,type,language){
-  return  `For a blog post titled: '${title}', provide 5 ${type} names. Respond in ${language} only with a json string array only.Only include the json string , with no variable declaration`
-}
-
-function categoryDescriptionPromptGen(category,type,language){
-  return  `For a blog ${type}: '${category}', provide a description. Respond in ${language} only.`
 }
 async function addTaxonomy(taxonomyArray,type,client,language){
   const result = []
@@ -543,5 +325,47 @@ async function createTaxonomy(taxonomyName,type,language, client){
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
+function extractArrayFromString(fetchTag) {
+  const arrayExtractor = /\[.*?\]/; // The spell to locate our array
+  const matched = fetchTag.match(arrayExtractor);
 
-module.exports = {autoBlog,rsspost}
+  if (matched) {
+    try {
+      // Attempting to transform the string into a noble array
+      const arrayString = matched[0];
+      const actualArray = JSON.parse(arrayString);
+      return actualArray; // The quest is a success!
+    } catch (e) {
+      // The spell backfired, alas! The array was a mirage.
+      console.error("Oops! Something went wrong during the transformation:", e);
+      return null; // Returning a solemn null, as a sign of our failed quest.
+    }
+  } else {
+    // The array was but a legend, nowhere to be found.
+    console.log("No array detected in the string. Are you sure it's the right scroll?");
+    console.log({fetchTag})
+    return null; // A respectful null, acknowledging the absence of our quest's goal.
+  }
+}
+function extractH1orFirstSentence(html) {
+  const $ = cheerio.load(html);
+  const h1Text = $('h1').first().text().trim();
+
+  // Check if there's text in the first H1 found
+  if (h1Text) {
+    return h1Text;
+  }
+
+  // If no H1, extract the first sentence from the text
+  // This is a simple approach and might need adjustments based on actual HTML content
+  const bodyText = $('body').text().trim();
+  let firstSentence
+  if(bodyText.indexOf('。'>0)){
+    firstSentence = bodyText.split('。')[0] + '。';
+    return firstSentence;
+  }
+    firstSentence = bodyText.split('. ')[0] + '.';
+    return firstSentence;
+}
+
+module.exports = {generateAndPost,retrieveLatestArticle}

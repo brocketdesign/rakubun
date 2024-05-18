@@ -11,15 +11,47 @@ $(document).ready(function() {
             data: formData,
             success: function(response) {
                 // Handle success
-                alert('Form successfully submitted');
+                Swal.fire({
+                    icon: 'success',
+                    title: '送信完了',
+                    text: 'フォームが正常に送信されました。',
+                    confirmButtonText: '閉じる'
+                });
                 console.log(response);
             },
             error: function() {
                 // Handle error
-                alert('An error occurred');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'エラー発生',
+                    text: 'エラーが発生しました。再試行してください。',
+                    confirmButtonText: '閉じる'
+                });
             }
         });
     });
+
+    // Function to add new blog URL input
+    $('body').on('click', '.add-blog-url', function() {
+        var newInputGroup = $(this).closest('.input-group').clone();
+        newInputGroup.find('input').val('');
+        newInputGroup.find('.remove-blog-url').attr('disabled', false);
+        $('#blogUrls').append(newInputGroup);
+    });
+
+    // Function to remove blog URL input
+    $('body').on('click', '.remove-blog-url', function() {
+        if ($('#blogUrls .input-group').length > 1) {  // Prevent removing the last input group
+            $(this).closest('.input-group').remove();
+        } else {
+            $(this).closest('.input-group').find('input').val('');  // Clear the input if it's the last remaining group
+            $(this).attr('disabled', 'disabled');
+        }
+    });
+
+    // Initial state should not allow removal of the only input field
+    $('.remove-blog-url').attr('disabled', 'disabled');
+
     $('#autoBlogForm').on('submit', function(event) {
         event.preventDefault(); // Prevent the form from submitting via the browser
         var formData = $(this).serialize(); // Serialize the form data
@@ -32,29 +64,50 @@ $(document).ready(function() {
             data: formData,
             success: function(response) {
                 // Handle success
-                alert('Form successfully submitted');
+                Swal.fire({
+                    icon: 'success',
+                    title: '送信完了',
+                    text: 'フォームが正常に送信されました。',
+                    confirmButtonText: '閉じる'
+                });
                 console.log(response);
             },
             error: function() {
                 // Handle error
-                alert('An error occurred');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'エラー発生',
+                    text: 'エラーが発生しました。再試行してください。',
+                    confirmButtonText: '閉じる'
+                });
             }
         });
-    });
+    });     
+
     var blogId = $('#blogId').data('id'); // Assume #blogId is your input field for the blog ID
     if(blogId) {
         $.ajax({
             url: '/api/autoblog/blog-info/' + blogId,
             type: 'GET',
-            success: function(blogInfo) {
-                Object.keys(blogInfo).forEach(function(key) {
+            success: function(data) {
+                Object.keys(data).forEach(function(key) {
                     // Check if an input field with an ID matching the key exists
                     var $input = $('#' + key);
                     if ($input.length) {
                         // Populate the input field with the value from the corresponding key in blogInfo
-                        $input.val(blogInfo[key]);
+                        $input.val(data[key]);
                     }
                 });
+
+                if (data && data.additionalUrls && data.additionalUrls.length > 0) {
+                    data.additionalUrls.forEach(function(url, index) {
+                        var inputGroup = $('.template').clone().removeClass('template').show();
+                        inputGroup.find('input').val(url);
+                        $('#blogUrls').append(inputGroup);
+                    });
+                    // Enable the remove button for all except the last item if multiple items exist
+                    $('.remove-blog-url').attr('disabled', false);
+                }
             },
             error: function(xhr, status, error) {
                 // Handle errors
@@ -89,6 +142,7 @@ $(document).ready(function() {
     deleteButton();
     duplicateButton();
 });
+
 function duplicateButton() {
     $('.duplicate-bot-btn').off('click').on('click', function() {
         var botId = $(this).attr('data-id'); // Get the blogId from the button's data-id attribute
@@ -115,26 +169,47 @@ $(document).ready(function() {
     duplicateButton();
 });
 
-function deleteButton(){
+function deleteButton() {
     $('.delete-bot-btn').on('click', function() {
         var botId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
 
-        if(confirm('Are you sure you want to delete this blog info?')) {
-            $.ajax({
-                url: '/api/autoblog/bot/' + botId,
-                type: 'DELETE',
-                success: function(response) {
-                    //alert(response.message);
-                    $(`.card[data-id="${botId}"]`).fadeOut()
-                },
-                error: function(xhr, status, error) {
-                    // Handle errors
-                    alert("Failed to delete blog info: " + error);
-                }
-            });
-        }
+        Swal.fire({
+            title: '本当に削除しますか？',
+            text: "この操作は元に戻せません！",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'はい、削除します！',
+            cancelButtonText: 'キャンセル',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/api/autoblog/bot/' + botId,
+                    type: 'DELETE',
+                    success: function(response) {
+                        Swal.fire(
+                            '削除されました！',
+                            'ブログ情報が正常に削除されました。',
+                            'success'
+                        );
+                        $(`.card[data-id="${botId}"]`).fadeOut();
+                    },
+                    error: function(xhr, status, error) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '削除できませんでした',
+                            text: "ブログ情報の削除に失敗しました: " + error
+                        });
+                    }
+                });
+            }
+        });
     });
 }
+
+
 function toggleBlogStatus(blogId, newState) {
     fetch(`/api/autoblog/bot/ `, {
         method: 'POST',

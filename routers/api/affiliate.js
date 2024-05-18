@@ -83,13 +83,9 @@ router.get('/log-popup-event', async (req, res) => {
             return res.status(404).send({ message: "Affiliate not found" });
         }
 
-        // Get the current date in Japan time zone
+        
         const today = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' });
-
-        // Convert to a Date object to standardize
-        const dateObj = new Date(today);
-
-        // Prepare the date in YYYY-MM-DD format for daily logging
+        const dateObj = new Date(today + ' UTC');
         const formattedDate = dateObj.toISOString().split('T')[0];
 
         // Extract the year and month for monthly logging

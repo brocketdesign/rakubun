@@ -4,10 +4,10 @@ const fs = require('fs');
 
 const sdapi = new StableDiffusionApi({
     host: 'localhost',
-    port: 7860, 
+    port: 42421, 
     protocol: "http",
-    defaultSampler: "DPM++ SDE Karras",
-    sampler_name: "DPM++ SDE Karras",
+    defaultSampler: "DPM++ SDE",
+    sampler_name: "DPM++ SDE",
     defaultStepCount: 40,
     cfg_scale :7,
     safety_checker: true,
@@ -18,7 +18,7 @@ const default_negative_prompt = '(low quality, worst quality, bad quality, lowre
 
 async function txt2img(options){
 
-  const prompt = options.prompt ? options.prompt : default_prompt;
+  const prompt = options.prompt ? default_prompt + options.prompt : default_prompt;
   const negative_prompt = (options.negativePrompt && options.negativePrompt != '')? options.negativePrompt : default_negative_prompt;
   const aspectRatio = options.aspectRatio;
 
@@ -44,6 +44,7 @@ async function txt2img(options){
     //const base64Image = await convertImageToBase64(imagePath);
     return{ imageID, imagePath };
   } catch (err) {
+    console.log(err)
     return
   }
 }

@@ -69,7 +69,7 @@ function generatePrompt(data, type) {
         case '8':
             // Setting up for article paragraph generation
             const { TITLE: finalTitle,THEME:finalTheme, WRITING_STYLE: finalStyle, LANGUAGE: finalLanguage, WRITING_TONE: finalTone } = data;
-            result.prompt = `Write a blog post about "${finalTitle}" in ${finalLanguage}.${finalTheme ?`The main theme is ${finalTheme}`:'' }.Provide a well structured and readable article. Style: ${finalStyle}. Tone: ${finalTone}. Use Markdown. you MUST respond in ${finalLanguage}`;
+            result.prompt = `Write a blog post about "${finalTitle}" in ${finalLanguage}.${finalTheme ?`The main theme is ${finalTheme}`:'' }Provide a well structured and readable article. Style: ${finalStyle}. Tone: ${finalTone}. Use Markdown. you MUST respond in ${finalLanguage}`;
             result.max_tokens = 1000 ; // A decent length for a paragraph
             break;
             

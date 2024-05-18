@@ -42,7 +42,7 @@ async function getSearchResult(query) {
       engine_id: process.env.GOOGLE_SEARCH_ENGINE_ID
   };
 
-  const url = new URL(`https://www.googleapis.com/customsearch/v1?key=${google.api_id}&cx=${google.engine_id}&q=${query}&num=10`).href;
+  const url = new URL(`https://www.googleapis.com/customsearch/v1?key=${google.api_id}&cx=${google.engine_id}&q=${query}&num=5&dateRestrict=m1`).href;
 
   try {
       const response = await axios.get(url);

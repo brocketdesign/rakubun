@@ -37,11 +37,14 @@ $(document).ready(function() {
     }
 
     function fetchAndDisplayAnalytics(affiliates) {
-        const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    
+        const today = new Date().toLocaleString('en-US', { timeZone: 'Asia/Tokyo' });
+        const dateObj = new Date(today + ' UTC');
+        const formattedDate = dateObj.toISOString().split('T')[0];
+        console.log({today,formattedDate})
+
         affiliates.forEach(affiliate => {
             ['opened', 'interacted'].forEach(action => {
-                $.get(`/api/affiliate/fetch-popup-data`, { affiliateId: affiliate._id, action: action, today: today })
+                $.get(`/api/affiliate/fetch-popup-data`, { affiliateId: affiliate._id, action: action, today: formattedDate })
                     .done((data) => {
                         // Update the table cells for daily and monthly data
                         $(`#row-${affiliate._id} .analytics-${action}`).html(`

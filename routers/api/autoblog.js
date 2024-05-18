@@ -7,6 +7,7 @@ const { getCategoryId } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs');
 var wordpress = require("wordpress");
 
+const {retrieveLatestArticle} = require('../../modules/autoblog')
 
 router.get('/info/category/:blogId', async (req, res) => {
   const { blogId } = req.params;
@@ -41,13 +42,13 @@ router.get('/blog-info/:blogId', async (req, res) => {
   const { blogId } = req.params;
 
   try {
-    const blogInfo = await global.db.collection('blogInfos')
-                             .findOne({_id: new ObjectId(blogId), userId: new ObjectId(req.user._id)});
+    const blogInfo = await global.db.collection('blogInfos').findOne({_id: new ObjectId(blogId), userId: new ObjectId(req.user._id)});
 
     if (!blogInfo) {
       return res.status(404).json({ message: 'Blog information not found or access denied.' });
     }
     blogInfo.blogId=blogId
+    retrieveLatestArticle(blogInfo,db)
     res.json(blogInfo);
   } catch (error) {
     console.error(error);
