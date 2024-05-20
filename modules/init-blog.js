@@ -12,6 +12,8 @@ const cheerio = require('cheerio');
 var wordpress = require("wordpress");
 const fs = require('fs');
 require('dotenv').config({ path: './.env' });
+const xmlrpc = require("xmlrpc");
+
 
 // Async function to retrieve and process the latest article using direct URLs
 async function retrieveLatestArticle(blogInfo, db) {
@@ -39,12 +41,13 @@ async function retrieveLatestArticle(blogInfo, db) {
                   // Fire the generateAndPost function to process and update the post
                   await generateAndPost(blogInfo, articleData, db);
 
-                  // Update the post status to 'done' to avoid reprocessing
+                  console.log('Update the post status to "done" to avoid reprocessing')
                   await db.collection('posts').updateOne(
                       { wordpressId: post.id },
                       { $set: { status: 'done' } },
                       { upsert: true }
                   );
+                  
 
                   return articleData; // Return the processed article data
               }
@@ -86,6 +89,37 @@ async function generateAndPost(blogInfo,articleData,db){
 
   //Article generation
   console.log(`Generating article for: ${articleData.title}`);
+
+    // Image Generation
+    const promptDataImage = imagePromptGen(articleData.title)
+    let promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
+    .then(fetchPromptImage => {
+      return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo._id});
+    })
+    .then(imageData => {
+      const imagePath = imageData.imagePath;
+      const imageBits = fs.readFileSync(imagePath);
+      // Wrap the callback in a promise
+      return new Promise((resolve, reject) => {
+        client.uploadFile({
+          name: `${imageData.imageID}.png`,
+          type: 'image/png',
+          bits: imageBits,
+        }, (error, file) => {
+          if (error) {
+            console.log('Error when adding the thumbnail');
+            reject(error); // Reject the promise on error
+          } else {
+            resolve(file); // Resolve the promise with the file on success
+          }
+        });
+      });
+    })
+    .catch(error => {
+      // Handle any errors in the promise chain
+      console.error("Error in image processing");
+    });
+
   // Categories
   let promise_categories = addTaxonomy(['ニュース'], 'category', client, language)
     .then(myCategories => {
@@ -99,7 +133,7 @@ async function generateAndPost(blogInfo,articleData,db){
   })
 
   // Content
-  let promise_content =  moduleCompletion({model: modelGPT,role:`You are a profesionnal ${blogInfo.language} blog writer` ,prompt: contentPrompt(articleData.content), max_tokens: 2000})
+  let promise_content =  moduleCompletion({model: modelGPT,role:`You are a profesionnal ${blogInfo.language} blog writer` ,prompt: contentPrompt(articleData.content), max_tokens: 4096})
   .then(fetchContent => {
     const convertContentHTML = markdownToHtml(fetchContent);
     return convertContentHTML
@@ -118,57 +152,34 @@ async function generateAndPost(blogInfo,articleData,db){
         return []
       }
     })
-
-  // Image Generation
-  const promptDataImage = imagePromptGen(articleData.title)
-  let promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
-  .then(fetchPromptImage => {
-    return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
-  })
-  .then(imageData => {
-    const imagePath = imageData.imagePath;
-    const imageBits = fs.readFileSync(imagePath);
-    // Wrap the callback in a promise
-    return new Promise((resolve, reject) => {
-      client.uploadFile({
-        name: `${imageData.imageID}.png`,
-        type: 'image/png',
-        bits: imageBits,
-      }, (error, file) => {
-        if (error) {
-          console.log('Error when adding the thumbnail');
-          reject(error); // Reject the promise on error
-        } else {
-          resolve(file); // Resolve the promise with the file on success
-        }
-      });
-    });
-  })
-  .catch(error => {
-    // Handle any errors in the promise chain
-    console.error("Error in image processing");
-  });
-
-
-
   
   // Post
-  let promise_post = Promise.all([promise_content,promise_google, promise_categories, promise_tags, promise_image])
-    .then(([content, google, categories, tags, image]) => {
-      const fetchTitle = extractH1orFirstSentence(content)
-      const new_content = content + `</br> ${google}`
-      try {
-        saveArticleUpdateBlog(fetchTitle, new_content, categories, tags, image, blogInfo);
-      } catch (error) {
-        console.log(error)
-        console.log(`Error Saving Article`)
-      }
-      return post(fetchTitle, new_content, categories, tags, image, client)
-    })
-    .catch(err=>{
-      console.log(err)
-    })
-    
+  async function processAndPostArticles() {
+    try {
+      const [content, google, categories, tags, image] = await Promise.all([
+        promise_content, 
+        promise_google, 
+        promise_categories, 
+        promise_tags, 
+        promise_image
+      ]);
+  
+      const fetchTitle = extractH1orFirstSentence(content);
+      const new_content = `${content}</br> ${google}`;
+  
+      // Assuming saveArticleUpdateBlog is async, use await to ensure it completes before moving on.
+      await saveArticleUpdateBlog(fetchTitle, new_content, categories, tags, image, blogInfo);
+  
+      // Assuming post is an async function
+      return await post(fetchTitle, new_content, categories, tags, image, client);
+    } catch (err) {
+      console.error(err);
+      console.log('Error in processing or posting the article');
+    }
+  }
+  
+  await processAndPostArticles();
+
 
 }
 
@@ -231,8 +242,7 @@ async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myT
       content: finalContent,
       categories: myCategories,
       tags: myTags,
-      blogId: new ObjectId(blogInfo.blogId), // Assuming blogInfo contains blogId
-      botId: new ObjectId(blogInfo.botId), // Assuming blogInfo contains blogId
+      blogId: new ObjectId(blogInfo._id), // Assuming blogInfo contains blogId
       createdAt: new Date(), // Capture the creation date of the article
       thumbnail:myImages?myImages.attachment_id:null
 

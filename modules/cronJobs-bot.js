@@ -1,7 +1,7 @@
 // cronjob.js
 const cron = require('node-cron');
 const { ObjectId } = require('mongodb');
-const {autoBlog,rsspost} = require('./init-bot')
+const {autoBlog} = require('./init-bot')
 
 let cronJobsMap = {};
 

@@ -1,4 +1,5 @@
 $(document).ready(function() {
+
     $('#botForm').on('submit', function(event) {
         event.preventDefault(); // Prevent the form from submitting via the browser
         var formData = $(this).serialize(); // Serialize the form data
@@ -69,8 +70,12 @@ $(document).ready(function() {
                     title: '送信完了',
                     text: 'フォームが正常に送信されました。',
                     confirmButtonText: '閉じる'
-                });
-                console.log(response);
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        location.reload();
+                    }
+                });                
+                
             },
             error: function() {
                 // Handle error
@@ -115,12 +120,15 @@ $(document).ready(function() {
                 if ($('#blogUrls .input-group').length > 1) {
                     $('.remove-blog-url').attr('disabled', false);
                 }
+
+                validateAndToggleIcon();
             },
             error: function(xhr, status, error) {
                 // Handle errors
                 console.error("Failed to fetch blog info:", error);
             }
         });
+
         updateCategoryList(blogId)
 
     }else {
@@ -318,6 +326,9 @@ function toggleBlogStatus(blogId, newState) {
 }
 
 function updateCategoryList(blogId) {
+    if($('#postCategory').length == 0){
+        return
+    }
     $.ajax({
         url: '/api/autoblog/info/category/' + blogId,
         type: 'GET',
@@ -335,3 +346,53 @@ function updateCategoryList(blogId) {
         }
     });
 }
+function postBlogArticle(blogId) {
+    Swal.fire({
+      title: '処理を開始しますか？',
+      text: 'ブログ記事の投稿を開始します。',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+          url: '/api/autoblog/post-blog-article',
+          type: 'POST',
+          data: JSON.stringify({ blogId: blogId }),
+          contentType: 'application/json; charset=utf-8',
+          dataType: 'json',
+          success: function(response) {
+            Swal.fire(
+              '完了しました！',
+              '記事の処理が正常に開始されました。',
+              'success'
+            );
+          },
+          error: function(xhr, status, error) {
+            Swal.fire(
+              'エラーが発生しました',
+              '処理を開始できませんでした。詳細: ' + xhr.responseText,
+              'error'
+            );
+          }
+        });
+      }
+    });
+  }
+  
+  function validateAndToggleIcon() {
+    const urlInput = $('#blogUrl');
+    const iconSpan = $('#openNewPageIcon');
+    const url = urlInput.val().trim();
+    // Simple check for a basic URL pattern
+    if (url.length > 0) {
+        iconSpan.show();
+        iconSpan.find('a').attr('href', url);
+    } else {
+        iconSpan.hide();
+    }
+}
+

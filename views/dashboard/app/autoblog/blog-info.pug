@@ -40,8 +40,13 @@ block mainContent
 
                             div.form-group.col-12.col-sm-6
                                 label.text-muted.fw-bold.text-muted.fw-bold(for="blogUrl", class="form-label") ブログURL:
-                                input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
+                                .input-group
+                                    input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
+                                    span.input-group-text(id="openNewPageIcon" style="display: none;")
+                                        a(href="#" target="_blank")
+                                            i.fas.fa-external-link-alt
                                 div.invalid-feedback ブログURLは必須です。
+
 
                 .card.my-2
                     .card-header
@@ -92,6 +97,10 @@ block mainContent
                         option(value="*/10 * * * *") 10分ごと
                         option(value="0 0 * * *") 毎日
                         option(value="0 0 * * 0") 毎週
-            button.w-100.my-2(type="submit" class="btn btn-primary") 送信
+                button.btn.btn-primary.my-4(type="button" onclick=`postBlogArticle("${blogId ? blogId : ""}")`)
+                    | 記事を投稿
+
+
+            button.w-100.my-2(type="submit" class="btn btn-success") 送信
 
     script(src="/js/autoblog.js")
