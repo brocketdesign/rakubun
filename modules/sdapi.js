@@ -2,6 +2,7 @@ const { StableDiffusionApi } = require("a1111-webui-api");
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
 const ngrok = require('ngrok');
+const startNgrok = require('../services/startNgrok');
 
 async function getApiConfiguration() {
   let host = 'localhost';
@@ -9,15 +10,17 @@ async function getApiConfiguration() {
 
   if (process.env.NODE_ENV !== 'local') {
     // Start NGROK and get a public URL
-    await ngrok.authtoken(process.env.NGROK_AUTH_TOKEN); // Set your NGROK auth token in environment variables
-    const url = await ngrok.connect(port);
+    const url = await startNgrok(port);
+    if (!url) {
+      throw new Error('Failed to start NGROK. Check logs for more details.');
+    }
     const urlObj = new URL(url);
     host = urlObj.hostname;
     port = urlObj.port || 80; // NGROK might provide a different port
     console.log(`NGROK running at ${url}`);
   }
 
-  // Create and return the Stable Diffusion API instance
+  // Assuming StableDiffusionApi is imported or defined elsewhere
   return new StableDiffusionApi({
     host: host,
     port: port, 
