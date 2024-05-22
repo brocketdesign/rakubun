@@ -25,5 +25,18 @@ async function startNgrok(port) {
     return null; // Return null or handle the error as appropriate
   }
 }
+async function stopNgrok(port) {
+  try {
+    // Disconnect any existing tunnels if ngrok is already running
+    await ngrok.disconnect();  // This will only disconnect tunnels without killing the ngrok process
+    await ngrok.kill();        // This ensures that all ngrok processes are terminated
 
-module.exports = startNgrok;
+
+    console.log(`Disconnect any existing tunnels if ngrok is already running`);
+
+  } catch (error) {
+    console.error('Failed to stop NGROK:', error);
+    return null; // Return null or handle the error as appropriate
+  }
+}
+module.exports = {startNgrok,stopNgrok};

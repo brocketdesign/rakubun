@@ -2,7 +2,7 @@ const { StableDiffusionApi } = require("a1111-webui-api");
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
 const ngrok = require('ngrok');
-const startNgrok = require('../services/startNgrok');
+const {startNgrok,stopNgrok} = require('../services/startNgrok');
 
 async function getApiConfiguration() {
   let host = 'localhost';
@@ -63,9 +63,15 @@ async function txt2img(options){
     await result.image.toFile(imagePath);
 
     //const base64Image = await convertImageToBase64(imagePath);
+    if (process.env.NODE_ENV !== 'local') {
+      stopNgrok();
+    }
     return{ imageID, imagePath };
   } catch (err) {
     console.log(err)
+    if (process.env.NODE_ENV !== 'local') {
+      stopNgrok();
+    }
     return
   }
 }
