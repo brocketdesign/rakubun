@@ -1,22 +1,40 @@
 const { StableDiffusionApi } = require("a1111-webui-api");
 const { ObjectId } = require('mongodb');
 const fs = require('fs');
+const ngrok = require('ngrok');
 
-const sdapi = new StableDiffusionApi({
-    host: 'localhost',
-    port: 42421, 
+async function getApiConfiguration() {
+  let host = 'localhost';
+  let port = 42421;
+
+  if (process.env.NODE_ENV !== 'local') {
+    // Start NGROK and get a public URL
+    await ngrok.authtoken(process.env.NGROK_AUTH_TOKEN); // Set your NGROK auth token in environment variables
+    const url = await ngrok.connect(port);
+    const urlObj = new URL(url);
+    host = urlObj.hostname;
+    port = urlObj.port || 80; // NGROK might provide a different port
+    console.log(`NGROK running at ${url}`);
+  }
+
+  // Create and return the Stable Diffusion API instance
+  return new StableDiffusionApi({
+    host: host,
+    port: port, 
     protocol: "http",
     defaultSampler: "DPM++ SDE",
     sampler_name: "DPM++ SDE",
     defaultStepCount: 40,
-    cfg_scale :7,
+    cfg_scale: 7,
     safety_checker: true,
   });
+}
   
 const default_prompt = "High-quality photorealistic, showcasing a vibrant,detailed, expressive characters, futuristic fashion, lively , colorful.clear, dynamic poses and emotions. golden hour, enhancing the colors and shadows for a cinematic feel./n"
 const default_negative_prompt = '(low quality, worst quality, bad quality, lowres:1.2), bad photo, bad art,oversaturated, watermark, username, signature, text, error, cropped, jpeg artifacts, autograph, trademark, (canvas frame, canvas border, out of frame:1.2),bad anatomy, bad hands, missing fingers, extra digit, fewer digits, bad feet, extra fingers, mutated hands, poorly drawn hands, bad proportions, extra limbs, disfigured, bad anatomy, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, mutated hands, fused fingers, too many fingers, long neck,nsfw,naked,nipple'
 
 async function txt2img(options){
+  const sdapi = await getApiConfiguration();
 
   const prompt = options.prompt ? default_prompt + options.prompt : default_prompt;
   const negative_prompt = (options.negativePrompt && options.negativePrompt != '')? options.negativePrompt : default_negative_prompt;
