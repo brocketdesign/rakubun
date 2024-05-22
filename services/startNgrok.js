@@ -1,10 +1,24 @@
 const ngrok = require('ngrok');
+const { exec } = require('child_process');
 
 async function startNgrok(port) {
   try {
+    // Attempt to kill any existing ngrok processes
+    await new Promise((resolve, reject) => {
+      exec('pkill -f ngrok', (error, stdout, stderr) => {
+        if (error) {
+          console.warn('Failed to kill existing ngrok processes:', stderr);
+          resolve(); // Resolve anyway to continue with ngrok setup
+        } else {
+          console.log('Existing ngrok processes killed', stdout);
+          resolve();
+        }
+      });
+    });
+
     // Ensure any existing NGROK tunnels are disconnected
-    await ngrok.disconnect(); // Attempts to disconnect all tunnels
-    await ngrok.kill(); // Ensure all NGROK processes are terminated
+    await ngrok.disconnect();
+    await ngrok.kill();
 
     // Set NGROK auth token if required
     if (process.env.NGROK_AUTH_TOKEN) {
