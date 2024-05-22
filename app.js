@@ -12,10 +12,6 @@ const { StableDiffusionApi } = require("stable-diffusion-api");
 
 const { initializeCronJobs } = require('./modules/cronJobs-bot.js');
 const { initializeCronJobsForBlogs } = require('./modules/cronJobs-blog.js');
-const startNgrok = require('./services/startNgrok');
-
-// Replace 42421 with the port your local server is running on
-startNgrok(42421);
 
 const passport = require("passport");
 const passportConfig = require('./middleware/passport')(passport);
