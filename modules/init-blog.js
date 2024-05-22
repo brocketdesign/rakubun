@@ -117,6 +117,7 @@ async function generateAndPost(blogInfo,articleData,db){
     })
     .catch(error => {
       // Handle any errors in the promise chain
+      console.log(error)
       console.error("Error in image processing");
     });
 
