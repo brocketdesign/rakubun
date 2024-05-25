@@ -3,7 +3,6 @@ const { ObjectId } = require('mongodb');
 const fs = require('fs');
 const ngrok = require('ngrok');
 const {startNgrok,stopNgrok} = require('../services/startNgrok');
-const {uploadFileToS3} = require('../services/aws');
 
 async function getApiConfiguration() {
   let host = 'localhost';
@@ -70,13 +69,13 @@ async function txt2img(options){
     const imageBuffer = await result.image.toBuffer();
 
     if (process.env.NODE_ENV !== 'local') {
-      stopNgrok();
+      //stopNgrok();
     }
     return{ imageID, imageBuffer };
   } catch (err) {
     console.log(err)
     if (process.env.NODE_ENV !== 'local') {
-      stopNgrok();
+      //stopNgrok();
     }
     return
   }
