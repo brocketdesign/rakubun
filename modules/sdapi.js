@@ -8,7 +8,7 @@ async function getApiConfiguration() {
   let host = 'localhost';
   let port = 42421;
 
-  if (process.env.NODE_ENV !== 'local' || true) {
+  if (process.env.NODE_ENV !== 'local') {
     // Start NGROK and get a public URL
     const url = await startNgrok(port);
     if (!url) {
