@@ -97,14 +97,13 @@ async function generateAndPost(blogInfo,articleData,db){
       return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo._id});
     })
     .then(imageData => {
-      const imagePath = imageData.imagePath;
-      const imageBits = fs.readFileSync(imagePath);
+      const imageBuffer = imageData.imageBuffer;
       // Wrap the callback in a promise
       return new Promise((resolve, reject) => {
         client.uploadFile({
           name: `${imageData.imageID}.png`,
           type: 'image/png',
-          bits: imageBits,
+          bits: imageBuffer,
         }, (error, file) => {
           if (error) {
             console.log('Error when adding the thumbnail');

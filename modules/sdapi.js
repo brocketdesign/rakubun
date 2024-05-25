@@ -3,6 +3,7 @@ const { ObjectId } = require('mongodb');
 const fs = require('fs');
 const ngrok = require('ngrok');
 const {startNgrok,stopNgrok} = require('../services/startNgrok');
+const {uploadFileToS3} = require('../services/aws');
 
 async function getApiConfiguration() {
   let host = 'localhost';
@@ -57,16 +58,21 @@ async function txt2img(options){
   try {
     const result = await sdapi.txt2img(payload);
     const imageID = await saveImageToDB(db, options.blogId, prompt, result.image, aspectRatio);
-    await ensureFolderExists('./public/output');
 
-    const imagePath = `./public/output/${imageID}.png`;
-    await result.image.toFile(imagePath);
-
+    //await ensureFolderExists('./public/output');
+    //const imagePath = `./public/output/${imageID}.png`;
+    //await result.image.toFile(imagePath);
     //const base64Image = await convertImageToBase64(imagePath);
+
+    //const imagePath = await uploadFileToS3(result.image, `${imageID}.png`)
+
+    // Assume 'result.image' is a Sharp object
+    const imageBuffer = await result.image.toBuffer();
+
     if (process.env.NODE_ENV !== 'local') {
       stopNgrok();
     }
-    return{ imageID, imagePath };
+    return{ imageID, imageBuffer };
   } catch (err) {
     console.log(err)
     if (process.env.NODE_ENV !== 'local') {
