@@ -13,7 +13,9 @@ block mainContent
     #affiliateId(data-id=(affiliateId ? affiliateId : ""))
     .infos
     div#dateRangeSelector
-        // Implement your date range selector here
+        button.btn.btn-primary.me-2(onclick="updateDateRange('thisMonth')") 今月
+        button.btn.btn-primary.me-2(onclick="updateDateRange('lastMonth')") 先月
+        button.btn.btn-primary(onclick="updateDateRange('last7Days')") 過去7日間
     .container-graph
       canvas#analyticsChart(width="800" height="400")
           // Setup event handlers to update chart based on user inputs

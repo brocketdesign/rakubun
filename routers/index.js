@@ -6,6 +6,7 @@ const axios = require('axios');
 const session = require('express-session');
 const { email, sendEmail } = require('../services/email')
 
+
 router.get('/',async(req, res, next) => {
   if (req.isAuthenticated()) {
     return res.redirect('/dashboard'); // Redirect to the dashboard if user is logged in

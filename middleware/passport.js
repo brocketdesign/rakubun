@@ -4,7 +4,6 @@ const dotenvConfig = require("dotenv").config();
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const FacebookStrategy = require("passport-facebook").Strategy;
-const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
 //
 //
@@ -64,39 +63,6 @@ module.exports = function (passport) {
         })
       );
 
-      passport.use(
-        new GoogleStrategy(
-          {
-            clientID: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: process.env.GOOGLE_APP_CALLBACK_URL,
-          },
-          async function (accessToken, refreshToken, profile, done) {
-            try {
-              const users = db.collection('users');
-      
-              // Try to find the user
-              let user = await users.findOne({ social_user_id: profile.id });
-      
-              // If user doesn't exist, create a new one
-              if (!user) {
-                const newUser = {
-                  social_user_id: profile.id,
-                  name: profile.displayName,
-                  registration_type: "google",
-                  // add any other fields you need
-                };
-                const result = await users.insertOne(newUser);
-                user = result.ops[0];
-              }
-      
-              done(null, user);
-            } catch (err) {
-              done(err);
-            } 
-          }
-        )
-      );
     }
 
 

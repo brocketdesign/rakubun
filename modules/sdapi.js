@@ -33,7 +33,7 @@ async function getApiConfiguration() {
   });
 }
   
-const default_prompt = "High-quality photorealistic, showcasing a vibrant,detailed, expressive characters, futuristic fashion, lively , colorful.clear, dynamic poses and emotions. golden hour, enhancing the colors and shadows for a cinematic feel./n"
+const default_prompt = "High-quality photorealistic, showcasing a vibrant,detailed, expressive characters, fashion, lively , colorful.clear, dynamic poses and emotions. golden hour, enhancing the colors and shadows for a cinematic feel./n"
 const default_negative_prompt = '(low quality, worst quality, bad quality, lowres:1.2), bad photo, bad art,oversaturated, watermark, username, signature, text, error, cropped, jpeg artifacts, autograph, trademark, (canvas frame, canvas border, out of frame:1.2),bad anatomy, bad hands, missing fingers, extra digit, fewer digits, bad feet, extra fingers, mutated hands, poorly drawn hands, bad proportions, extra limbs, disfigured, bad anatomy, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, mutated hands, fused fingers, too many fingers, long neck,nsfw,naked,nipple'
 
 async function txt2img(options){

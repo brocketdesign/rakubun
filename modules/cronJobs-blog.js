@@ -43,7 +43,9 @@ const initializeCronJobsForBlogs = async (db) => {
 
   const blogs = await db.collection('blogInfos').find({ isActive: true }).toArray();
   blogs.forEach(blog => {
-    setCronJobForBlog(db, blog._id, blog.postFrequency);
+    if(blog.postFrequency){
+      setCronJobForBlog(db, blog._id, blog.postFrequency);
+    }
   });
 };
 

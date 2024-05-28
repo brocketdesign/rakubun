@@ -90,3 +90,23 @@ $(document).ready(function() {
     showInfo($('#affiliateId').data('id'))
 });
 
+function updateDateRange(range) {
+    const today = new Date();
+    let startDate, endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    if (range === 'thisMonth') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1); // First day of this month
+    } else if (range === 'lastMonth') {
+        startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1); // First day of last month
+        endDate = new Date(today.getFullYear(), today.getMonth(), 0); // Last day of last month
+    } else if (range === 'last7Days') {
+        startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7); // 7 days before today
+    }
+
+    const formattedStartDate = startDate.toISOString().split('T')[0];
+    const formattedEndDate = endDate.toISOString().split('T')[0];
+
+    // Update chart for both opened and interacted actions
+    updateChart('opened', formattedStartDate, formattedEndDate);
+    updateChart('interacted', formattedStartDate, formattedEndDate);
+}
