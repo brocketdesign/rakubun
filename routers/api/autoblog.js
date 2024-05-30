@@ -56,10 +56,10 @@ router.get('/blog-info/:blogId', async (req, res) => {
   }
 });
 router.post('/blog-info', async (req, res) => {
-  const userId = req.user._id;
-  const blogData = req.body;
 
   try {
+  const userId = req.user._id;
+  const blogData = req.body;
     if(blogData.additionalUrls){
       blogData.additionalUrls = blogData.additionalUrls.filter(url => url !== "");
     }
