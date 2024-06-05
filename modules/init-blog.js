@@ -211,26 +211,7 @@ function categoryDescriptionPromptGen(category,type,language){
   return  `For a blog ${type}: '${category}', provide a description. Respond in ${language} only.`
 }
 function imagePromptGen(fetchTitle){
-  return `I will provide a title and you will respond with a JS array list of descriptive words to describe a person  in relation with the title so I can draw an image.be specific,lots of details.The keyword categories are : 
-  Subject
-  Example: a beautiful and powerful mysterious sorceress, smile, sitting on a rock, lightning magic, hat, detailed leather clothing with gemstones, dress, castle background
-  Medium
-  Example: digital art
-  Style
-  Example:, hyperrealistic, fantasy, dark art
-  image Resolution 
-  Example: highly detailed, sharp focus
-  Additional details
-  Example:sci-fi, dystopian
-  Color
-  Example: iridescent gold
-  Lighting
-  Example:  studio lighting
-  
-  Provide at least 5 keywords per category.
-  Provide a short description of what you plan to describe then provide the list of words.
-  
-  Title: ${fetchTitle}.`;
+  return `Provide an image prompt for a thumbnail for an article titled : ${fetchTitle}. DO NOT INCLUDE ANY HUMAN FACE.`;
 }
 // Tools
 async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, myImages, blogInfo) {
