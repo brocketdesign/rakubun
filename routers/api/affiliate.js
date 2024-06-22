@@ -282,6 +282,7 @@ router.post('/receive-affiliate-data', async (req, res) => {
             });
         }
     } catch (error) {
+        console.log(error)
         res.status(500).send({
             message: 'Error receiving user data',
             error: error.message
