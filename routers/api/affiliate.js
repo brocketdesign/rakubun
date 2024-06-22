@@ -243,7 +243,7 @@ router.post('/affiliate-data', async (req, res) => {
 router.post('/receive-affiliate-data', async (req, res) => {
     try {
         const userData = req.body; // Data sent from the form
-
+        console.log(`Adding new affiliate`)
         if (Object.keys(userData).length === 0) {
             return res.status(400).send({ message: 'No user data provided' });
         }
