@@ -80,7 +80,7 @@ async function post(title, content, categories, tags, image, client) {
     // Create a new post with all the category IDs
     const postObject = {
       title: title,
-      status: 'publish',
+      status: 'draft',
       type: 'post',
       terms: {
         'category': categoryIds, 
