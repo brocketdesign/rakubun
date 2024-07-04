@@ -13,75 +13,9 @@ var wordpress = require("wordpress");
 const fs = require('fs');
 require('dotenv').config({ path: './.env' });
 const xmlrpc = require("xmlrpc");
-const puppeteer = require('puppeteer-core');
-const chromium = require('chrome-aws-lambda');
-
-async function retrieveLatestArticle(blogInfo, db) {
-    let browser = null;
-
-    try {
-        const isLocal = process.env.NODE_ENV === 'local';
-        const executablePath = isLocal ? puppeteer.executablePath() : await chromium.executablePath;
-
-        const args = isLocal 
-            ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
-            : chromium.args;
-
-        browser = await puppeteer.launch({
-            args,
-            executablePath,
-            headless: isLocal ? true : chromium.headless,
-        });
-
-        const page = await browser.newPage();
-
-        for (let blogUrl of blogInfo.additionalUrls) {
-            if (!blogUrl) continue;
-
-            await page.goto(`${blogUrl}/wp-json/wp/v2/posts`, {
-                waitUntil: 'networkidle0',
-            });
-
-            const posts = await page.evaluate(() => {
-                return JSON.parse(document.querySelector('body').innerText);
-            });
-
-            for (let post of posts) {
-                const existingPost = await db.collection('posts').findOne({ wordpressId: post.id, status: 'done' });
-
-                if (!existingPost) {
-                    const articleData = {
-                        title: post.title.rendered,
-                        content: post.content.rendered
-                    };
-
-                    await generateAndPost(blogInfo, articleData, db);
-
-                    await db.collection('posts').updateOne(
-                        { wordpressId: post.id },
-                        { $set: { status: 'done' } },
-                        { upsert: true }
-                    );
-
-                    await browser.close();
-                    return articleData;
-                }
-            }
-        }
-        await browser.close();
-    } catch (error) {
-        console.error('Failed to retrieve or process articles:', error);
-        if (browser) {
-            await browser.close();
-        }
-    }
-    return null;
-}
-
-
 
 // Async function to retrieve and process the latest article using direct URLs
-async function _retrieveLatestArticle(blogInfo, db) {
+async function retrieveLatestArticle(blogInfo, db) {
   try {
       // Loop through all blog URLs directly from the blogInfo object
       for (let blogUrl of blogInfo.additionalUrls) {  // Assume blogInfo contains an array of URLs
