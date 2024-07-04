@@ -14,13 +14,22 @@ const fs = require('fs');
 require('dotenv').config({ path: './.env' });
 const xmlrpc = require("xmlrpc");
 const puppeteer = require('puppeteer');
+const chromium = require('chrome-aws-lambda');
 
 async function retrieveLatestArticle(blogInfo, db) {
+    let browser = null;
+
     try {
-        const browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+        // Determine whether to use puppeteer or chrome-aws-lambda
+        const isLocal = process.env.NODE_ENV === 'local';
+        const executablePath = isLocal ? puppeteer.executablePath() : await chromium.executablePath;
+
+        browser = await puppeteer.launch({
+            args: isLocal ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : chromium.args,
+            executablePath,
+            headless: isLocal ? true : chromium.headless,
         });
+
         const page = await browser.newPage();
 
         for (let blogUrl of blogInfo.additionalUrls) {
@@ -59,9 +68,13 @@ async function retrieveLatestArticle(blogInfo, db) {
         await browser.close();
     } catch (error) {
         console.error('Failed to retrieve or process articles:', error);
+        if (browser) {
+            await browser.close();
+        }
     }
     return null;
 }
+
 
 
 // Async function to retrieve and process the latest article using direct URLs
