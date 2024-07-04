@@ -13,19 +13,22 @@ var wordpress = require("wordpress");
 const fs = require('fs');
 require('dotenv').config({ path: './.env' });
 const xmlrpc = require("xmlrpc");
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
 const chromium = require('chrome-aws-lambda');
 
 async function retrieveLatestArticle(blogInfo, db) {
     let browser = null;
 
     try {
-        // Determine whether to use puppeteer or chrome-aws-lambda
         const isLocal = process.env.NODE_ENV === 'local';
         const executablePath = isLocal ? puppeteer.executablePath() : await chromium.executablePath;
 
+        const args = isLocal 
+            ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+            : chromium.args;
+
         browser = await puppeteer.launch({
-            args: isLocal ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu'] : chromium.args,
+            args,
             executablePath,
             headless: isLocal ? true : chromium.headless,
         });
