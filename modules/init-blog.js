@@ -13,10 +13,59 @@ var wordpress = require("wordpress");
 const fs = require('fs');
 require('dotenv').config({ path: './.env' });
 const xmlrpc = require("xmlrpc");
+const puppeteer = require('puppeteer');
+
+async function retrieveLatestArticle(blogInfo, db) {
+    try {
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-gpu']
+        });
+        const page = await browser.newPage();
+
+        for (let blogUrl of blogInfo.additionalUrls) {
+            if (!blogUrl) continue;
+
+            await page.goto(`${blogUrl}/wp-json/wp/v2/posts`, {
+                waitUntil: 'networkidle0',
+            });
+
+            const posts = await page.evaluate(() => {
+                return JSON.parse(document.querySelector('body').innerText);
+            });
+
+            for (let post of posts) {
+                const existingPost = await db.collection('posts').findOne({ wordpressId: post.id, status: 'done' });
+
+                if (!existingPost) {
+                    const articleData = {
+                        title: post.title.rendered,
+                        content: post.content.rendered
+                    };
+
+                    await generateAndPost(blogInfo, articleData, db);
+
+                    await db.collection('posts').updateOne(
+                        { wordpressId: post.id },
+                        { $set: { status: 'done' } },
+                        { upsert: true }
+                    );
+
+                    await browser.close();
+                    return articleData;
+                }
+            }
+        }
+        await browser.close();
+    } catch (error) {
+        console.error('Failed to retrieve or process articles:', error);
+    }
+    return null;
+}
 
 
 // Async function to retrieve and process the latest article using direct URLs
-async function retrieveLatestArticle(blogInfo, db) {
+async function _retrieveLatestArticle(blogInfo, db) {
   try {
       // Loop through all blog URLs directly from the blogInfo object
       for (let blogUrl of blogInfo.additionalUrls) {  // Assume blogInfo contains an array of URLs
