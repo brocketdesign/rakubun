@@ -7,10 +7,6 @@ let cronJobsMap = {};
 
 // Function to set a cron job for a blog
 const setCronJobForBlog = async (db, blogId, schedule) => {
-  if (process.env.NODE_ENV !== 'local') {
-    console.log('App running on online server')
-    return;
-  }
 
   const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(blogId) });
 

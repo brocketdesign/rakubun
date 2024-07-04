@@ -90,35 +90,39 @@ async function generateAndPost(blogInfo,articleData,db){
   //Article generation
   console.log(`Generating article for: ${articleData.title}`);
 
-    // Image Generation
-    const promptDataImage = imagePromptGen(articleData.title)
-    let promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
-    .then(fetchPromptImage => {
-      return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo._id});
-    })
-    .then(imageData => {
-      const imageBuffer = imageData.imageBuffer;
-      // Wrap the callback in a promise
-      return new Promise((resolve, reject) => {
-        client.uploadFile({
-          name: `${imageData.imageID}.png`,
-          type: 'image/png',
-          bits: imageBuffer,
-        }, (error, file) => {
-          if (error) {
-            console.log('Error when adding the thumbnail');
-            reject(error); // Reject the promise on error
-          } else {
-            resolve(file); // Resolve the promise with the file on success
-          }
+  let promise_image = Promise.resolve(null);
+  if (process.env.NODE_ENV == 'local') {
+      // Image Generation
+      const promptDataImage = imagePromptGen(articleData.title)
+      promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
+      .then(fetchPromptImage => {
+        return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo._id});
+      })
+      .then(imageData => {
+        const imageBuffer = imageData.imageBuffer;
+        // Wrap the callback in a promise
+        return new Promise((resolve, reject) => {
+          client.uploadFile({
+            name: `${imageData.imageID}.png`,
+            type: 'image/png',
+            bits: imageBuffer,
+          }, (error, file) => {
+            if (error) {
+              console.log('Error when adding the thumbnail');
+              reject(error); // Reject the promise on error
+            } else {
+              resolve(file); // Resolve the promise with the file on success
+            }
+          });
         });
+      })
+      .catch(error => {
+        // Handle any errors in the promise chain
+        console.log(error)
+        console.error("Error in image processing");
       });
-    })
-    .catch(error => {
-      // Handle any errors in the promise chain
-      console.log(error)
-      console.error("Error in image processing");
-    });
+  }
+
 
   // Categories
   let promise_categories = addTaxonomy(['ニュース'], 'category', client, language)
