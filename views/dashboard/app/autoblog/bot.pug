@@ -150,9 +150,8 @@ block mainContent
                                 label.text-muted.fw-bold(for="postgpt", class="form-label") GPT
                                 select#postgpt(name="postgpt" class="form-select")
                                     option(value="gpt4o") GPT-4o
-                                    option(value="gpt3") GPT-3
-                                    option(value="gpt4") GPT-4
-                            div.form-group.col-12
+                                    option(value="gpt4o-mini") GPT-4o-mini
+                            div.form-group.col-12.col-sm-6
                                 label.text-muted.fw-bold(for="postFrequency", class="form-label") 投稿頻度：
                                 select#postFrequency(name="postFrequency" class="form-select")
                                     option(value="0 0,12 * * *") 1日に2回
@@ -161,6 +160,11 @@ block mainContent
                                     option(value="*/10 * * * *") 10分ごと
                                     option(value="0 0 * * *") 毎日
                                     option(value="0 0 * * 0") 毎週
+                            div.form-group.col-12.col-sm-6
+                                label.text-muted.fw-bold(for="postStatus", class="form-label") 投稿頻度：
+                                select#postStatus(name="postStatus" class="form-select")
+                                    option(value="public") 公開
+                                    option(value="draft") 下書き
 
                             div.form-group.col-12.col-sm-6
                                 label.text-muted.fw-bold(for="writingStyle", class="form-label") 好みの執筆スタイル：

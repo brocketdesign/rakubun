@@ -24,14 +24,14 @@ async function autoBlog(blogInfo,db){
   let modelGPT;
 
   switch (blogInfo.postgpt) {
-    case 'gpt4':
-      modelGPT = 'gpt-4-0125-preview';
-      break;
     case 'gpt4o':
       modelGPT = 'gpt-4o';
       break;
+    case 'gpt4o-mini':
+      modelGPT = 'gpt-4o-mini';
+      break;
     default:
-      modelGPT = 'gpt-3.5-turbo-0125'; // Default to GPT-3 if no match
+      modelGPT = 'gpt-4o'; // Default to GPT-3 if no match
       break;
   }  
 
@@ -72,19 +72,16 @@ async function autoBlog(blogInfo,db){
 
   // Image Generation
   const promptDataImage = imagePromptGen(fetchTitle)
-  let promise_image = moduleCompletion({model:modelGPT,role:'stable diffusion prompt generator', prompt:promptDataImage,max_tokens:500})
+  let promise_image = moduleCompletion({model:modelGPT,prompt:promptDataImage,max_tokens:400})
   .then(fetchPromptImage => {
-    return txt2img({prompt:fetchPromptImage,negativePrompt:'',aspectRatio:'5:4',height:816,blogId:blogInfo.blogId});
+    return txt2img({prompt:fetchPromptImage,negativePrompt:'',blogId:blogInfo.blogId});
   })
-  .then(imageData => {
-    const imagePath = imageData.imagePath;
-    const imageBits = fs.readFileSync(imagePath);
-    // Wrap the callback in a promise
+  .then(imageData => { //{ imageID , imageBuffer }
     return new Promise((resolve, reject) => {
       client.uploadFile({
         name: `${imageData.imageID}.png`,
         type: 'image/png',
-        bits: imageBits,
+        bits: imageData.imageBuffer,
       }, (error, file) => {
         if (error) {
           console.log('Error when adding the thumbnail');
@@ -94,7 +91,7 @@ async function autoBlog(blogInfo,db){
         }
       });
     });
-  })
+  })  
   .catch(error => {
     // Handle any errors in the promise chain
     console.error("Error in image processing");
@@ -129,26 +126,10 @@ async function autoBlog(blogInfo,db){
 }
 
 function imagePromptGen(fetchTitle){
-  return `I will provide a title and you will respond with a JS array list of descriptive words to describe a person  in relation with the title so I can draw an image.be specific,lots of details.The keyword categories are : 
-  Subject
-  Example: a beautiful and powerful mysterious sorceress, smile, sitting on a rock, lightning magic, hat, detailed leather clothing with gemstones, dress, castle background
-  Medium
-  Example: digital art
-  Style
-  Example:, hyperrealistic, fantasy, dark art
-  image Resolution 
-  Example: highly detailed, sharp focus
-  Additional details
-  Example:sci-fi, dystopian
-  Color
-  Example: iridescent gold
-  Lighting
-  Example:  studio lighting
-  
-  Provide at least 5 keywords per category.
-  Provide a short description of what you plan to describe then provide the list of words.
-  
-  Title: ${fetchTitle}.`;
+  return `
+  I will provide a title and you will respond with an image prompt\n
+  Here is an example of response : masterpiece, best quality, 1girl, yellow eyes, long hair, white hair, tree, stairs, standing, kimono, sky, cherry blossoms, temple, looking at viewer, upper body, from below, looking back,\n
+  Here is the title: ${fetchTitle}.`;
 }
 function contentPromptGenForSearch(search_results,blogInfo){
   return `Using the following JSON informations. ${JSON.stringify(search_results)} .\nProvide a well structued and SEO friendly blog post. You are a professional ${blogInfo.postLanguage} blog writer. Your blog post is entirely in ${blogInfo.postLanguage}`
