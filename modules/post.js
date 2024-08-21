@@ -75,7 +75,6 @@ async function getTermDetails(id, type, client) {
 
 async function post(title, content, categories, tags, image, postStatus, client) {
   try {
-    console.log({postStatus})
     const categoryIds = await createCategories(categories,'category',client);
     const tagIds = await createCategories(tags, 'post_tag', client);
     // Create a new post with all the category IDs

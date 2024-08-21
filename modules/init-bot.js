@@ -98,12 +98,9 @@ async function autoBlog(blogInfo,db){
   });
 
   // Content
-  let promise_content = getSearchResult(fetchTitle)
-  .then(search_results => {
-    const promptDataContent = contentPromptGenForSearch(search_results, blogInfo);
-    const content_promise = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 4096})
-    return content_promise
-  })
+  const promptDataContent = contentPromptGen(search_results,fetchTitle, blogInfo);
+  let promise_content = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 4096})
+
 
   
   // Post
@@ -131,11 +128,16 @@ function imagePromptGen(fetchTitle){
   Here is an example of response : masterpiece, best quality, 1girl, yellow eyes, long hair, white hair, tree, stairs, standing, kimono, sky, cherry blossoms, temple, looking at viewer, upper body, from below, looking back,\n
   Here is the title: ${fetchTitle}.`;
 }
-function contentPromptGenForSearch(search_results,blogInfo){
-  return `Using the following JSON informations. ${JSON.stringify(search_results)} .\nProvide a well structued and SEO friendly blog post. You are a professional ${blogInfo.postLanguage} blog writer. Your blog post is entirely in ${blogInfo.postLanguage}`
+function contentPromptGenForSearch(search_results, blogInfo){
+  if(search_results){
+    return `Using the following JSON informations. ${JSON.stringify(search_results)} .\nProvide a well structued and SEO friendly blog post. You are a professional ${blogInfo.postLanguage} blog writer. Your blog post is entirely in ${blogInfo.postLanguage}`
+  }else{
+    return `Provide a well structued and SEO friendly blog post. You are a professional ${blogInfo.postLanguage} blog writer. Your blog post is entirely in ${blogInfo.postLanguage}`
+
+  }
 }
 function contentPromptGen(fetchTitle,blogInfo){
-  return `Write 5 paragraphs related to "${fetchTitle}", a paragraph contain a title and a description about the subject and a link to a REAL up and running ${blogInfo.postLanguage}  website  about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The titles you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
+  //return `Write 5 paragraphs related to "${fetchTitle}", a paragraph contain a title and a description about the subject and a link to a REAL up and running ${blogInfo.postLanguage}  website  about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The titles you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
   return  `Write a detailed blog post about "${fetchTitle}".The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Use Markdown for formatting.`;
 }
 function titlePromptGen(blogInfo) {
