@@ -115,7 +115,7 @@ async function autoBlog(blogInfo,db){
         console.log(error)
         console.log(`Error Saving Article`)
       }
-      return post(fetchTitle, content, categories, tags, image, client)
+      return post(fetchTitle, content, categories, tags, image, blogInfo.postStatus, client)
       
     })
     .catch(err=>{
