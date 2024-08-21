@@ -41,7 +41,7 @@ const setCronJobForUser = async (db, botId, schedule) => {
 // Function to initialize all cron jobs from database at app start
 const initializeCronJobs = async (db) => {
   if (process.env.NODE_ENV !== 'local') {
-    return
+    //return
   } 
 
   // Assuming you have a function to get all user schedules from your database
