@@ -133,8 +133,8 @@ const axios = require('axios');
       const taskId = await fetchNovitaMagic({
         prompt,
         negativePrompt,
-        width: width || 512,
-        height: height || 712,
+        width: width || 712,
+        height: height || 512,
       });
   
       const imageBuffer = await fetchNovitaResult(taskId);
