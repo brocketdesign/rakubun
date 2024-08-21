@@ -99,7 +99,7 @@ async function autoBlog(blogInfo,db){
 
   // Content
   const promptDataContent = contentPromptGen(fetchTitle, blogInfo);
-  let promise_content = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 4096})
+  let promise_content = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 2000})
 
 
   
