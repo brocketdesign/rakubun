@@ -9,7 +9,7 @@ let cronJobsMap = {};
 const setCronJobForUser = async (db, botId, schedule) => {
 
   if (process.env.NODE_ENV !== 'local') {
-    return
+    //return
   } 
   
   const botInfo = await db.collection('botInfos').findOne({ _id: new ObjectId(botId) });

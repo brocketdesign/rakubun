@@ -18,7 +18,6 @@ $(document).ready(function() {
                     text: 'フォームが正常に送信されました。',
                     confirmButtonText: '閉じる'
                 });
-                console.log(response);
             },
             error: function() {
                 // Handle error
@@ -385,6 +384,7 @@ function postBlogArticle(blogId) {
   
   function validateAndToggleIcon() {
     const urlInput = $('#blogUrl');
+    if(urlInput.length == 0) return
     const iconSpan = $('#openNewPageIcon');
     const url = urlInput.val().trim();
     // Simple check for a basic URL pattern
