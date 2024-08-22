@@ -41,7 +41,8 @@ router.get('/blog-info/:blogId', async (req, res) => {
   const { blogId } = req.params;
 
   try {
-    const blogInfo = await global.db.collection('blogInfos').findOne({_id: new ObjectId(blogId), userId: new ObjectId(req.user._id)});
+    const blogInfo = await global.db.collection('blogInfos')
+    .findOne({_id: new ObjectId(blogId)});
 
     if (!blogInfo) {
       return res.status(404).json({ message: 'Blog information not found or access denied.' });
@@ -53,6 +54,7 @@ router.get('/blog-info/:blogId', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 router.post('/blog-info', async (req, res) => {
 
   try {
@@ -68,6 +70,7 @@ router.post('/blog-info', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
 router.delete('/blog/:blogId', async (req, res) => {
   const { blogId } = req.params;
 
@@ -114,6 +117,24 @@ router.post('/duplicate-blog/:blogId', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+router.get('/bots',async (req, res) => {
+  const blogId = req.query.blogId ? req.query.blogId : null;
+  let botData;
+
+  try {
+      if (blogId != null) {
+          botData = await global.db.collection('botInfos').find({ blogId: blogId }).toArray();
+          res.json({ success: true, botData });
+      } else {
+          res.json({ success: false, message: "Blog ID is required." });
+      }
+  } catch (error) {
+      console.log(error);
+      res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// BOT API
 
 router.get('/bot-info/:botId', async (req, res) => {
   const { botId } = req.params;

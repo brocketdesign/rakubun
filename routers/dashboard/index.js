@@ -37,7 +37,10 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
   let postData
   try {
     // Fetching blog data for the current user
-    blogData = await global.db.collection('blogInfos').find({userId: userId}).toArray()                  
+    blogData = await global.db.collection('blogInfos')
+    .find({userId: userId})
+    .sort({_id:-1})
+    .toArray()                  
 
     if(blogId != null){
       blogData = await global.db.collection('blogInfos').findOne({_id : blogId})

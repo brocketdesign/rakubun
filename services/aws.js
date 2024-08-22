@@ -24,21 +24,19 @@ const uploadToS3 = async (buffer, hash, filename) => {
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Key: `${hash}_${filename}`,
       Body: buffer,
-      ACL: 'public-read'
   };
   const uploadResult = await s3.upload(params).promise();
   return uploadResult.Location;
 };
 const handleFileUpload = async (part) => {
   let buffer;
-  
+
   if (part.file) {
       // Handling uploaded file
-      const chunks = [];
-      for await (const chunk of part.file) {
-          chunks.push(chunk);
+      if (!Buffer.isBuffer(part.file)) {
+          throw new TypeError('Expected a Buffer');
       }
-      buffer = Buffer.concat(chunks);
+      buffer = part.file; // Directly use the buffer
   } else if (part.value && isValidUrl(part.value)) {
       // Handling file from URL
       const response = await axios.get(part.value, { responseType: 'arraybuffer' });
@@ -52,7 +50,7 @@ const handleFileUpload = async (part) => {
       Bucket: process.env.AWS_S3_BUCKET_NAME,
       Prefix: hash,
   }).promise();
-  
+
   if (existingFiles.Contents.length > 0) {
       return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${existingFiles.Contents[0].Key}`;
   } else {

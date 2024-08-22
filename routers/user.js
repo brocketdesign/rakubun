@@ -1,72 +1,82 @@
 const express = require('express');
 const multer = require('multer');
+const upload = multer();
 const {
   formatDateToDDMMYYHHMMSS,
   addUsertoFreePlan
 } = require('../services/tools')
 
-const { handleFileUpload } = require('../services/tools')
+const { handleFileUpload } = require('../services/aws')
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const passport = require('passport');
 const { email, sendEmail } = require('../services/email')
 
 const { ObjectId } = require('mongodb');
-const { hostname } = require('os');
 
-router.get('/setting', (req, res) => {
-  console.log('User setting page requested');
-  res.render('user/setting',{user:req.user}); // Render the login template
+router.get('/setting', async (req, res) => {
+  res.render('user/setting', { user: req.user });
 });
 
-
-router.post('/updateProfile', async (req, res) => {
-  let user;
-
-  if (req.body.resetToken) {
-      user = await global.db.collection('users').findOne({ resetToken: req.body.resetToken });
-  } else {
-      user = req.user;
-  }
+router.post('/updateProfile', upload.single('profileImage'), async (req, res) => {
+  const user = req.user;
+  const { email } = req.body;
+  let profileImageUrl = user.profileImage;
 
   try {
-      const formData = req.body;
-      let profileImageUrl;
-console.log(req.files)
-      if (req.files && req.files.profileImage) {
-          const profileImage = req.files.profileImage[0];
-          profileImageUrl = await handleFileUpload(profileImage);
-          user.profileImage = profileImageUrl;
+      if (req.file) {
+        const part = {
+              file: req.file.buffer, 
+              filename: req.file.originalname,
+          };
+          profileImageUrl = await handleFileUpload(part);
+      } else if (req.body.profileImage && isValidUrl(req.body.profileImage)) {
+          const part = {
+              value: req.body.profileImage,
+          };
+          profileImageUrl = await handleFileUpload(part);
       }
 
-      const updatedData = {
-        email: formData.email,
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber,
-        birthDate: formData.birthDate,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zip: formData.zip,
-        country: formData.country,
-        language: formData.language
-    };
-    
-    if (profileImageUrl) {
-        updatedData.profileImage = profileImageUrl;
-    }    
-console.log(updatedData)
       await global.db.collection('users').updateOne(
           { _id: user._id },
-          { $set: updatedData }
+          {
+              $set: {
+                  email: email || user.email,
+                  profileImage: profileImageUrl,
+              },
+          }
       );
 
       res.json({ success: true, message: 'Profile updated successfully', profileImage: profileImageUrl });
   } catch (error) {
       console.error('Error updating profile:', error);
       res.status(500).json({ success: false, message: 'An error occurred while updating the profile' });
+  }
+});
+
+router.post('/updatePassword', async (req, res) => {
+  const user = req.user;
+  const { userOldPassword, userPassword, userPasswordVerification } = req.body;
+
+  try {
+      const isMatch = await bcrypt.compare(userOldPassword, user.password);
+      if (!isMatch) {
+          return res.status(400).json({ success: false, message: '古いパスワードが正しくありません' });
+      }
+
+      if (userPassword !== userPasswordVerification) {
+          return res.status(400).json({ success: false, message: '新しいパスワードと確認が一致しません' });
+      }
+
+      const hashedPassword = await bcrypt.hash(userPassword, 10);
+      await global.db.collection('users').updateOne(
+          { _id: user._id },
+          { $set: { password: hashedPassword } }
+      );
+
+      res.json({ success: true, message: 'パスワードが正常に更新されました' });
+  } catch (error) {
+      console.error('Error updating password:', error);
+      res.status(500).json({ success: false, message: 'An error occurred while updating the password' });
   }
 });
 

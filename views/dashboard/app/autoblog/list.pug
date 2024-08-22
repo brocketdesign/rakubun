@@ -1,78 +1,231 @@
 extends ../../base
 
 block mainContent
-    div.col.d-flex.align-items-center.justify-content-center.mb-4
-        i.fa.fa-robot.mx-3.display-6
-        i.fa.fa-arrow-right
-        i.fab.fa-wordpress.mx-3.display-6
-    .toolbar.btn-toolbar.my-2
-        .toolbar-body.py-3.px-2.d-flex.justify-content-between
-            a.btn.btn-dark.shadow-none(type="button", href="/dashboard/app/autoblog/")
-                i.fas.fa-list 
-            if blogId
-                - url = `/dashboard/app/autoblog/bot?blogId=${blogId}`
-            else 
-                - url = `/dashboard/app/autoblog/blog-info/`
-            a.btn.btn-success.shadow-none.mx-2(type="button", href=url)
-                i.fas.fa-plus 
+    .container-fluid
+        .row
+            // Sidebar for blogs
+            .col-md-3.bg-light.position-fixed.h-100.sidebar
+                h4.mt-4.mb-3.text-center Blog List
+                button#addBlogBtn.btn.btn-success.btn-block.mb-4 Add New Blog
+                ul#blogList.list-group.list-group-flush
+                    each blog in blogData
+                        li.list-group-item(data-id=blog._id)
+                            .d-flex.justify-content-between.align-items-center
+                                div
+                                    button.btn.btn-outline-dark.btn-sm.shadow-0.me-2.editBlogBtn(
+                                        type="button", 
+                                        data-id=blog._id, 
+                                        title="編集"
+                                    )
+                                        i.fas.fa-edit
+                                    button.btn.btn-outline-dark.btn-sm.shadow-0.me-2(
+                                        type="button", 
+                                        onclick=`window.open('${blog.blogUrl}', '_blank')` 
+                                        title="URL"
+                                    )
+                                        i.fas.fa-link
+                                    span #{blog.blogName}
+                                i.fas.fa-chevron-right
 
-    if !blogId && !botId
-        .row.row-cols-1.row-cols-md-3.my-5
-            each blog in blogData
-                .col 
-                    .card.mb-3(data-id=blog._id)
+
+            // Main content area
+            .col-md-9.offset-md-3
+                .toolbar.btn-toolbar.my-4
+                    .toolbar-body.d-flex.justify-content-between
+                        h3 Blog Bots
+                #botContainer
+    #hiddenFormContainer(style="display:none;")
+        form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
+            .row.row-cols-1.row-cols-sm-2
+                .col
+                    input#blogId(type="hidden", name="blogId")
+                    .card.my-2
+                        .card-header
+                            h5 ブログ情報
                         .card-body
-                            a(href=blog.blogUrl, target="_blank") 
-                                i.fab.fa-wordpress
-                                span.mx-2.mb-2.card-title #{blog.blogName}
-                                p.card-text #{blog.blogUrl}
-                            .col.mt-2
-                                a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/blog-info/${blog._id}`) 
-                                    i.fa.fa-cog
-                                a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
-                                    i.fa.fa-robot
-    if blogId
-        a(href=blogData.blogUrl, target="_blank") 
-            i.fab.fa-wordpress
-            span.mx-2 #{blogData.blogName}
-        if botData
-            .row.row-cols-1.row-cols-md-3.my-5
-                each bot in botData
-                    .col 
-                        .card.mb-3(data-id=bot._id)
-                            .card-body
-                                i.fa.fa-robot
-                                span.mx-2.mb-2.card-title #{bot.botName}
-                                h6.card-subtitle.my-2.text-muted Bot ID: #{bot._id}
-                                h6.card-subtitle.mb-2.text-muted #{bot.postgpt ? bot.postgpt.toUpperCase() : ''}
-                                p.card-text #{bot.botDescription ? bot.botDescription.substring(0, 200) : ''}...
-                                a.btn.btn-primary.me-2(href=`/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}`)
-                                    i.fa.fa-cog
-                                button.toggle-bot-btn.btn.btn-success.mx-2(class=bot.isActive ? '': 'd-none' data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', false)`) 
-                                    i.fas.fa-toggle-on
-                                button.toggle-bot-btn.btn.btn-secondary.mx-2(class=!bot.isActive ? '': 'd-none' data-id=bot._id, onclick=`toggleBotStatus('${bot._id}', true)`) 
-                                    i.fas.fa-toggle-off
-                                a.btn.btn-secondary.mx-2(href=`/dashboard/app/autoblog?botId=${bot._id}`)
-                                    i.fa.fa-file-alt
-                                button.delete-bot-btn.btn.btn-danger.float-end.mx-2(data-id=bot._id)
-                                    i.fas.fa-trash-alt
-    if botId
-        span 
-            i.fa.fa-robot
-            span.mx-2 #{botData.botName}
-        if postData
-            .row.row-cols-1.row-cols-md-3.my-5
-                each post in postData
-                    .col 
-                        .card.mb-3(data-id=post._id)
-                            .card-body
-                                i.fa.fa-robot
-                                span.mx-2.mb-2.card-title #{post.title}
-                                h6.card-subtitle.my-2.text-muted Bot ID: #{post._id}
-                                .col.mb-2
-                                    each tag in post.tags
-                                        span.me-2.mb-1.fw-bold #{tag.name}
-                                - var title = post.content ? post.content.split('</h1>').pop().substring(0, 200)+'...' : ''
-                                != title
+                            .row
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for="blogName", class="form-label") ブログ名:
+                                    input#blogName(type="text", name="blogName", required=true class="form-control")
+                                    div.invalid-feedback ブログ名は必須です。
+
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for="blogUrl", class="form-label") ブログURL:
+                                    .input-group
+                                        input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
+                                        span.input-group-text(id="openNewPageIcon" style="display: none;")
+                                            a(href="#" target="_blank")
+                                                i.fas.fa-external-link-alt
+                                    div.invalid-feedback ブログURLは必須です。
+
+                    .card.my-2
+                        .card-header
+                            h5 ブログ認証
+                        .card-body
+                            .row
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for='blogUsername') ユーザー名
+                                    input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for='blogPassword') パスワード
+                                    input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
+
+                .col
+                    .card.my-2
+                        .card-header
+                            h5 投稿設定
+                        .card-body
+                            .row
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for="postLanguage", class="form-label") テキストの言語：
+                                    select#postLanguage(name="postLanguage" class="form-select")
+                                        option(value="japanese") 日本語
+                                        option(value="french") フランス語
+                                        option(value="english") 英語
+                                        option(value="spanish") スペイン語
+                                        option(value="german") ドイツ語
+                                        option(value="chinese") 中国語
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for="postgpt", class="form-label") GPT
+                                    select#postgpt(name="postgpt" class="form-select")
+                                        option(value="gpt4o") GPT-4o
+                                        option(value="gpt4o-mini") GPT-4o-mini
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.fw-bold(for="postFrequency", class="form-label") 投稿頻度：
+                                    select#postFrequency(name="postFrequency" class="form-select")
+                                        option(value="0 0,12 * * *") 1日に2回
+                                        option(value="0 * * * *") 1時間ごと
+                                        option(value="*/30 * * * *") 30分ごと
+                                        option(value="*/10 * * * *") 10分ごと
+                                        option(value="0 0 * * *") 毎日
+                                        option(value="0 0 * * 0") 毎週
 
     script(src="/js/autoblog.js")
+    script.
+    
+        function loadBots(blogId) {
+            $.ajax({
+                url: '/api/autoblog/bots',
+                method: 'GET',
+                data: { blogId: blogId },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        let botsHtml = '';
+                        if (response.botData.length == 0) {
+                            $('#botContainer').html(`<p>データがありません</p>`);
+                            return;
+                        }
+                        response.botData.forEach(function(bot) {
+                            botsHtml += `
+                                <div class="col">
+                                    <div class="card mb-3" data-id="${bot._id}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <div>
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fa fa-robot"></i>
+                                                        <span class="mx-1 small">${bot.botName}</span>
+                                                    </span>
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fa fa-microchip"></i>
+                                                        <span class="card-subtitle small mx-1">${bot.postgpt ? bot.postgpt.toUpperCase() : ''}</span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p class="small card-text">${bot.botDescription ? bot.botDescription.substring(0, 100) : ''}...</p>
+                                            <a href="/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}" class="btn btn-primary btn-sm shadow-0 me-2"><i class="fa fa-cog"></i></a>
+                                            <button class="toggle-bot-btn btn btn-success btn-sm shadow-0 mx-2 ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on"></i></button>
+                                            <button class="toggle-bot-btn btn btn-secondary btn-sm shadow-0 mx-2 ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off"></i></button>
+                                            <a href="/dashboard/app/autoblog?botId=${bot._id}" class="btn btn-secondary btn-sm shadow-0 mx-2"><i class="fa fa-file-alt"></i></a>
+                                            <button class="delete-bot-btn btn btn-danger btn-sm shadow-0 float-end mx-2" data-id="${bot._id}"><i class="fas fa-trash-alt"></i></button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        });
+                        $('#botContainer').html(botsHtml);
+                    } else {
+                        console.error('Error:', response.message);
+                    }
+                },
+                error: function(err) {
+                    console.error('Error loading bots:', err);
+                }
+            });
+        }
+
+        // Attach loadBots to the blog list items dynamically
+        $('#blogList li').on('click', function() {
+            const blogId = $(this).data('id');
+            loadBots(blogId);
+        });
+        $(document).ready(function() {
+            function showBlogForm(title, formHtml, formData = {}) {
+                const $form = $(formHtml);
+                
+                if (formData) {
+                    $form.find('#blogId').val(formData._id || '');
+                    $form.find('#blogName').val(formData.blogName || '');
+                    $form.find('#blogUrl').val(formData.blogUrl || '');
+                    $form.find('#blogUsername').val(formData.blogUsername || '');
+                    $form.find('#blogPassword').val(formData.blogPassword || '');
+                    $form.find('#postLanguage').val(formData.postLanguage || '');
+                    $form.find('#postgpt').val(formData.postgpt || '');
+                    $form.find('#postFrequency').val(formData.postFrequency || '');
+                }
+
+                Swal.fire({
+                    title: title,
+                    html: $form,
+                    showCancelButton: true,
+                    confirmButtonText: '送信',
+                    focusConfirm: false,
+                    preConfirm: () => {
+                        const form = Swal.getPopup().querySelector('form');
+                        if (!form.checkValidity()) {
+                            Swal.showValidationMessage(`フォームを全て入力してください`);
+                            return false;
+                        }
+                        return $(form).serialize();
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: 'POST',
+                            url: '/api/autoblog/blog-info',
+                            data: result.value,
+                            success: () => {
+                                Swal.fire('完了!', '正常に処理されました。', 'success').then(() => location.reload());
+                            },
+                            error: () => {
+                                Swal.fire('エラー!', 'エラーが発生しました。再試行してください。', 'error');
+                            }
+                        });
+                    }
+                });
+            }
+
+            $('#addBlogBtn').on('click', function() {
+                const formHtml = $('#hiddenFormContainer').html();
+                showBlogForm('新しいブログを追加', formHtml);
+            });
+
+            $('.editBlogBtn').on('click', function(e) {
+                e.stopPropagation();
+                const blogId = $(this).data('id');
+                $.get('/api/autoblog/blog-info/' + blogId, (response) => {
+                    if (response) {
+                        const formHtml = $('#hiddenFormContainer').html();
+                        showBlogForm('ブログを編集', formHtml, response);
+                    } else {
+                        Swal.fire('エラー!', 'ブログデータを取得できませんでした。', 'error');
+                    }
+                }).fail(() => {
+                    Swal.fire('エラー!', 'ブログデータの取得中にエラーが発生しました。', 'error');
+                });
+            });
+
+
+        });

@@ -1,193 +1,95 @@
 extends ../dashboard/base
 
 block mainContent
-    ul.nav.nav-tabs
-        li.nav-item
-            a.nav-link(href='#personalInfo' data-bs-toggle='tab') アカウント設定
-        li.nav-item
-            a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') パスワードの更新
-    .tab-content.pb-5#updateProfile(style="display:none")
-        #personalInfo.tab-pane.fade
-            .header.my-4
-                .profile-image.text-center(style="cursor:pointer")
-                    img.shadow.border.border-dark(src=user.profileImage || '/img/avatar.png', alt='ユーザープロフィール画像' style="object-fit: contain; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;")
-            form.row.mt-3
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='profileImage') プロフィール写真
-                    .input-group
-                        input#profileImage.form-control(type='file', name="profileImage", value=user.profileImage)
-                hr.my-3.d-none
-                .form-group.col-12
-                    label(for='language') 言語
-                    select#language.form-control(name="language")
-                        option(value="japanese" selected) 日本語
-                        option(value="english") 英語
-                hr.my-3.d-none
-                .form-group.col-12.d-none
-                    label(for='username') ニックネーム
-                    input#username.form-control(name="username", type='text', placeholder='ニックネームを入力' value=user.username)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='lastName') 姓
-                    input#lastName.form-control(name="lastName", type='text', placeholder='姓を入力' value=user.lastName)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='firstName') 名
-                    input#firstName.form-control(name="firstName", type='text', placeholder='名を入力' value=user.firstName)
-                hr.my-3
-                .form-group.col-12.col-sm-6
-                    label(for='email') メール
-                    input#email.form-control(name="email", type='email', placeholder='メールアドレスを入力' value=user.email)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='phoneNumber') 電話番号
-                    input#phoneNumber.form-control(name="phoneNumber", type='tel', placeholder='電話番号を入力' value=user.phoneNumber)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='birthDate') 生年月日
-                    input#birthDate.form-control(name="birthDate", type='date' value=user.birthDate)
-                hr.my-3.d-none
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='address') 住所
-                    input#address.form-control(name="address", type='text', placeholder='住所を入力' value=user.address)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='city') 市区町村
-                    input#city.form-control(name="city", type='text', placeholder='市区町村を入力' value=user.city)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='state') 都道府県
-                    input#state.form-control(name="state", type='text', placeholder='都道府県を入力' value=user.state)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='zip') 郵便番号
-                    input#zip.form-control(name="zip", type='text', placeholder='郵便番号を入力' value=user.zip)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='country') 国
-                    select#country.form-control(name="country")
-                    option(value=user.country) 国を選択してください
-                button.btn.btn-primary.my-4(type='submit') 送信
-        #passwordUpdate.tab-pane.fade.d-none
-            form.row.mt-3
-                .form-group.col-12.col-sm-6
-                    label(for='userOldPassword') 古いパスワード
-                    input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='現在のパスワードを入力してください。', required)
-                    small.text-muted 現在のパスワードを入力してください。 
-                hr.my-3
-                .form-group.col-12.col-sm-6
-                    label(for='userPassword') 新しいパスワード
-                    input#userPassword.form-control(name="userPassword", type='password', placeholder='新しいパスワードを入力してください。', required)
-                .form-group.col-12.col-sm-6
-                    label(for='userPasswordVerification') 新しいパスワードの確認
-                    input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
-                button.btn.btn-primary.my-4(type='submit') 送信
+    .container.mt-5
+        .row
+            .col-md-3
+                ul.nav.nav-pills.flex-column
+                    li.nav-item
+                        a.nav-link.active#personalInfoTab(data-bs-toggle='pill', href='#personalInfo') アカウント設定
+                    li.nav-item
+                        a.nav-link#passwordUpdateTab(data-bs-toggle='pill', href='#passwordUpdate') パスワードの更新
+            .col-md-9
+                .tab-content
+                    #personalInfo.tab-pane.fade.show.active
+                        .header.my-4
+                            .profile-image.text-center(style="cursor:pointer")
+                                img.shadow.border.border-dark(src=user.profileImage || '/img/avatar.png', alt='ユーザープロフィール画像', style="object-fit: cover; width: 150px; height: 150px; border-radius: 50%;")
+                        form#personalInfoForm.mt-3
+                            .row 
+                                .col-12.col-sm-6
+                                    .form-group
+                                        label(class="small text-muted" for='name') 名前
+                                        input#name.form-control(name="name", type='text', placeholder='名前を入力' value=user.name required)
+                                .col-12.col-sm-6
+                                    .form-group
+                                        label(class="small text-muted" for='email') メール
+                                        input#email.form-control(name="email", type='email', placeholder='メールアドレスを入力' value=user.email required)
+                            .form-group.mt-3.d-none
+                                label(class="small text-muted" for='profileImage') プロフィール写真
+                                input#profileImage.form-control(type='file', name="profileImage")
+                            button.btn.btn-primary.mt-4(type='submit') 送信
+                    #passwordUpdate.tab-pane.fade
+                        form#passwordUpdateForm.mt-3
+                            .form-group
+                                label(class="small text-muted" for='userOldPassword') 古いパスワード
+                                input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='現在のパスワードを入力してください。', required)
+                            .form-group.mt-3
+                                label(class="small text-muted" for='userPassword') 新しいパスワード
+                                input#userPassword.form-control(name="userPassword", type='password', placeholder='新しいパスワードを入力してください。', required)
+                            .form-group.mt-3
+                                label(class="small text-muted" for='userPasswordVerification') 新しいパスワードの確認
+                                input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
+                            button.btn.btn-primary.mt-4(type='submit') 送信
 
     script.
         $(document).ready(() => {
-            initUserProfile();
+            $('.profile-image').on('click', () => $('#profileImage').click());
+
+            $('#profileImage').on('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        $('.profile-image img').attr('src', e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
         });
-        const initUserProfile = () => {
-            const form = $('#updateProfile form').not('#reset-form');
-            let initialFormData = new FormData(form[0]);
-            let formChanged = false;
+        $(document).ready(() => {
+            const initUserProfile = () => {
+                const handleFormSubmit = (e, form) => {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const url = form.id === 'personalInfoForm' ? '/user/updateProfile' : '/user/updatePassword';
 
-            const handleFormChange = () => {
-                formChanged = true;
-            };
+                    $.ajax({
+                        url: url,
+                        type: 'POST',
+                        data: formData,
+                        contentType: false,
+                        processData: false,
+                        success: (response) => {
+                            alert(response.message || '成功しました');
+                            if (response.profileImage) {
+                                $('.profile-image img').attr('src', response.profileImage);
+                            }
+                        },
+                        error: (xhr) => {
+                            alert('エラーが発生しました。もう一度お試しください。');
+                        }
+                    });
+                };
 
-            const handleFormSubmit = async (e) => {
-                e.preventDefault();
-                const formData = new FormData(form[0]);
+                $('#personalInfoForm').on('submit', function(e) {
+                    handleFormSubmit(e, this);
+                });
 
-                if (!checkFormChange(initialFormData, formData)) {
-                    alert('フォームに変更はありません。');
-                    return;
-                }
-
-                const passwordError = await validatePasswordFields(formData);
-                if (passwordError) {
-                    handleFormResult(false, passwordError);
-                    return;
-                }
-
-                $.ajax({
-                    url: '/user/updateProfile',
-                    type: 'POST',
-                    data: formData,
-                    contentType: false,
-                    processData: false,
-                    success: function(response) {
-                        handleFormSuccess(response);
-                    },
-                    error: function(xhr, status, error) {
-                        handleFormError(xhr, status, error);
-                    }
+                $('#passwordUpdateForm').on('submit', function(e) {
+                    handleFormSubmit(e, this);
                 });
             };
 
-            const validatePasswordFields = async (formData) => {
-                const oldPassword = formData.get("userOldPassword");
-                const newPassword = formData.get("userPassword");
-                const newPasswordVerification = formData.get("userPasswordVerification");
-
-                if (oldPassword && !(await isOldPasswordCorrect(oldPassword))) {
-                    return '古いパスワードが正しくありません';
-                }
-
-                if (newPassword || newPasswordVerification) {
-                    if (newPassword !== newPasswordVerification) {
-                        return '新しいパスワードとパスワードの確認が一致しません';
-                    }
-                }
-
-                return null;
-            };
-
-            const isOldPasswordCorrect = async (oldPassword) => {
-                try {
-                    const response = await $.post('/user/isOldPasswordCorrect', { oldPassword });
-                    return response.isMatch;
-                } catch (error) {
-                    console.error('Error in password validation:', error);
-                    return false;
-                }
-            };
-
-            const initImageHandling = () => {
-                const profileImageInput = $('#profileImage');
-                const profileImagePreview = $('.profile-image img');
-
-                if (profileImageInput.length > 0) {
-                    $('.profile-image').on('click', function() {
-                        profileImageInput.click();
-                    });
-
-                    profileImageInput.on('change', function() {
-                        const file = this.files[0];
-                        const reader = new FileReader();
-
-                        reader.onload = function(e) {
-                            profileImagePreview.attr('src', e.target.result).show();
-                        };
-
-                        reader.readAsDataURL(file);
-                        form.submit();
-                    });
-                }
-            };
-
-            const initTabs = () => {
-                if ($('#updateProfile').length > 0) {
-                    const activeTab = localStorage.getItem('activeTab') || '#personalInfo';
-                    new bootstrap.Tab($(`a[href="${activeTab}"]`)).show();
-
-                    $('#updateProfile').fadeIn();
-
-                    $('.nav-tabs a').on('shown.bs.tab', function(e) {
-                        localStorage.setItem('activeTab', $(e.target).attr('href'));
-                    });
-                }
-            };
-
-            form.on('submit', handleFormSubmit);
-            $('#updateProfile form input, #updateProfile form select, #updateProfile form textarea').on('change', handleFormChange);
-            $(window).on('beforeunload', function() {
-                return formChanged ? "保存されていない変更があります。このページを離れてもよろしいですか？" : undefined;
-            });
-
-            initImageHandling();
-            initTabs();
-        };
+            initUserProfile();
+        });
