@@ -1,5 +1,4 @@
 const { getCategoryId, categoryExists, ensureCategory, getTermDetails, post } = require('./post.js')
-const { getOrUpdateArticles } = require('./feedScraper.js');
 const { generatePrompt } = require('../services/prompt.js')
 const { moduleCompletion, moduleCompletionOllama } = require('./openai.js');
 const { getSearchResult, getImageSearchResult } = require('../services/tools.js')

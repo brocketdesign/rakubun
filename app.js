@@ -8,10 +8,8 @@ const http = require('http');
 const LocalStrategy = require('passport-local').Strategy;
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
-const { StableDiffusionApi } = require("stable-diffusion-api");
 
 const { initializeCronJobs } = require('./modules/cronJobs-bot.js');
-const { initializeCronJobsForBlogs } = require('./modules/cronJobs-blog.js');
 
 const passport = require("passport");
 const passportConfig = require('./middleware/passport')(passport);
@@ -32,7 +30,6 @@ function startServer() {
 
       const db = client.db(dbName); // Use the database name from .env file
       global.db = db; // Save the db connection in a global variable
-      initializeCronJobsForBlogs(db)
       initializeCronJobs(db)
       // Use the express-session middleware
       app.use(
@@ -78,9 +75,7 @@ function startServer() {
       const payment = require('./routers/payment');
       const dashboard= require('./routers/dashboard/index');
       const generator = require('./routers/api/generator');
-      const rss = require('./routers/api/rss');
       const autoblog = require('./routers/api/autoblog');
-      const affiliate = require('./routers/api/affiliate');
       
       app.use('/', index); 
       app.use('/user', user); 
@@ -88,9 +83,7 @@ function startServer() {
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
       app.use('/api/generator', generator);
-      app.use('/api/rss', rss);
       app.use('/api/autoblog', autoblog);
-      app.use('/api/affiliate', affiliate);
 
 
 

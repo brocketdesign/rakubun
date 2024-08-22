@@ -44,7 +44,7 @@ html
                     | RAKUBUN
               button#sidebarMenuToggleSmall.btn.rounded-0.shadow-0.col(type="button")
                 .text-end(style="cursor:pointer")
-                  img.border.border-dark(src=user.profileImage || 'https://placehold.co/51x76', alt='User Profile Image' style="object-fit: contain; width: 45px; height: 45px; border-radius: 50%; object-fit: cover;")
+                  img.border.border-dark(src=user.profileImage || '/img/avatar.png', alt='User Profile Image' style="object-fit: contain; width: 45px; height: 45px; border-radius: 50%; object-fit: cover;")
       #back-alert.alert-container.container.position-relative(style="cursor:pointer")
         if messages.error
           .alert.alert-danger.position-fixed.top-0.border.border-danger.shadow(style="z-index: 1000;")

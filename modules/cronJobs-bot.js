@@ -30,7 +30,7 @@ const setCronJobForUser = async (db, botId, schedule) => {
   blogInfo.blogId = blogInfo._id
   const combinedPowers = { ...botInfo, ...blogInfo };
 
-  autoBlog(combinedPowers,db)
+  //autoBlog(combinedPowers,db)
   console.log(`Set job for blog ${botId} at ${botInfo.postFrequency}`)
   cronJobsMap[botId] = cron.schedule(botInfo.postFrequency, () => {
     console.log(`Doing something for blog ${botId}`);

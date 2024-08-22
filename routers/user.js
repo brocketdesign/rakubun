@@ -5,6 +5,7 @@ const {
   addUsertoFreePlan
 } = require('../services/tools')
 
+const { handleFileUpload } = require('../services/tools')
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const passport = require('passport');
@@ -18,82 +19,54 @@ router.get('/setting', (req, res) => {
   res.render('user/setting',{user:req.user}); // Render the login template
 });
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, process.env.UPLOAD_STORAGE_FOLDER);
-  },
-  filename: function (req, file, cb) {
-    cb(null, `${file.fieldname}-${req.user._id}-${formatDateToDDMMYYHHMMSS()}.jpg`);
+
+router.post('/updateProfile', async (req, res) => {
+  let user;
+
+  if (req.body.resetToken) {
+      user = await global.db.collection('users').findOne({ resetToken: req.body.resetToken });
+  } else {
+      user = req.user;
   }
-});
-
-
-const upload = multer( {storage: storage });
-
-router.post('/updateProfile', upload.fields([{ name: 'profileImage' }, { name: 'bannerImage' }, {name : 'imageUpload'}]), async (req, res) => {
 
   try {
-      let user
-
-      if(req.body.resetToken){
-        // Find the user with the matching reset token
-        user = await global.db.collection('users').findOne({ resetToken : req.body.resetToken });
-      }else{
-        user = req.user
+      const formData = req.body;
+      let profileImageUrl;
+console.log(req.files)
+      if (req.files && req.files.profileImage) {
+          const profileImage = req.files.profileImage[0];
+          profileImageUrl = await handleFileUpload(profileImage);
+          user.profileImage = profileImageUrl;
       }
 
-      const userId = user._id;  // Retrieve user ID from req object
-      const updatedInfo = req.body;  // Retrieve updated data from form submission
-      updatedInfo.galleryImages = user.galleryImages || []
-
-      //console.log(req.body) 
-      //console.log(req.files) 
-
-      if (req.files) {
-
-        let profileImage = req.files['profileImage'] ? `${process.env.UPLOAD_STORAGE_FOLDER.replace('public','')}${req.files['profileImage'][0].filename}` : null;
-        let bannerImage = req.files['bannerImage'] ? `${process.env.UPLOAD_STORAGE_FOLDER.replace('public','')}${req.files['bannerImage'][0].filename}` : null;
-        let galleryImage = req.files['imageUpload'] ? `${process.env.UPLOAD_STORAGE_FOLDER.replace('public','')}${req.files['imageUpload'][0].filename}` : null;
-
-        // If a file was uploaded, add the file path to the user's data
-        if (profileImage) {
-          updatedInfo.profileImage = profileImage;
-        }
-        if (bannerImage) {
-          updatedInfo.bannerImage = bannerImage;
-        }
-        if (galleryImage) {
-          // Assuming updatedInfo.galleryImages is initially an empty array or already an array
-          updatedInfo.galleryImages.push(galleryImage);
-        }
-      }
-      if(updatedInfo.userPassword){
-        updatedInfo.password = await bcrypt.hash(updatedInfo.userPassword, 10);
-        user.password = updatedInfo.password
-
-        const EmailData = {
-          username: user.username, 
-        };
+      const updatedData = {
+        email: formData.email,
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        birthDate: formData.birthDate,
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zip: formData.zip,
+        country: formData.country,
+        language: formData.language
+    };
     
-        sendEmail(user.email, 'password update', EmailData)
-          .then(() => console.log('Email sent!'))
-          .catch(error => console.error(`Error sending email: ${error}`));
+    if (profileImageUrl) {
+        updatedData.profileImage = profileImageUrl;
+    }    
+console.log(updatedData)
+      await global.db.collection('users').updateOne(
+          { _id: user._id },
+          { $set: updatedData }
+      );
 
-      }
-      // Use global.db to get a reference to the users collection
-      const usersCollection = global.db.collection('users');
-
-      // Update user in the collection
-      await usersCollection.updateOne({ _id: new ObjectId(userId) }, { $set: updatedInfo });
-
-      if(req.body.resetToken){
-        await global.db.collection('users').updateOne({ resetToken : req.body.resetToken },{$set:{resetToken:false,validityToken:false}});
-      }
-      
-      res.json({ status: 'success', message: 'Profile has been updated.' });
+      res.json({ success: true, message: 'Profile updated successfully', profileImage: profileImageUrl });
   } catch (error) {
-    console.log(error)
-      res.json({ status: 'error', message: 'An error occurred while updating the profile.' });
+      console.error('Error updating profile:', error);
+      res.status(500).json({ success: false, message: 'An error occurred while updating the profile' });
   }
 });
 

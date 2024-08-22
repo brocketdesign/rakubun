@@ -6,7 +6,7 @@ block mainContent
         i.fa.fa-arrow-right
         i.fab.fa-wordpress.mx-3.display-6
     .toolbar.btn-toolbar.my-2
-        .toolbar-body.py-3.px-2
+        .toolbar-body.py-3.px-2.d-flex.justify-content-between
             a.btn.btn-dark.shadow-none(type="button", href="/dashboard/app/autoblog/")
                 i.fas.fa-list 
             if blogId
@@ -31,10 +31,6 @@ block mainContent
                                     i.fa.fa-cog
                                 a.btn.btn-dark.mx-2(href=`/dashboard/app/autoblog?blogId=${blog._id}`) 
                                     i.fa.fa-robot
-                                button.toggle-blog-btn.btn.btn-success.mx-2(class=blog.isActive ? '': 'd-none' data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', false)`) 
-                                    i.fas.fa-toggle-on
-                                button.toggle-blog-btn.btn.btn-secondary.mx-2(class=!blog.isActive ? '': 'd-none'  data-id=blog._id, onclick=`toggleBlogStatus('${blog._id}', true)`) 
-                                    i.fas.fa-toggle-off
     if blogId
         a(href=blogData.blogUrl, target="_blank") 
             i.fab.fa-wordpress

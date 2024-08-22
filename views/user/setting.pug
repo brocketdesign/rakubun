@@ -3,100 +3,191 @@ extends ../dashboard/base
 block mainContent
     ul.nav.nav-tabs
         li.nav-item
-            a.nav-link(href='#personalInfo' data-bs-toggle='tab') Account settings
+            a.nav-link(href='#personalInfo' data-bs-toggle='tab') アカウント設定
         li.nav-item
-            a.nav-link(href='#wordpressInfo' data-bs-toggle='tab') Wordpress
-        li.nav-item.d-none
-            a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') Password update
+            a.nav-link(href='#passwordUpdate' data-bs-toggle='tab') パスワードの更新
     .tab-content.pb-5#updateProfile(style="display:none")
         #personalInfo.tab-pane.fade
-            .header
-                .banner-image(style="cursor:pointer")
-                    img(src=user.bannerImage || 'https://placehold.co/51x76',, alt='Banner Image' style="height: 60vh; width: 100%; object-fit: cover; object-position: center;cursor:pointer")
-                .profile-image.text-center(style="transform: translateY(-50%);cursor:pointer")
-                    img.shadow.border.border-dark(src=user.profileImage || 'https://placehold.co/51x76', alt='User Profile Image' style="object-fit: contain; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;")
+            .header.my-4
+                .profile-image.text-center(style="cursor:pointer")
+                    img.shadow.border.border-dark(src=user.profileImage || '/img/avatar.png', alt='ユーザープロフィール画像' style="object-fit: contain; width: 150px; height: 150px; border-radius: 50%; object-fit: cover;")
             form.row.mt-3
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='profileImage') Profile picture
+                    label(for='profileImage') プロフィール写真
                     .input-group
                         input#profileImage.form-control(type='file', name="profileImage", value=user.profileImage)
-                .form-group.col-12.col-sm-6.d-none
-                    label(for='bannerImage') Banner image
-                    .input-group
-                        input#bannerImage.form-control(type='file', name="bannerImage", value=user.bannerImage)
                 hr.my-3.d-none
                 .form-group.col-12
                     label(for='language') 言語
                     select#language.form-control(name="language")
                         option(value="japanese" selected) 日本語
                         option(value="english") 英語
-                        option(value="spanish") スペイン語
-                        option(value="french") Français
                 hr.my-3.d-none
                 .form-group.col-12.d-none
-                    label(for='username') Nickname
-                    input#username.form-control(name="username", type='text', placeholder='Enter Nickname' value=user.username)
+                    label(for='username') ニックネーム
+                    input#username.form-control(name="username", type='text', placeholder='ニックネームを入力' value=user.username)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='lastName') Last name
-                    input#lastName.form-control(name="lastName", type='text', placeholder='Enter Last Name' value=user.lastName)
+                    label(for='lastName') 姓
+                    input#lastName.form-control(name="lastName", type='text', placeholder='姓を入力' value=user.lastName)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='firstName') First name
-                    input#firstName.form-control(name="firstName", type='text', placeholder='Enter First Name' value=user.firstName)
+                    label(for='firstName') 名
+                    input#firstName.form-control(name="firstName", type='text', placeholder='名を入力' value=user.firstName)
                 hr.my-3
                 .form-group.col-12.col-sm-6
-                    label(for='email') Email
-                    input#email.form-control(name="email", type='email', placeholder='Enter Email' value=user.email)
+                    label(for='email') メール
+                    input#email.form-control(name="email", type='email', placeholder='メールアドレスを入力' value=user.email)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='phoneNumber') Phone Number
-                    input#phoneNumber.form-control(name="phoneNumber", type='tel', placeholder='Enter Phone Number' value=user.phoneNumber)
+                    label(for='phoneNumber') 電話番号
+                    input#phoneNumber.form-control(name="phoneNumber", type='tel', placeholder='電話番号を入力' value=user.phoneNumber)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='birthDate') Date of birth
+                    label(for='birthDate') 生年月日
                     input#birthDate.form-control(name="birthDate", type='date' value=user.birthDate)
                 hr.my-3.d-none
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='address') Address
-                    input#address.form-control(name="address", type='text', placeholder='Enter Address' value=user.address)
+                    label(for='address') 住所
+                    input#address.form-control(name="address", type='text', placeholder='住所を入力' value=user.address)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='city') City or municipality
-                    input#city.form-control(name="city", type='text', placeholder='Enter City' value=user.city)
+                    label(for='city') 市区町村
+                    input#city.form-control(name="city", type='text', placeholder='市区町村を入力' value=user.city)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='state') Prefecture or State
-                    input#state.form-control(name="state", type='text', placeholder='Enter State' value=user.state)
+                    label(for='state') 都道府県
+                    input#state.form-control(name="state", type='text', placeholder='都道府県を入力' value=user.state)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='zip') Postal code
-                    input#zip.form-control(name="zip", type='text', placeholder='Enter Zip Code' value=user.zip)
+                    label(for='zip') 郵便番号
+                    input#zip.form-control(name="zip", type='text', placeholder='郵便番号を入力' value=user.zip)
                 .form-group.col-12.col-sm-6.d-none
-                    label(for='country') Country
+                    label(for='country') 国
                     select#country.form-control(name="country")
-                    option(value=user.country) Select your country
-                button.btn.btn-primary.my-4(type='submit') Send
-        #wordpressInfo.tab-pane.fade
-            form.row.mt-3
-                .form-group.col-12.col-sm-6
-                    label(for='blogUrl') Blog URL
-                    input#blogUrl.form-control(name="blogUrl", type='url', placeholder='', required)
-                .form-group.col-12.col-sm-6
-                    label(for='blogTheme') Blog Theme
-                    input#blogTheme.form-control(name="blogTheme", type='text', placeholder='What is it about')
-                hr.my-3
-                .form-group.col-12.col-sm-6
-                    label(for='blogUsername') User Name
-                    input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
-                .form-group.col-12.col-sm-6
-                    label(for='blogPassword') Password
-                    input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
-                button.btn.btn-primary.my-4(type='submit') Send
+                    option(value=user.country) 国を選択してください
+                button.btn.btn-primary.my-4(type='submit') 送信
         #passwordUpdate.tab-pane.fade.d-none
             form.row.mt-3
                 .form-group.col-12.col-sm-6
-                    label(for='userOldPassword') Old password
-                    input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='Please enter the existing password.', required)
-                    small.text-muted Please enter the existing password. 
+                    label(for='userOldPassword') 古いパスワード
+                    input#userOldPassword.form-control(name="userOldPassword", type='password', placeholder='現在のパスワードを入力してください。', required)
+                    small.text-muted 現在のパスワードを入力してください。 
                 hr.my-3
                 .form-group.col-12.col-sm-6
-                    label(for='userPassword') New Passord
-                    input#userPassword.form-control(name="userPassword", type='password', placeholder='Please enter the new password.', required)
+                    label(for='userPassword') 新しいパスワード
+                    input#userPassword.form-control(name="userPassword", type='password', placeholder='新しいパスワードを入力してください。', required)
                 .form-group.col-12.col-sm-6
-                    label(for='userPasswordVerification') Confirm new password
+                    label(for='userPasswordVerification') 新しいパスワードの確認
                     input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
-                button.btn.btn-primary.my-4(type='submit') Send
+                button.btn.btn-primary.my-4(type='submit') 送信
+
+    script.
+        $(document).ready(() => {
+            initUserProfile();
+        });
+        const initUserProfile = () => {
+            const form = $('#updateProfile form').not('#reset-form');
+            let initialFormData = new FormData(form[0]);
+            let formChanged = false;
+
+            const handleFormChange = () => {
+                formChanged = true;
+            };
+
+            const handleFormSubmit = async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form[0]);
+
+                if (!checkFormChange(initialFormData, formData)) {
+                    alert('フォームに変更はありません。');
+                    return;
+                }
+
+                const passwordError = await validatePasswordFields(formData);
+                if (passwordError) {
+                    handleFormResult(false, passwordError);
+                    return;
+                }
+
+                $.ajax({
+                    url: '/user/updateProfile',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        handleFormSuccess(response);
+                    },
+                    error: function(xhr, status, error) {
+                        handleFormError(xhr, status, error);
+                    }
+                });
+            };
+
+            const validatePasswordFields = async (formData) => {
+                const oldPassword = formData.get("userOldPassword");
+                const newPassword = formData.get("userPassword");
+                const newPasswordVerification = formData.get("userPasswordVerification");
+
+                if (oldPassword && !(await isOldPasswordCorrect(oldPassword))) {
+                    return '古いパスワードが正しくありません';
+                }
+
+                if (newPassword || newPasswordVerification) {
+                    if (newPassword !== newPasswordVerification) {
+                        return '新しいパスワードとパスワードの確認が一致しません';
+                    }
+                }
+
+                return null;
+            };
+
+            const isOldPasswordCorrect = async (oldPassword) => {
+                try {
+                    const response = await $.post('/user/isOldPasswordCorrect', { oldPassword });
+                    return response.isMatch;
+                } catch (error) {
+                    console.error('Error in password validation:', error);
+                    return false;
+                }
+            };
+
+            const initImageHandling = () => {
+                const profileImageInput = $('#profileImage');
+                const profileImagePreview = $('.profile-image img');
+
+                if (profileImageInput.length > 0) {
+                    $('.profile-image').on('click', function() {
+                        profileImageInput.click();
+                    });
+
+                    profileImageInput.on('change', function() {
+                        const file = this.files[0];
+                        const reader = new FileReader();
+
+                        reader.onload = function(e) {
+                            profileImagePreview.attr('src', e.target.result).show();
+                        };
+
+                        reader.readAsDataURL(file);
+                        form.submit();
+                    });
+                }
+            };
+
+            const initTabs = () => {
+                if ($('#updateProfile').length > 0) {
+                    const activeTab = localStorage.getItem('activeTab') || '#personalInfo';
+                    new bootstrap.Tab($(`a[href="${activeTab}"]`)).show();
+
+                    $('#updateProfile').fadeIn();
+
+                    $('.nav-tabs a').on('shown.bs.tab', function(e) {
+                        localStorage.setItem('activeTab', $(e.target).attr('href'));
+                    });
+                }
+            };
+
+            form.on('submit', handleFormSubmit);
+            $('#updateProfile form input, #updateProfile form select, #updateProfile form textarea').on('change', handleFormChange);
+            $(window).on('beforeunload', function() {
+                return formChanged ? "保存されていない変更があります。このページを離れてもよろしいですか？" : undefined;
+            });
+
+            initImageHandling();
+            initTabs();
+        };

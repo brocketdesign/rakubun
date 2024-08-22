@@ -1,34 +1,64 @@
-const AWS = require('aws-sdk');
+const axios = require('axios');
+const { createHash } = require('crypto');
+const aws = require('aws-sdk');
 
-// Configure the AWS region of the S3 bucket
-AWS.config.update({
-  region: 'ap-northeast-1',
+// Configure AWS S3
+const s3 = new aws.S3({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: process.env.AWS_REGION
 });
-
-const s3 = new AWS.S3();
-
-function uploadFileToS3(fileContent, fileName) {
-  const params = {
-    Bucket: process.env.S3_BUCKET_NAME,
-    Key: fileName,
-    Body: fileContent,
-  };
-
-  return new Promise((resolve, reject) => {
-    s3.upload(params, function(err, data) {
-      if (err) {
-        return reject(err);
-      }
-      resolve({
-        url: data.Location,
-        buffer: fileContent
-      });
-    });
-  });
+// Function to get the current counter value from the database
+async function getCounter(db) {
+const counterDoc = await db.collection('counters').findOne({ _id: 'storyCounter' });
+return counterDoc && !isNaN(counterDoc.value) ? counterDoc.value : 0;
 }
 
+// Function to update the counter value in the database
+async function updateCounter(db, value) {
+  await db.collection('counters').updateOne({ _id: 'storyCounter' }, { $set: { value: value } }, { upsert: true });
+}
+
+const uploadToS3 = async (buffer, hash, filename) => {
+  const params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: `${hash}_${filename}`,
+      Body: buffer,
+      ACL: 'public-read'
+  };
+  const uploadResult = await s3.upload(params).promise();
+  return uploadResult.Location;
+};
+const handleFileUpload = async (part) => {
+  let buffer;
+  
+  if (part.file) {
+      // Handling uploaded file
+      const chunks = [];
+      for await (const chunk of part.file) {
+          chunks.push(chunk);
+      }
+      buffer = Buffer.concat(chunks);
+  } else if (part.value && isValidUrl(part.value)) {
+      // Handling file from URL
+      const response = await axios.get(part.value, { responseType: 'arraybuffer' });
+      buffer = Buffer.from(response.data, 'binary');
+  } else {
+      throw new Error('No valid file or URL provided');
+  }
+
+  const hash = createHash('md5').update(buffer).digest('hex');
+  const existingFiles = await s3.listObjectsV2({
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Prefix: hash,
+  }).promise();
+  
+  if (existingFiles.Contents.length > 0) {
+      return `https://${process.env.AWS_S3_BUCKET_NAME}.s3.amazonaws.com/${existingFiles.Contents[0].Key}`;
+  } else {
+      return uploadToS3(buffer, hash, part.filename || 'uploaded_file');
+  }
+};
 
 /**
  * Test access to the specified S3 bucket.
@@ -54,4 +84,4 @@ function testS3Access(bucketName) {
   }
   
 
-module.exports = {uploadFileToS3}
+module.exports = {handleFileUpload}

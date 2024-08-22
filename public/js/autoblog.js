@@ -31,23 +31,7 @@ $(document).ready(function() {
         });
     });
 
-    // Function to add new blog URL input
-    $('body').on('click', '.add-blog-url', function() {
-        var newInputGroup = $(this).closest('.input-group').clone();
-        newInputGroup.find('input').val('');
-        newInputGroup.find('.remove-blog-url').attr('disabled', false);
-        $('#blogUrls').append(newInputGroup);
-    });
 
-    // Function to remove blog URL input
-    $('body').on('click', '.remove-blog-url', function() {
-        if ($('#blogUrls .input-group').length > 1) {  // Prevent removing the last input group
-            $(this).closest('.input-group').remove();
-        } else {
-            $(this).closest('.input-group').find('input').val('');  // Clear the input if it's the last remaining group
-            $(this).attr('disabled', 'disabled');
-        }
-    });
 
     // Initial state should not allow removal of the only input field
     $('.remove-blog-url').attr('disabled', 'disabled');
@@ -103,23 +87,6 @@ $(document).ready(function() {
                     }
                 });
 
-                if (data && data.additionalUrls && data.additionalUrls.length > 0) {
-                    // Load each URL into its own input group
-                    data.additionalUrls.forEach(function(url) {
-                        var inputGroup = $('.template').clone().removeClass('template').show();
-                        inputGroup.find('input').val(url);
-                        $('#blogUrls').append(inputGroup);
-                    });
-                } else {
-                    // Initialize with one empty input group if no URLs exist
-                    var inputGroup = $('.template').clone().removeClass('template').show();
-                    $('#blogUrls').append(inputGroup);
-                }
-                // Always ensure the remove button is functional unless there's only one input group
-                if ($('#blogUrls .input-group').length > 1) {
-                    $('.remove-blog-url').attr('disabled', false);
-                }
-
                 validateAndToggleIcon();
             },
             error: function(xhr, status, error) {
@@ -130,10 +97,6 @@ $(document).ready(function() {
 
         updateCategoryList(blogId)
 
-    }else {
-        // Even if there's no blogId, initialize with one empty input group
-        var inputGroup = $('.template').clone().removeClass('template').show();
-        $('#blogUrls').append(inputGroup);
     }
     var botId = $('#botId').data('id');
     if(botId){
@@ -345,43 +308,7 @@ function updateCategoryList(blogId) {
         }
     });
 }
-function postBlogArticle(blogId) {
-    Swal.fire({
-      title: '処理を開始しますか？',
-      text: 'ブログ記事の投稿を開始します。',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'はい',
-      cancelButtonText: 'いいえ'
-    }).then((result) => {
-      if (result.isConfirmed) {
-        $.ajax({
-          url: '/api/autoblog/post-blog-article',
-          type: 'POST',
-          data: JSON.stringify({ blogId: blogId }),
-          contentType: 'application/json; charset=utf-8',
-          dataType: 'json',
-          success: function(response) {
-            Swal.fire(
-              '完了しました！',
-              '記事の処理が正常に開始されました。',
-              'success'
-            );
-          },
-          error: function(xhr, status, error) {
-            Swal.fire(
-              'エラーが発生しました',
-              '処理を開始できませんでした。詳細: ' + xhr.responseText,
-              'error'
-            );
-          }
-        });
-      }
-    });
-  }
-  
+
   function validateAndToggleIcon() {
     const urlInput = $('#blogUrl');
     if(urlInput.length == 0) return

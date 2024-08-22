@@ -5,8 +5,6 @@ const axios = require('axios');
 const { ObjectId } = require('mongodb');
 const { getCategoryId } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
-const { setCronJobForBlog } = require('../../modules/cronJobs-blog.js');
-const {retrieveLatestArticle} = require('../../modules/init-blog')
 
 var wordpress = require("wordpress");
 
@@ -64,7 +62,6 @@ router.post('/blog-info', async (req, res) => {
       blogData.additionalUrls = blogData.additionalUrls.filter(url => url !== "");
     }
     const blogId = await saveBlogInfo(userId, blogData);
-    setCronJobForBlog(db, blogId, blogData.postFrequency)
     res.status(201).send({ message: 'Blog info saved successfully', blogId });
   } catch (error) {
     console.log(error);
@@ -117,49 +114,6 @@ router.post('/duplicate-blog/:blogId', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
-
-router.post('/post-blog-article', async (req, res) => {
-  const { blogId } = req.body;
-
-  try {
-    const blogInfo = await global.db.collection('blogInfos').findOne({_id: new ObjectId(blogId), userId: new ObjectId(req.user._id)});
-
-    if (!blogInfo) {
-      return res.status(404).json({ message: 'Blog information not found or access denied.' });
-    }
-
-    // Update the database to indicate that a process is in progress
-    await global.db.collection('blogInfos').updateOne(
-      { _id: new ObjectId(blogId) },
-      { $set: { processing: true } }
-    );
-
-    // Immediately respond to the client
-    res.json({ message: 'Process started.' });
-
-    // Call the function without awaiting its completion
-    retrieveLatestArticle(blogInfo, global.db)
-      .then(() => {
-        // Update the database on success
-        global.db.collection('blogInfos').updateOne(
-          { _id: new ObjectId(blogId) },
-          { $set: { processing: false, lastUpdated: new Date() } }
-        );
-      })
-      .catch((error) => {
-        console.error('Error processing latest article:', error);
-        // Update the database on failure
-        global.db.collection('blogInfos').updateOne(
-          { _id: new ObjectId(blogId) },
-          { $set: { processing: false, error: 'Failed to process latest article' } }
-        );
-      });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
 
 router.get('/bot-info/:botId', async (req, res) => {
   const { botId } = req.params;

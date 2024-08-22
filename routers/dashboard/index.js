@@ -21,33 +21,12 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-//Route for handling '/affiliate/'
-router.get('/app/affiliate/', ensureAuthenticated,ensureMembership, async (req, res) => {  
-  res.render('dashboard/app/affiliate/list',{user:req.user,title:"RAKUBUN - Dashboard"});
-});
-router.get('/app/affiliate/status', ensureAuthenticated,ensureMembership, async (req, res) => {  
-  res.render('dashboard/app/affiliate/status',{user:req.user,title:"RAKUBUN - Dashboard"});
-});
-router.get('/app/affiliate/graph/:affiliateId', ensureAuthenticated,ensureMembership, async (req, res) => {  
-  const affiliateId = req.params.affiliateId
-  res.render('dashboard/app/affiliate/graph',{user:req.user,affiliateId, title:"RAKUBUN - Dashboard"});
-});
+
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
   const appname = req.params.appname
   res.render('dashboard/app/generator/'+appname,{user:req.user,title:"RAKUBUN - Dashboard"});
 });
-// Route for handling '/rss/'
-router.get('/app/rss', ensureAuthenticated,ensureMembership, async (req, res) => {  
-  res.render('dashboard/app/rss/index',{user:req.user,title:"RAKUBUN - Dashboard"});
-  
-});
-// Route for handling '/feed/'
-router.get('/app/feed', ensureAuthenticated,ensureMembership, async (req, res) => {  
-  res.render('dashboard/app/rss/feed',{user:req.user,title:"RAKUBUN - Dashboard"});
-});
-// Assuming 'ensureAuthenticated' and 'ensureMembership' middleware functions are correctly setting up 'req.user'
-
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
   const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null
   const botId = req.query.botId && req.query.botId != 'undefined'

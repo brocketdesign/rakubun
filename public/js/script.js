@@ -5,27 +5,15 @@ const YOUR_LARGE_SCREEN_BREAKPOINT = 992
 const checkFormChange = (initialData, form) => {
     return Array.from(form.entries()).some(([name, value]) => value !== initialData.get(name));
 }
-const previewImage = (imageInput, imagePreview) => {
-    imageInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        const reader = new FileReader();
-        $(imagePreview).show()
-        reader.onload = () => imagePreview.src = reader.result;
-        reader.readAsDataURL(file);
-    });
-}
 
-const inputTrigger = (inputElement, triggerElement) => {
-    triggerElement.addEventListener('click', () => inputElement.click());
-}
+
+
 $(document).ready(function() {
 
     handleLoginForm()
     
     handleEvents()
     handleGridRange();
-    handleUserProfile();
-    handleUserProfileImages();
     handleCopyButtons();
     handlePostButtons() ;
 
@@ -84,75 +72,9 @@ const handleCardButton = () => {
         $(this).closest('.card-body').find('.card-title').toggle()
     })
 }
-// This function checks password fields if they exist
-const validatePasswordFields = async formData => {
-    // Extract password data from formData
-    const oldPassword = formData.get("userOldPassword");
-    const newPassword = formData.get("userPassword");
-    const newPasswordVerification = formData.get("userPasswordVerification");
 
-    if (oldPassword) {
-        if (!await isOldPasswordCorrect(oldPassword)) {
-            return '古いパスワードが正しくありません';
-        }
-    }
 
-    if (newPassword && newPasswordVerification) {
-        if (!areNewPasswordsSame(newPassword, newPasswordVerification)) {
-            return '新しいパスワードとパスワードの確認が一致しません';
-        }
-    } else if (newPassword || newPasswordVerification) {
-        // Only check if both fields are filled if one of them is filled
-        return 'すべてのパスワードフィールドを入力してください';
-    }
-
-    return null; // Return null if there's no error
-};
-
-// This function handles form submission
-const handleFormSubmission = async formData => {
-    const passwordError = await validatePasswordFields(formData);
-
-    if (passwordError) {
-        handleFormResult(false, passwordError);
-        return;
-    }
-
-    $.ajax({
-        url: `/user/updateProfile`,
-        type: 'POST',
-        enctype: 'multipart/form-data',
-        data: formData,
-        processData: false, // Tell jQuery not to process data
-        contentType: false, // Tell jQuery not to set contentType
-        success: handleFormSuccess,
-        error: handleFormError
-    });
-};
-
-const isOldPasswordCorrect = async (oldPassword) => {
-    let isCorrect = false;
-  
-    await $.ajax({
-        url: `/user/isOldPasswordCorrect`,
-        type: 'POST',
-        data: { oldPassword: oldPassword },
-        success: (response) => {
-            isCorrect = response.isMatch;
-        },
-        error: (jqXHR, textStatus, errorThrown) => {
-            console.log('Error in password validation: ', textStatus, errorThrown);
-        }
-    });
-  
-    return isCorrect;
-};
-
-const areNewPasswordsSame = (newPassword,newPasswordVerification) => {
-    return newPassword === newPasswordVerification;
-};
-
-const handleFormSuccess = response => {
+window.handleFormSuccess = function(response) {
     if (response.status === 'success') {
         handleFormResult(true, response.message);
     } else {
@@ -1148,74 +1070,8 @@ function cancelSubscription(subscriptionID){
     }
     
 }
-function handleUserProfileImages(){
-    let form = $('#updateProfile form').not('#reset-form');
 
-       // Listen for changes on the profile image input
-       $('#profileImage').on('change', function() {
-        console.log("Profile image changed, hold tight, submitting the form...");
-        form.submit();
-    });
 
-    // Listen for changes on the banner image input
-    $('#bannerImage').on('change', function() {
-        console.log("Banner image changed, woo! Submitting the form...");
-        form.submit();
-    });
-}
-const handleUserProfile = () => {
-    let formChanged = false;
-    let form = $('#updateProfile form').not('#reset-form');
-    let inputs = $('#updateProfile form input, #updateProfile form select, #updateProfile form textarea');
-    let initialFormData = new FormData(form[0]);
-
-    inputs.change(() => formChanged = true);
-    form.on('submit', () => formChanged = false);
-    window.onbeforeunload = () => formChanged ? "保存されていない変更があります。このページを離れてもよろしいですか？" : undefined;
-    // Form submission handling
-    form.on('submit', function(e) {
-        e.preventDefault();
-
-        let formData = new FormData(this);
-
-        console.log(formData);
-
-        if (!checkFormChange(initialFormData, formData)) {
-            alert('フォームに変更はありません。');
-            return
-        }
-
-        handleFormSubmission(formData);
-    }); 
-
-    // Image preview and click to trigger file input
-    const profileImageInput = document.getElementById('profileImage');
-    const bannerImageInput = document.getElementById('bannerImage');
-    
-    if (profileImageInput && bannerImageInput ) {
-      inputTrigger(profileImageInput, document.querySelector('.profile-image'));
-      inputTrigger(bannerImageInput, document.querySelector('.banner-image'));
-  
-      previewImage(profileImageInput, document.querySelector('.profile-image img'));
-      previewImage(bannerImageInput, document.querySelector('.header img'));
-  
-    }
-    // Active Tab
-    if($('#updateProfile').length>0){
-        if (document.querySelector('.nav-tabs')) {
-            let activeTab = localStorage.getItem('activeTab');
-            if(activeTab){
-              new bootstrap.Tab(document.querySelector(`a[href="${activeTab}"]`)).show();
-            }else{
-              new bootstrap.Tab(document.querySelector(`a[href="#personalInfo"]`)).show();
-            }
-            $('#updateProfile').fadeIn()
-            document.querySelectorAll('.nav-tabs a').forEach(t => t.addEventListener('shown.bs.tab', (e) => {
-                localStorage.setItem('activeTab', e.target.getAttribute('href'));
-            }));
-          }
-    }
-}
 const handleEvents = () => {
     // Other event listeners
     $(document).on('click', '.alert-container', function() { $(this).fadeOut();  });
