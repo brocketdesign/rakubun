@@ -4,7 +4,7 @@ block mainContent
     .container-fluid.px-0
         .row
             // Sidebar for blogs
-            .col-md-3.bg-light.position-fixed.sidebar.d-flex.flex-column.px-0.border.m-vh-100(style="height: calc(100vh - 75px);")
+            .col-md-3.bg-light.position-fixed.sidebar.d-flex.flex-column.px-0.border.m-vh-100
                 button#addBlogBtn.btn.btn-sm.btn-outline-primary.shadow-0.btn-block.my-2.mx-auto.w-75
                     i(class="fas fa-plus me-2")
                     | 新しいブログを追加
@@ -32,7 +32,7 @@ block mainContent
 
 
             // Main content area
-            #bots-container.col-md-9.offset-md-3.position-fixed.d-none.d-sm-inline.bg-white.m-vh-100(style="overflow-y: scroll;height: calc(100vh - 75px);")
+            #bots-container.col-md-9.offset-md-3.position-fixed.d-none.d-sm-inline.bg-white.m-vh-100(style="overflow-y: scroll;")
                 .toolbar.btn-toolbar.py-2.sticky-top.bg-white
                     .toolbar-body.d-flex.justify-content-between.w-100.align-items-center
                         button#close-bots-container.btn.btn-light
@@ -284,10 +284,8 @@ block mainContent
             padding-top: 5px;
             padding-bottom: 15px;
         }
-        @media (max-width: 767px) {
-            .m-vh-100{
-                height: calc(var(--vh, 1vh) * 100 - 75px);
-            }
+        .m-vh-100{
+            height: calc(var(--vh, 1vh) * 100 - 75px);
         }
     script.
         function toggleBotStatus(botId, newState) {
