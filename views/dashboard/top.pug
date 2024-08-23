@@ -1,14 +1,10 @@
 extends base
 
 block mainContent
-    .text-center
-        i.fa.fa-home.display-6
-    hr.my-4
-    
-    section.my-5
+    section.my-3
         .row.row-cols-1.row-cols-md-3.my-5
             .col.mb-3
-                a.card.btn.bg-white.px-2(href=`/dashboard/app/autoblog`)
+                a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/autoblog`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
                             i.fa.fa-robot.mx-3.display-6
@@ -18,7 +14,7 @@ block mainContent
                             p.card-text.text-muted.text-center.w-100
                                 | Auto - Wordpress
             .col.mb-3
-                a.card.btn.bg-white.px-2(href=`/dashboard/app/generator/4`)
+                a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/generator/4`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
                             i.fab.fa-twitter-square.mx-3.display-6
@@ -43,10 +39,10 @@ block mainContent
                     i.fas.fa-cogs.me-2
                 .row.row-cols-1.row-cols-md-2.my-3
                     .col.my-1
-                        a.btn.btn-primary.w-100(href="/user/setting") アカウント設定
+                        a.btn.btn-primary.shadow-0.w-100(href="/user/setting") アカウント設定
                     .col.my-1
-                        a.btn.btn-primary.w-100(href="/about-us") 会社概要
+                        a.btn.btn-primary.shadow-0.w-100(href="/about-us") 会社概要
                     .col.my-1
-                        a.btn.btn-outline-primary.w-100(href="#") 使い方ガイド
+                        a.btn.btn-outline-primary.shadow-0.w-100(href="#") 使い方ガイド
                     .col.my-1
-                        a.btn.btn-outline-primary.w-100(href="/contact") お問い合わせ
+                        a.btn.btn-outline-primary.shadow-0.w-100(href="/contact") お問い合わせ

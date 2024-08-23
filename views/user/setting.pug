@@ -1,7 +1,7 @@
 extends ../dashboard/base
 
 block mainContent
-    .container.mt-5
+    .container
         .row
             .col-md-3
                 ul.nav.nav-pills.flex-column
@@ -28,7 +28,7 @@ block mainContent
                             .form-group.mt-3.d-none
                                 label(class="small text-muted" for='profileImage') プロフィール写真
                                 input#profileImage.form-control(type='file', name="profileImage")
-                            button.btn.btn-primary.mt-4(type='submit') 送信
+                            button.btn.btn-primary.mt-2.mb-4(type='submit') 送信
                     #passwordUpdate.tab-pane.fade
                         form#passwordUpdateForm.mt-3
                             .form-group
@@ -40,7 +40,7 @@ block mainContent
                             .form-group.mt-3
                                 label(class="small text-muted" for='userPasswordVerification') 新しいパスワードの確認
                                 input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
-                            button.btn.btn-primary.mt-4(type='submit') 送信
+                            button.btn.btn-primary.mt-2.mb-4(type='submit') 送信
 
     script.
         $(document).ready(() => {
