@@ -32,10 +32,12 @@ block mainContent
 
 
             // Main content area
-            .col-md-9.offset-md-3.position-fixed(style="overflow-y: scroll;height: calc(100vh - 75px);")
+            #bots-container.col-md-9.offset-md-3.position-fixed.d-none.d-sm-inline.bg-white(style="overflow-y: scroll;height: calc(100vh - 75px);")
                 .toolbar.btn-toolbar.py-2.sticky-top.bg-white
-                    .toolbar-body.d-flex.justify-content-between.w-100
-                        h6 AI自動化ボット
+                    .toolbar-body.d-flex.justify-content-between.w-100.align-items-center
+                        button#close-bots-container.btn.btn-light
+                            i.fas.fa-bars
+                        h6.mb-0 AI自動化ボット
                         .d-flex 
                             button#addBotBtn.btn.btn-secondary.btn-sm(style="display:none;")
                                 i(class="fas fa-plus")
@@ -441,7 +443,9 @@ block mainContent
             loadBots(blogId);
             $('#addBotBtn').show()
             $(this).addClass('active').siblings().removeClass('active');
+            $('#bots-container').removeClass('d-none')
         });
+        $('#close-bots-container').click(function(){$('#bots-container').addClass('d-none')})
         $(document).ready(function() {
             function showBlogForm(title, formHtml, formData = {}) {
                 const $form = $(formHtml);
