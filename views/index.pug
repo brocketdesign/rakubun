@@ -41,102 +41,99 @@ block content
         div(style="background:linear-gradient(45deg, rgb(23, 88, 213), rgb(14, 167, 214) 100%);")
             div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
                 div.text-white.col-12.col-md-12.py-5
-                    h1.mb-3.fw-bold.display-4(style="height: 200px;")
+                    h1.mb-3.fw-bold(style="height: 200px;")
                         span RAKUBUN
                         span(style="opacity: 0.8;") 、
                         p.generate-text#headline
                         span.generate-text-fail(style="display:none")
                             span AIを使用してコンテンツを10倍速で作成
-                    h5 数秒で高品質な記事、ソーシャルメディア、広告コピーを作成
-                    h5.mb-4 AIライティングアシスタント
+                    h6 数秒で高品質な記事、ソーシャルメディア、広告コピーを作成
+                    h6.mb-4 AIライティングアシスタント
+                    h5.mb-4.d-none らくぶんで、AIがブログをサクッと自動投稿！お任せで楽々更新！
                     button.btn.btn-warning.btn-lg.m-2(onclick="displayLogin()", role="button", style="font-size:1em;") まずは無料でお試し
 
-    div.container.pt-5(style="overflow-x:hidden;")
+    div.container.pt-2(style="overflow-x:hidden;")
         section
-            #icon-grid.container.px-4.py-5
-            div(style="height: 200px;")
-                h1.display-4.fw-bold.generate-text(data-context="チャットGPTよりも効率的にコンテンツ制作を合理化するための見出しを書いてください")
+            div
+                h5.fw-bold.generate-text(data-context="チャットGPTよりも効率的にコンテンツ制作を合理化するための見出しを書いてください")
                 .generate-text-fail
-                h1.display-4.fw-bold 効率的にコンテンツ制作を合理化する
+                h1.fw-bold 効率的にコンテンツ制作を合理化する
             h6.fw-normal 100以上の効果的な日本語テンプレート（ブログ記事や広告コピーなど）を使用して、目的のジャンルのコンテンツをすぐに作成できます。
-            .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.py-5
+            .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
                 .col.d-flex.align-items-start
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-pencil-alt(style='width: 1.75em; height: 1.75em;')
                     div
-                        h4.fw-bold.mb-0 SEOブログ作成
+                        h6.fw-bold.mb-0 SEOブログ作成
                         p ChatGPTを使用して最適化されたブログ記事を作成します。
                 .col.d-flex.align-items-start
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-twitter(style='width: 1.75em; height: 1.75em;')
+                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-share-alt(style='width: 1.75em; height: 1.75em;')
                     div
-                        h4.fw-bold.mb-0 Twitter投稿アシスタント
+                        h6.fw-bold.mb-0 Twitter投稿アシスタント
                         p 効果的なツイートの作成のための提案とサポートを受け取ります。
                 .col.d-flex.align-items-start
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-search-dollar(style='width: 1.75em; height: 1.75em;')
                     div
-                        h4.fw-bold.mb-0 キーワード最適化
+                        h6.fw-bold.mb-0 キーワード最適化
                         p コンテンツを最適化するための検索上位キーワードを取得します。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start.d-none
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')
                     div
                         h4.fw-bold.mb-0 パフォーマンス分析
                         p 投稿の効果を分析し、最適な戦略を見出します。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start.d-none
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-robot(style='width: 1.75em; height: 1.75em;')
                     div
                         h4.fw-bold.mb-0 AI対話
                         p ユーザーリクエストに基づいて、ChatGPTと会話を交わします。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start.d-none
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-images(style='width: 1.75em; height: 1.75em;')
                     div
                         h4.fw-bold.mb-0 ビジュアルコンテンツの提案
                         p 画像やグラフィックを最適化するための提案を受け取ります。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start.d-none
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-share-alt(style='width: 1.75em; height: 1.75em;')
                     div
                         h4.fw-bold.mb-0 ソーシャルメディア統合
                         p 1つのプラットフォームから複数のソーシャルメディアプラットフォームに投稿できます。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start.d-none
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-cogs(style='width: 1.75em; height: 1.75em;')
                     div
                         h4.fw-bold.mb-0 カスタマイズ設定
                         p アプリを自分の好みに合わせてカスタマイズできます。
 
 
-        hr.my-5
         //- Section: Content
         section
             div.row
                 div.col-md-6.gx-5.mb-4
                     div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/111.jpg")
+                        img.img-fluid(src="/img/img-1.webp")
                         a(href="#")
                             div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
                 div.col-md-6.gx-5.mb-4
-                    h4.fw-bold.display-4 コンテンツ制作をより効率的に合理化
+                    h6.fw-bold コンテンツ制作をより効率的に合理化
                     p.text-muted
                         | 100以上の効果的な日本語テンプレート（ブログ記事や広告コピーなど）を使用して、目的のジャンルのコンテンツをすぐに作成できます。
                     p.strong 安全で信頼できる
                     p.text-muted
                         | 当社のサービスはセキュリティに優れており、個人情報と機密データを厳格に保護します。安心してお使いいただけます。
 
-        hr.my-5
         //- Section: Content
         section
             div.row
                 div.col-md-6.gx-5.mb-4.order-md-2
                     div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/111.jpg")
+                        img.img-fluid(src="/img/img-2.webp")
                         a(href="#")
                             div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
                 div.col-md-6.gx-5.mb-4
-                    h4.fw-bold.display-4 AIエディタで長編コンテンツを作成
+                    h6.fw-bold AIエディタで長編コンテンツを作成
                     p.text-muted
                         | 100以上の効果的な日本語テンプレート（ブログ記事や広告コピーなど）を使用して、目的のジャンルのコンテンツをすぐに作成できます。
                     p.strong 安全で信頼できる
                     p.text-muted
                         | 当社のサービスはセキュリティに優れており、個人情報と機密データを厳格に保護します。安心してお使いいただけます。
 
-        hr.my-5
         //- Section: Content
         section.text-center
             h4.mb-5.strong 多彩な機能
@@ -148,7 +145,7 @@ block content
                             a(href="#")
                                 div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
                         div.card-body
-                            h5.card-title 契約書作成
+                            h6.card-title 契約書作成
                             p.card-text
                                 | CloudSign を使用すると、簡単に契約書を作成できます。カスタマイズ可能なテンプレートを使用して、契約書の詳細を簡単に記入できます。
                             a.btn.btn-primary(href="/user/signup") 詳細を見る
@@ -181,8 +178,8 @@ block content
         //- Section: Pricing
     section.text-center
         .pricing-header.p-3.pb-md-4.mx-auto.text-center
-            h1.display-4.fw-bold 利用状況に合わせたプラン
-            h1.display-4.fw-bold あなたにぴったりのプランが用意されています
+            h1.fw-bold 利用状況に合わせたプラン
+            h1.fw-bold あなたにぴったりのプランが用意されています
             p.fs-5.text-muted
             | このBootstrap例を利用すれば、見込み客向けの効果的な価格表を簡単に作成できます。カスタマイズはほとんどなく、デフォルトのBootstrapコンポーネントとユーティリティで作られています。
             include subscription/plan

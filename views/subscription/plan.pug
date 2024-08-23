@@ -72,11 +72,11 @@
                 h5.fw-bold  RAKUBUNは「Stripe」を利用して決済処理を行っています。
                 p.text-sm.f-muted 「Stripe」は業界団体の定める厳格な基準に準拠しており、各国規制当局によるライセンス
 
-    div#accordionExample.accordion
+    div#accordionExample.accordion.mt-3
         each item, index in faq
-            div.card.my-3
+            div.card.shadow-0.border
                 div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
-                    h5.mb-0
+                    h6.mb-0
                         button.btn.btn-link
                         | #{item.question}
                 div(class='collapse' id=`collapse${index}` aria-labelledby=`heading${index}` data-bs-parent='#accordionExample')

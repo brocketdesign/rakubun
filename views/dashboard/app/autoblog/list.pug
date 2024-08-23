@@ -13,13 +13,13 @@ block mainContent
                         li.list-group-item-action.list-group-item.rounded.border.mb-1(data-id=blog._id)
                             .d-flex.justify-content-between.align-items-center
                                 div
-                                    button.btn.btn-light.border.btn-sm.shadow-0.me-2.editBlogBtn(
+                                    button.badge.badge-light.border.btn-sm.shadow-0.me-2.editBlogBtn(
                                         type="button", 
                                         data-id=blog._id, 
                                         title="編集"
                                     )
                                         i.fas.fa-edit
-                                    button.btn.btn-light.border.btn-sm.shadow-0.me-2(
+                                    button.badge.badge-primary.border.btn-sm.shadow-0.me-2(
                                         type="button", 
                                         onclick=`window.open('${blog.blogUrl}', '_blank')` 
                                         title="URL"
