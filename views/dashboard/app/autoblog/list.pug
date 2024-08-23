@@ -47,8 +47,8 @@ block mainContent
             .row.row-cols-1.row-cols-lg-2
                 .col
                     input.blogId(type="hidden", name="blogId")
-                    .card.border.shadow-0.my-2
-                        .card-body
+                    .card.border.shadow-0.rounded-0.my-2
+                        .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
                                     label.text-muted.text-start(for="blogName", class="form-label") ブログ名:
@@ -64,8 +64,8 @@ block mainContent
                                                 i.fas.fa-external-link-alt
                                     div.invalid-feedback ブログURLは必須です。
 
-                    .card.border.shadow-0.my-2
-                        .card-body
+                    .card.border.shadow-0.rounded-0.my-2
+                        .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
                                     label.text-muted.text-start(for='blogUsername') ユーザー名
@@ -75,8 +75,8 @@ block mainContent
                                     input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
 
                 .col
-                    .card.border.shadow-0.my-2
-                        .card-body
+                    .card.border.shadow-0.rounded-0.my-2
+                        .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
                                     label.text-muted.text-start(for="postLanguage", class="form-label") テキストの言語：
@@ -105,8 +105,8 @@ block mainContent
         form#botForm(method="post", action="/submit-bot-info" class="needs-validation" novalidate)
             .row.row-cols-1
                 .col
-                    .card.border.shadow-0.my-2
-                        .card-body
+                    .card.border.shadow-0.rounded-0.my-2
+                        .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
                                     label.text-muted.text-start(for="postLanguage", class="form-label") テキストの言語：
@@ -174,8 +174,8 @@ block mainContent
                 .col
                     input.blogId(type="hidden", name="blogId")
                     input#botId(type="hidden", name="botId")
-                    .card.border.shadow-0.my-2
-                        .card-body
+                    .card.border.shadow-0.rounded-0.my-2
+                        .card-body.px-1
                             .row
                                 div.form-group
                                     label.text-muted.text-start(for="articleLength", class="form-label") 記事の長さ：
@@ -259,8 +259,8 @@ block mainContent
                                         option(value="Travel Enthusiasts") 旅行愛好家
                                         option(value="Fashion Enthusiasts") ファッション愛好家
 
-                    .card.border.shadow-0.my-2
-                        .card-body
+                    .card.border.shadow-0.rounded-0.my-2
+                        .card-body.px-1
                             .row
                                 div.form-group
                                     label.text-muted.text-start(for="postCategory", class="form-label") 投稿カテゴリー：
@@ -422,7 +422,7 @@ block mainContent
                                                     </span>
                                                 </div>
                                             </div>
-                                            <p class="small card-text">${bot.botDescription ? bot.botDescription.substring(0, 100) : ''}...</p>
+                                            <p class="card-text" style="font-size: 12px;">${bot.botDescription ? bot.botDescription.substring(0, 50) : ''}...</p>
                                             <a href="#" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
                                             </a>                                            
@@ -473,13 +473,14 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    width: '90%',
+                    width: '100%',
                     showCancelButton: false,
                     showCloseButton: true,
                     confirmButtonText: '送信',
                     focusConfirm: false,
                     customClass: {
-                        title: 'fs-6' 
+                        title: 'fs-6',
+                        htmlContainer:'px-0'
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -513,6 +514,7 @@ block mainContent
 
             $('.editBlogBtn').on('click', function(e) {
                 e.stopPropagation();
+                const blogId = $(this).data('id');
                 $.get('/api/autoblog/blog-info/' + blogId, (response) => {
                     if (response) {
                         const formHtml = $('#hiddenFormContainer').html();
@@ -547,13 +549,14 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    width: '90%',
+                    width: '100%',
                     showCancelButton: false,
                     showCloseButton: true,
                     confirmButtonText: '送信',
                     focusConfirm: false,
                     customClass: {
-                        title: 'fs-6' 
+                        title: 'fs-6',
+                        htmlContainer:'px-0'
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -587,7 +590,7 @@ block mainContent
                 showBotForm('新しいボットを追加', formHtml);
             });
 
-            $(document).on('click','.editBotBtn', function(e) {
+            $(document).on('click','.editBotBtn, #botContainer .card', function(e) {
                 e.stopPropagation();
                 const botId = $(this).data('id');
                 $.get('/api/autoblog/bot-info/' + botId, (response) => {
