@@ -382,6 +382,13 @@ block mainContent
             });
         });
         function loadBots(blogId) {
+            const loader = $(`
+            <div class="d-flex justify-content-center align-items center p-4">
+                <div class="spinner-border text-secondary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>`)
+            $('#botContainer').html(loader)
             $.ajax({
                 url: '/api/autoblog/bots',
                 method: 'GET',
