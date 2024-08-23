@@ -31,11 +31,14 @@ const setCronJobForUser = async (db, botId, schedule) => {
   const combinedPowers = { ...botInfo, ...blogInfo };
 
   //autoBlog(combinedPowers,db)
-  console.log(`Set job for blog ${botId} at ${botInfo.postFrequency}`)
-  cronJobsMap[botId] = cron.schedule(botInfo.postFrequency, () => {
-    console.log(`Doing something for blog ${botId}`);
-    autoBlog(combinedPowers,db)
-  });
+  if(botInfo.postFrequency){
+    console.log(`Set job for blog ${botId} at ${botInfo.postFrequency}`)
+    cronJobsMap[botId] = cron.schedule(botInfo.postFrequency, () => {
+      console.log(`Doing something for blog ${botId}`);
+      autoBlog(combinedPowers,db)
+    });
+  }
+
 };
 
 // Function to initialize all cron jobs from database at app start

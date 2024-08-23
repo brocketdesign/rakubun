@@ -1,56 +1,60 @@
 extends ../../base
 
 block mainContent
-    .container-fluid
+    .container-fluid.px-0
         .row
             // Sidebar for blogs
-            .col-md-3.bg-light.position-fixed.h-100.sidebar
-                h4.mt-4.mb-3.text-center Blog List
-                button#addBlogBtn.btn.btn-success.btn-block.mb-4 Add New Blog
-                ul#blogList.list-group.list-group-flush
+            .col-md-3.bg-light.position-fixed.sidebar.d-flex.flex-column.px-0.border(style="height: calc(100vh - 75px);")
+                button#addBlogBtn.btn.btn-sm.btn-outline-primary.shadow-0.btn-block.my-2.mx-auto.w-75
+                    i(class="fas fa-plus me-2")
+                    | 新しいブログを追加
+                ul#blogList.list-group.list-group-flush.mt-1(style="flex-grow: 1;overflow-y:scroll")
                     each blog in blogData
-                        li.list-group-item(data-id=blog._id)
+                        li.list-group-item-action.list-group-item(data-id=blog._id)
                             .d-flex.justify-content-between.align-items-center
                                 div
-                                    button.btn.btn-outline-dark.btn-sm.shadow-0.me-2.editBlogBtn(
+                                    button.btn.btn-light.border.btn-sm.shadow-0.me-2.editBlogBtn(
                                         type="button", 
                                         data-id=blog._id, 
                                         title="編集"
                                     )
                                         i.fas.fa-edit
-                                    button.btn.btn-outline-dark.btn-sm.shadow-0.me-2(
+                                    button.btn.btn-light.border.btn-sm.shadow-0.me-2(
                                         type="button", 
                                         onclick=`window.open('${blog.blogUrl}', '_blank')` 
                                         title="URL"
                                     )
                                         i.fas.fa-link
-                                    span #{blog.blogName}
+                                    p.m-1(style="font-size:14px")
+                                        span.badge.me-2(class=blog.botCount === 0 ? 'badge-danger' : 'badge-primary') #{blog.botCount}
+                                        | #{blog.blogName.substring(0, 10)}
                                 i.fas.fa-chevron-right
 
 
             // Main content area
-            .col-md-9.offset-md-3
-                .toolbar.btn-toolbar.my-4
-                    .toolbar-body.d-flex.justify-content-between
-                        h3 Blog Bots
+            .col-md-9.offset-md-3.position-fixed(style="overflow-y: scroll;height: calc(100vh - 75px);")
+                .toolbar.btn-toolbar.py-2.sticky-top.bg-white
+                    .toolbar-body.d-flex.justify-content-between.w-100
+                        h6 AI自動化ボット
+                        .d-flex 
+                            button#addBotBtn.btn.btn-secondary.btn-sm(style="display:none;")
+                                i(class="fas fa-plus")
                 #botContainer
     #hiddenFormContainer(style="display:none;")
         form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
-            .row.row-cols-1.row-cols-sm-2
+            .row.row-cols-1.row-cols-lg-2
                 .col
-                    input#blogId(type="hidden", name="blogId")
-                    .card.my-2
-                        .card-header
-                            h5 ブログ情報
+                    input.blogId(type="hidden", name="blogId")
+                    .card.border.shadow-0.my-2
                         .card-body
                             .row
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for="blogName", class="form-label") ブログ名:
+                                    label.text-muted.text-start(for="blogName", class="form-label") ブログ名:
                                     input#blogName(type="text", name="blogName", required=true class="form-control")
                                     div.invalid-feedback ブログ名は必須です。
 
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for="blogUrl", class="form-label") ブログURL:
+                                    label.text-muted.text-start(for="blogUrl", class="form-label") ブログURL:
                                     .input-group
                                         input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
                                         span.input-group-text(id="openNewPageIcon" style="display: none;")
@@ -58,26 +62,22 @@ block mainContent
                                                 i.fas.fa-external-link-alt
                                     div.invalid-feedback ブログURLは必須です。
 
-                    .card.my-2
-                        .card-header
-                            h5 ブログ認証
+                    .card.border.shadow-0.my-2
                         .card-body
                             .row
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for='blogUsername') ユーザー名
+                                    label.text-muted.text-start(for='blogUsername') ユーザー名
                                     input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for='blogPassword') パスワード
+                                    label.text-muted.text-start(for='blogPassword') パスワード
                                     input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
 
                 .col
-                    .card.my-2
-                        .card-header
-                            h5 投稿設定
+                    .card.border.shadow-0.my-2
                         .card-body
                             .row
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for="postLanguage", class="form-label") テキストの言語：
+                                    label.text-muted.text-start(for="postLanguage", class="form-label") テキストの言語：
                                     select#postLanguage(name="postLanguage" class="form-select")
                                         option(value="japanese") 日本語
                                         option(value="french") フランス語
@@ -86,12 +86,12 @@ block mainContent
                                         option(value="german") ドイツ語
                                         option(value="chinese") 中国語
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for="postgpt", class="form-label") GPT
+                                    label.text-muted.text-start(for="postgpt", class="form-label") GPT
                                     select#postgpt(name="postgpt" class="form-select")
                                         option(value="gpt4o") GPT-4o
                                         option(value="gpt4o-mini") GPT-4o-mini
                                 div.form-group.col-12.col-sm-6
-                                    label.text-muted.fw-bold(for="postFrequency", class="form-label") 投稿頻度：
+                                    label.text-muted.text-start(for="postFrequency", class="form-label") 投稿頻度：
                                     select#postFrequency(name="postFrequency" class="form-select")
                                         option(value="0 0,12 * * *") 1日に2回
                                         option(value="0 * * * *") 1時間ごと
@@ -99,10 +99,286 @@ block mainContent
                                         option(value="*/10 * * * *") 10分ごと
                                         option(value="0 0 * * *") 毎日
                                         option(value="0 0 * * 0") 毎週
+    #hiddenBotFormContainer(style="display:none;")
+        form#botForm(method="post", action="/submit-bot-info" class="needs-validation" novalidate)
+            .row.row-cols-1
+                .col
+                    .card.border.shadow-0.my-2
+                        .card-body
+                            .row
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.text-start(for="postLanguage", class="form-label") テキストの言語：
+                                    select#postLanguage(name="postLanguage" class="form-select")
+                                        option(value="japanese") 日本語
+                                        option(value="french") フランス語
+                                        option(value="english") 英語
+                                        option(value="spanish") スペイン語
+                                        option(value="german") ドイツ語
+                                        option(value="chinese") 中国語
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.text-start(for="postgpt", class="form-label") GPT
+                                    select#postgpt(name="postgpt" class="form-select")
+                                        option(value="gpt4o") GPT-4o
+                                        option(value="gpt4o-mini") GPT-4o-mini
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.text-start(for="postFrequency", class="form-label") 投稿頻度：
+                                    select#postFrequency(name="postFrequency" class="form-select")
+                                        option(value="0 0,12 * * *") 1日に2回
+                                        option(value="0 * * * *") 1時間ごと
+                                        option(value="*/30 * * * *") 30分ごと
+                                        option(value="*/10 * * * *") 10分ごと
+                                        option(value="0 0 * * *") 毎日
+                                        option(value="0 0 * * 0") 毎週
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.text-start(for="postStatus", class="form-label") 投稿頻度：
+                                    select#postStatus(name="postStatus" class="form-select")
+                                        option(value="publish") 公開
+                                        option(value="draft") 下書き
 
-    script(src="/js/autoblog.js")
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.text-start(for="writingStyle", class="form-label") 好みの執筆スタイル：
+                                    select#writingStyle(name="writingStyle" class="form-select")
+                                        option(value="Descriptive", selected) 記述的
+                                        option(value="Informative") 情報的
+                                        option(value="Creative") 創造的
+                                        option(value="Narrative") 物語性
+                                        option(value="Persuasive") 説得力のある
+                                        option(value="Reflective") 内省的
+                                        option(value="Argumentative") 議論的
+                                        option(value="Analytical") 分析的
+                                        option(value="Technical") 技術的
+                                        option(value="Journalistic") ジャーナリスティック
+                                        option(value="Neutral", selected) 中立的
+
+                                div.form-group.col-12.col-sm-6
+                                    label.text-muted.text-start(for="writingTone", class="form-label") 好みの執筆トーン：
+                                    select#writingTone(name="writingTone" class="form-select")
+                                        option(value="Formal") フォーマル
+                                        option(value="Assertive") 断定的
+                                        option(value="Cheerful") 快活な
+                                        option(value="Humorous") ユーモラス
+                                        option(value="Informal") カジュアル
+                                        option(value="Inspirational") インスピレーション
+                                        option(value="Professional") プロフェッショナル
+                                        option(value="Coincidental") 偶然の
+                                        option(value="Emotional") 感情的な
+                                        option(value="Persuasive") 説得力のある
+                                        option(value="Supportive") 支援的な
+                                        option(value="Sarcastic") 皮肉な
+                                        option(value="Condescending") 遠慮なく
+                                        option(value="Skeptical") 懐疑的な
+                                        option(value="Narrative") 物語的な
+                                        option(value="Journalistic") ジャーナリスティック
+                .col
+                    input.blogId(type="hidden", name="blogId")
+                    input#botId(type="hidden", name="botId")
+                    .card.border.shadow-0.my-2
+                        .card-body
+                            .row
+                                div.form-group
+                                    label.text-muted.text-start(for="articleLength", class="form-label") 記事の長さ：
+                                    select#articleLength(name="articleLength" class="form-select")
+                                        option(value="1000") 〜500単語
+                                        option(value="2000") 500〜1000単語
+                                        option(value="4000") 1000〜2000単語
+                                div.form-group
+                                    label.text-muted.text-start(for="articleCategories", class="form-label") 記事のカテゴリー：
+                                    select#articleCategories(name="articleCategories", multiple=true, class="form-select")
+                                        option(value="Technology") テクノロジー
+                                        option(value="Travel") 旅行
+                                        option(value="Food") 食品
+                                        option(value="Health & Fitness") 健康とフィットネス
+                                        option(value="Fashion") ファッション
+                                        option(value="Lifestyle") ライフスタイル
+                                        option(value="Beauty") 美容
+                                        option(value="Sports") スポーツ
+                                        option(value="Entertainment") エンターテイメント
+                                        option(value="Finance") ファイナンス
+                                        option(value="Business") ビジネス
+                                        option(value="Marketing") マーケティング
+                                        option(value="Education") 教育
+                                        option(value="Parenting") 育児
+                                        option(value="Home & Garden") 家庭とガーデニング
+                                        option(value="DIY & Crafts") DIYとクラフト
+                                        option(value="Photography") 写真
+                                        option(value="Art & Design") アートとデザイン
+                                        option(value="Books & Literature") 書籍と文学
+                                        option(value="Science") 科学
+                                        option(value="History") 歴史
+                                        option(value="Politics") 政治
+                                        option(value="Nature") 自然
+                                        option(value="Pets") ペット
+                                        option(value="Relationships") 関係
+                                        option(value="Self Improvement") 自己改善
+                                        option(value="Spirituality") スピリチュアリティ
+                                        option(value="Technology & Gadgets") テクノロジーとガジェット
+                                        option(value="Video Games") ビデオゲーム
+                                        option(value="Film & TV") 映画とテレビ
+                                        option(value="Music") 音楽
+                                        option(value="Cooking & Recipes") 料理とレシピ
+                                        option(value="Gardening") ガーデニング
+                                        option(value="Home Improvement") ホームインプロvement
+                                        option(value="Crafts & DIY") クラフトとDIY
+                                        option(value="Fashion & Beauty") ファッションとビューティー
+                                        option(value="Parenting & Family") 親子関係と家族
+                                        option(value="Finance & Money") ファイナンスとお金
+                                        option(value="Career & Work") キャリアと仕事
+                                        option(value="Education & Learning") 教育と学習
+                                        option(value="Health & Wellness") 健康とウェルネス
+                                        option(value="Fitness & Exercise") フィットネスとエクササイズ
+                                        option(value="Sports & Outdoors") スポーツとアウトドア
+                                        option(value="Travel & Adventure") 旅行と冒険
+                                        option(value="Art & Creativity") アートと創造性
+                                        option(value="Books & Writing") 書籍と執筆
+                                        option(value="Science & Technology") 科学と技術
+                                        option(value="History & Culture") 歴史と文化
+                                        option(value="Politics & Society") 政治と社会
+                                        option(value="Nature & Environment") 自然と環境
+                                        option(value="Animals & Pets") 動物とペット
+                                        option(value="Relationships & Love") 関係と愛
+                                        option(value="Self-Improvement & Motivation") 自己改善と動機付け
+                                        option(value="Spirituality & Religion") スピリチュアリティと宗教
+                                div.form-group
+                                    label.text-muted.text-start(for="targetAudience", class="form-label") ターゲットオーディエンス：
+                                    select#targetAudience(name="targetAudience[]" multiple class="form-select")
+                                        option(value="Men") 男性
+                                        option(value="Women") 女性
+                                        option(value="Children") 子供
+                                        option(value="Teenagers") 十代の若者
+                                        option(value="Young Adults") 若者
+                                        option(value="Elderly") 高齢者
+                                        option(value="Students") 学生
+                                        option(value="Professionals") プロフェッショナル
+                                        option(value="Parents") 親
+                                        option(value="Entrepreneurs") 起業家
+                                        option(value="Tech Enthusiasts") テクノロジー愛好家
+                                        option(value="Fitness Enthusiasts") フィットネス愛好家
+                                        option(value="Food Enthusiasts") 食品愛好家
+                                        option(value="Travel Enthusiasts") 旅行愛好家
+                                        option(value="Fashion Enthusiasts") ファッション愛好家
+
+                    .card.border.shadow-0.my-2
+                        .card-body
+                            .row
+                                div.form-group
+                                    label.text-muted.text-start(for="postCategory", class="form-label") 投稿カテゴリー：
+                                    select#postCategory(name="postCategory", class="form-select", multiple=true)
+                                div.form-group
+                                    label.text-muted.text-start(for="botName", class="form-label") ボット名：
+                                    input#botName(type="text", name="botName", required=true class="form-control")
+                                    div.invalid-feedback ボット名が必要です。
+                                div.form-group
+                                    label.text-muted.text-start(for="botDescription", class="form-label") ボットの説明：
+                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=5)
+                                    div.invalid-feedback ボットの説明が必要です。
+
+
+    style.
+        label {
+            font-size: 12px;
+            width: 100%;
+        }
+        .card-body {
+            padding-top: 5px;
+            padding-bottom: 15px;
+        }
+
     script.
-    
+        function toggleBotStatus(botId, newState) {
+            console.log({botId,newState})
+            fetch(`/api/autoblog/bot-info/ `, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ botId: botId, isActive: newState }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Handle response
+                console.log(data);
+                $(`.toggle-bot-btn[data-id="${botId}"]`).each(function() {
+                    $(this).toggleClass('d-none');
+                });        
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+        $(document).on('click','.delete-bot-btn', function() {
+            var botId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
+
+            Swal.fire({
+                title: '本当に削除しますか？',
+                text: "この操作は元に戻せません！",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'はい、削除します！',
+                cancelButtonText: 'キャンセル',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/api/autoblog/bot/' + botId,
+                        type: 'DELETE',
+                        success: function(response) {
+                            Swal.fire(
+                                '削除されました！',
+                                'ブログ情報が正常に削除されました。',
+                                'success'
+                            );
+                            $(`.card[data-id="${botId}"]`).fadeOut();
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: '削除できませんでした',
+                                text: "ブログ情報の削除に失敗しました: " + error
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        $(document).on('click','.delete-blog-btn', function() {
+            var blogId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
+
+            Swal.fire({
+                title: '本当に削除しますか？',
+                text: "この操作は元に戻せません！",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'はい、削除します！',
+                cancelButtonText: 'キャンセル',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '/api/autoblog/blog/' + blogId,
+                        type: 'DELETE',
+                        success: function(response) {
+                            Swal.fire(
+                                '削除されました！',
+                                'ブログ情報が正常に削除されました。',
+                                'success'
+                            );
+                            window.location.href = '/dashboard/app/autoblog/'
+                        },
+                        error: function(xhr, status, error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: '削除できませんでした',
+                                text: "ブログ情報の削除に失敗しました: " + error
+                            });
+                        }
+                    });
+                }
+            });
+        });
         function loadBots(blogId) {
             $.ajax({
                 url: '/api/autoblog/bots',
@@ -118,8 +394,8 @@ block mainContent
                         }
                         response.botData.forEach(function(bot) {
                             botsHtml += `
-                                <div class="col">
-                                    <div class="card mb-3" data-id="${bot._id}">
+                                <div class="col my-2">
+                                    <div class="card bg-light shadow-0 border" data-id="${bot._id}">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between mb-1">
                                                 <div>
@@ -136,10 +412,12 @@ block mainContent
                                                 </div>
                                             </div>
                                             <p class="small card-text">${bot.botDescription ? bot.botDescription.substring(0, 100) : ''}...</p>
-                                            <a href="/dashboard/app/autoblog/bot?botId=${bot._id}&blogId=${blogId}" class="btn btn-primary btn-sm shadow-0 me-2"><i class="fa fa-cog"></i></a>
+                                            <a href="#" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
+                                                <i class="fas fa-edit"></i>
+                                            </a>                                            
                                             <button class="toggle-bot-btn btn btn-success btn-sm shadow-0 mx-2 ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on"></i></button>
                                             <button class="toggle-bot-btn btn btn-secondary btn-sm shadow-0 mx-2 ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off"></i></button>
-                                            <a href="/dashboard/app/autoblog?botId=${bot._id}" class="btn btn-secondary btn-sm shadow-0 mx-2"><i class="fa fa-file-alt"></i></a>
+                                            <a href="/dashboard/app/autoblog?botId=${bot._id}" class="d-none btn btn-secondary btn-sm shadow-0 mx-2"><i class="fa fa-file-alt"></i></a>
                                             <button class="delete-bot-btn btn btn-danger btn-sm shadow-0 float-end mx-2" data-id="${bot._id}"><i class="fas fa-trash-alt"></i></button>
                                         </div>
                                     </div>
@@ -159,14 +437,17 @@ block mainContent
         // Attach loadBots to the blog list items dynamically
         $('#blogList li').on('click', function() {
             const blogId = $(this).data('id');
+            $('input.blogId').each(function(){$(this).val(blogId)})
             loadBots(blogId);
+            $('#addBotBtn').show()
+            $(this).addClass('active').siblings().removeClass('active');
         });
         $(document).ready(function() {
             function showBlogForm(title, formHtml, formData = {}) {
                 const $form = $(formHtml);
                 
                 if (formData) {
-                    $form.find('#blogId').val(formData._id || '');
+                    $form.find('input.blogId').val(formData._id || '');
                     $form.find('#blogName').val(formData.blogName || '');
                     $form.find('#blogUrl').val(formData.blogUrl || '');
                     $form.find('#blogUsername').val(formData.blogUsername || '');
@@ -179,9 +460,14 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    showCancelButton: true,
+                    width: '90%',
+                    showCancelButton: false,
+                    showCloseButton: true,
                     confirmButtonText: '送信',
                     focusConfirm: false,
+                    customClass: {
+                        title: 'fs-6' 
+                    },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
                         if (!form.checkValidity()) {
@@ -214,7 +500,6 @@ block mainContent
 
             $('.editBlogBtn').on('click', function(e) {
                 e.stopPropagation();
-                const blogId = $(this).data('id');
                 $.get('/api/autoblog/blog-info/' + blogId, (response) => {
                     if (response) {
                         const formHtml = $('#hiddenFormContainer').html();
@@ -226,6 +511,81 @@ block mainContent
                     Swal.fire('エラー!', 'ブログデータの取得中にエラーが発生しました。', 'error');
                 });
             });
+            function showBotForm(title, formHtml, formData = {}) {
+                const $form = $(formHtml);
+                
+                if (formData) {
+                    $form.find('#botId').val(formData._id || '');
+                    $form.find('#botName').val(formData.botName || '');
+                    $form.find('#botDescription').val(formData.botDescription || '');
+                    $form.find('#postCategory').val(formData.postCategory || '');
+                    $form.find('#articleLength').val(formData.articleLength || '');
+                    $form.find('#articleCategories').val(formData.articleCategories || '');
+                    $form.find('#targetAudience').val(formData.targetAudience || '');
+                    $form.find('#postLanguage').val(formData.postLanguage || '');
+                    $form.find('#postgpt').val(formData.postgpt || '');
+                    $form.find('#postFrequency').val(formData.postFrequency || '');
+                    $form.find('#postStatus').val(formData.postStatus || '');
+                    $form.find('#writingStyle').val(formData.writingStyle || '');
+                    $form.find('#writingTone').val(formData.writingTone || '');
 
+                }
 
+                Swal.fire({
+                    title: title,
+                    html: $form,
+                    width: '90%',
+                    showCancelButton: false,
+                    showCloseButton: true,
+                    confirmButtonText: '送信',
+                    focusConfirm: false,
+                    customClass: {
+                        title: 'fs-6' 
+                    },
+                    preConfirm: () => {
+                        const form = Swal.getPopup().querySelector('form');
+                        if (!form.checkValidity()) {
+                            Swal.showValidationMessage(`フォームを全て入力してください`);
+                            return false;
+                        }
+                        return $(form).serialize();
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: 'POST',
+                            url: '/api/autoblog/bot-info',
+                            data: result.value,
+                            success: () => {
+                                Swal.fire('完了!', '正常に処理されました。', 'success').then(() => {
+                                    const blogId = $('#blogList li.active').data('id');
+                                    loadBots(blogId);
+                                });
+                            },
+                            error: () => {
+                                Swal.fire('エラー!', 'エラーが発生しました。再試行してください。', 'error');
+                            }
+                        });
+                    }
+                });
+            }
+            $('#addBotBtn').on('click', function() {
+                const formHtml = $('#hiddenBotFormContainer').html();
+                showBotForm('新しいボットを追加', formHtml);
+            });
+
+            $(document).on('click','.editBotBtn', function(e) {
+                e.stopPropagation();
+                const botId = $(this).data('id');
+                $.get('/api/autoblog/bot-info/' + botId, (response) => {
+                    if (response) {
+                        const formHtml = $('#hiddenBotFormContainer').html();
+                        showBotForm('ボットを編集', formHtml, response);
+                    } else {
+                        Swal.fire('エラー!', 'ボットデータを取得できませんでした。', 'error');
+                    }
+                }).fail(() => {
+                    Swal.fire('エラー!', 'ボットデータの取得中にエラーが発生しました。', 'error');
+                });
+            });
         });

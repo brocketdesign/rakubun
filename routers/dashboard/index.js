@@ -28,33 +28,41 @@ router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, asyn
   res.render('dashboard/app/generator/'+appname,{user:req.user,title:"RAKUBUN - Dashboard"});
 });
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
-  const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null
+  const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null;
   const botId = req.query.botId && req.query.botId != 'undefined'
-  ? new ObjectId(req.query.botId) : null
-  const userId = new ObjectId(req.user._id)
-  let blogData
-  let botData
-  let postData
+    ? new ObjectId(req.query.botId) : null;
+  const userId = new ObjectId(req.user._id);
+  let blogData;
+  let botData;
+  let postData;
+
   try {
     // Fetching blog data for the current user
     blogData = await global.db.collection('blogInfos')
-    .find({userId: userId})
-    .sort({_id:-1})
-    .toArray()                  
+      .find({ userId: userId })
+      .sort({ _id: -1 })
+      .toArray();
 
-    if(blogId != null){
-      blogData = await global.db.collection('blogInfos').findOne({_id : blogId})
-      botData = await global.db.collection('botInfos').find({blogId : req.query.blogId}).toArray();
+    // Count bots for each blog
+    for (let i = 0; i < blogData.length; i++) {
+      const botCount = await global.db.collection('botInfos')
+        .countDocuments({ blogId: (blogData[i]._id.toString()) });
+      blogData[i].botCount = botCount;
     }
 
-    if(botId != null){
-      botData = await global.db.collection('botInfos').findOne({_id : botId})
-      postData = await global.db.collection('articles').find({botId}).toArray();
+    if (blogId != null) {
+      blogData = await global.db.collection('blogInfos').findOne({ _id: blogId });
+      botData = await global.db.collection('botInfos').find({ blogId: blogId }).toArray();
+    }
+
+    if (botId != null) {
+      botData = await global.db.collection('botInfos').findOne({ _id: botId });
+      postData = await global.db.collection('articles').find({ botId }).toArray();
     }
 
     res.render('dashboard/app/autoblog/list', {
       user: req.user,
-      blogData, 
+      blogData,
       botData,
       postData,
       botId,
@@ -66,6 +74,7 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
     res.status(500).send('Internal server error');
   }
 });
+
 
 router.get('/app/autoblog/bot/', async (req, res) => {
   let { blogId, botId } =  req.query || null
