@@ -16,22 +16,11 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       return
     }
     const faq = require('../services/faq')
-    // Retrieve both product objects from Stripe using the product IDs
-    const premiumProduct = await stripe.products.retrieve(premiumPlan.id);
-    // Retrieve the default price IDs of both products
-    const premiumDefaultPriceId = premiumProduct.default_price;
-
-    const premiumPrice = await stripe.prices.retrieve(premiumDefaultPriceId)
-
     // Pass the relevant product information to the payment view
     res.render('subscription/payment', {
       publishableKey: process.env.STRIPE_PUBLIC,
-      premiumProductName: premiumProduct.name,
-      premiumProductDescription: premiumProduct.description,
-      premiumProductPrice: premiumPrice.unit_amount,
-      premiumProductImage: premiumProduct.images[0],
-      premiumProductId: premiumProduct.id,
-      premiumPriceId: premiumDefaultPriceId,
+      premiumYearly : process.env.STRIPE_PREMIUM_PLAN_PRICE_YEARLY, 
+      premiumMonthly : process.env.STRIPE_PREMIUM_PLAN_PRICE_MONTHLY, 
       user:req.user,
       faq,
       title: "Choose a membership"
@@ -42,40 +31,50 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
   }
 });
 
-router.get('/subscription/bought-products',ensureAuthenticated, async (req, res) => {
-  
+router.get('/subscription/bought-products', ensureAuthenticated, async (req, res) => {
   try {
-      if(!req.user.subscriptionId){
-        res.render('subscription/bought-products', {user:req.user, subscriptions:[], title:"My memberships" });
-        return
-      }
-      const sub = await stripe.subscriptions.retrieve(req.user.subscriptionId);
-      const productName = await getProductName(req.user.subscriptionId)
+    if (!req.user.subscriptionId) {
+      res.render('subscription/bought-products', { user: req.user, subscriptions: [], title: "My memberships" });
+      return;
+    }
 
-      const options = {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        weekday: 'short',
-      }
-      
-      const subscribedProducts = [{
-        id: sub.id,
-        productName,
-        price:sub.plan.amount,
-        startDate: new Date(sub.created * 1000).toLocaleDateString('ja-JP',options),
-        nextPaymentDate: new Date(sub.current_period_end * 1000).toLocaleDateString('ja-JP',options),
-        isActive: sub.status === 'active' // This can also be 'inactive', 'past_due', 'canceled', 'unpaid' etc. depending on your use case
-      }]
-      console.log(subscribedProducts)
-      // Render the bought products page with the list of product details
-      res.render('subscription/bought-products', {user:req.user, subscriptions:subscribedProducts, title:"My memberships" });
+    const sub = await stripe.subscriptions.retrieve(req.user.subscriptionId);
+    const productName = await getProductName(req.user.subscriptionId);
+
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      weekday: 'short',
+    };
+
+    // Determine billing cycle in Japanese
+    let billingCycle = '';
+    if (sub.plan.interval === 'month') {
+      billingCycle = `${sub.plan.interval_count}ヶ月ごと`;
+    } else if (sub.plan.interval === 'year') {
+      billingCycle = `${sub.plan.interval_count}年ごと`;
+    }
+
+    const subscribedProducts = [{
+      id: sub.id,
+      productName,
+      price: sub.plan.amount,
+      billingCycle,  // Include billing cycle
+      startDate: new Date(sub.created * 1000).toLocaleDateString('ja-JP', options),
+      nextPaymentDate: new Date(sub.current_period_end * 1000).toLocaleDateString('ja-JP', options),
+      isActive: sub.status === 'active'
+    }];
+
+    // Render the bought products page with the list of product details
+    res.render('subscription/bought-products', { user: req.user, subscriptions: subscribedProducts, title: "My memberships" });
   } catch (error) {
-      // Handle error
-      console.log(error)
-      res.render('error', { error });
+    // Handle error
+    console.log(error);
+    res.render('error', { error });
   }
 });
+
 
 async function getProductName(subscriptionId) {
   try {
@@ -137,7 +136,8 @@ router.get('/subscription-payment-success', async (req, res) => {
       $set: { 
         subscription: newSubscription, 
         subscriptionId: newSubscriptionId, 
-        stripeCustomerID: newSubscription.customer  
+        stripeCustomerID: newSubscription.customer,
+        subscriptionStatus: 'active',
       } 
     }
   );
@@ -164,9 +164,12 @@ router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
       await db.collection('users').updateOne(
         { _id: new ObjectId(req.user._id) },
         { 
-          $unset: { subscriptionId: "" }
+          $unset: { subscriptionId: "" },
+          $set: {
+            subscriptionStatus: 'canceled'
+          }
         }
-      );
+      );      
       res.status(200).json({status:'success', message:'ご契約は正常にキャンセルされました。'})
     } else {
       // The subscription wasn't canceled for some reason
@@ -182,30 +185,11 @@ router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
 });
 
 router.post('/create-checkout-session', async (req, res) => {
-  const { product_id, price_id } = req.body;
-  
-  const product = await stripe.products.retrieve(product_id);
+  const { price_id } = req.body;
 
   // Get the protocol (http or https) and the host from the request
   const protocol = req.protocol;
   const host = req.get('host');
-
-  let stripeCustomerId = req.user.stripeCustomerId;
-
-  // If user does not have a Stripe customer ID, create one and store in database
-  if (!stripeCustomerId) {
-    const customer = await stripe.customers.create({
-      email: req.user.email,
-      description: `Customer for user ID: ${req.user._id}`
-    });
-
-    stripeCustomerId = customer.id;
-
-    await global.db.collection('users').updateOne(
-      { _id: new ObjectId(req.user._id) },
-      { $set: { stripeCustomerId: stripeCustomerId } }
-    );
-  }
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -213,15 +197,17 @@ router.post('/create-checkout-session', async (req, res) => {
       price: price_id,
       quantity: 1,
     }],
-    customer: stripeCustomerId,  // Use Stripe customer ID directly
     mode: 'subscription', 
     success_url: `${protocol}://${host}/payment/subscription-payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${protocol}://${host}/payment/subscription-payment-error`,
+    customer_email: req.user.email,  // Add user email to the session
+    locale: 'ja',  // Set the locale to Japanese
     metadata: { userId: req.user._id.toString() },  // Store userId in session metadata
   });
 
   res.json({ id: session.id });
 });
+
 
 // Update payment information
 router.post('/create-checkout-session-for-update', async (req, res) => {

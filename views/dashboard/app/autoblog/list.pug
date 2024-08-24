@@ -44,7 +44,7 @@ block mainContent
                 #botContainer
     #hiddenFormContainer(style="display:none;")
         form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
-            .row.row-cols-1.row-cols-lg-2
+            .row.row-cols-1
                 .col
                     input.blogId(type="hidden", name="blogId")
                     .card.border.shadow-0.rounded-0.my-2
@@ -256,27 +256,6 @@ block mainContent
             height: calc(var(--vh, 1vh) * 100 - 75px);
         }
     script.
-        function toggleBotStatus(botId, newState) {
-            console.log({botId,newState})
-            fetch(`/api/autoblog/bot-info/ `, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ botId: botId, isActive: newState }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Handle response
-                console.log(data);
-                $(`.toggle-bot-btn[data-id="${botId}"]`).each(function() {
-                    $(this).toggleClass('d-none');
-                });        
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-        }
         $(document).on('click','.delete-bot-btn', function() {
             var botId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
 
@@ -396,8 +375,9 @@ block mainContent
                                             <a href="#" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
                                             </a>                                            
-                                            <button class="toggle-bot-btn btn btn-success btn-sm shadow-0 mx-2 ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on"></i></button>
-                                            <button class="toggle-bot-btn btn btn-secondary btn-sm shadow-0 mx-2 ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off"></i></button>
+                                            <button class="toggle-bot-btn btn btn-success btn-sm shadow-0 mx-2 toggleBotStatusBtn ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on"></i></button>
+                                            <button class="toggle-bot-btn btn btn-secondary btn-sm shadow-0 mx-2 toggleBotStatusBtn ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off"></i></button>
+                                            <button class="btn btn-secondary btn-sm shadow-0 mx-2 startBotBtn" data-id="${bot._id}"><i class="fas fa-play"></i></button>
                                             <a href="/dashboard/app/autoblog?botId=${bot._id}" class="d-none btn btn-secondary btn-sm shadow-0 mx-2"><i class="fa fa-file-alt"></i></a>
                                             <button class="delete-bot-btn btn btn-danger btn-sm shadow-0 float-end mx-2" data-id="${bot._id}"><i class="fas fa-trash-alt"></i></button>
                                         </div>
@@ -423,6 +403,29 @@ block mainContent
             $('#addBotBtn').show()
             $(this).addClass('active').siblings().removeClass('active');
             $('#bots-container').removeClass('d-none')
+            const updateCategoryList = function(blogId) {
+                if($('#postCategory').length == 0){
+                    return
+                }
+                $.ajax({
+                    url: '/api/autoblog/info/category/' + blogId,
+                    type: 'GET',
+                    success: function(categories) {
+                        $('#postCategory').html('')
+                        for(let category of categories){
+                            $('#postCategory').append(`
+                                <option value=${category.termId}>${category.name}</option>
+                            `)
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        // Handle errors
+                        console.error("Failed to fetch blog info:", error);
+                    }
+                });
+            }
+            updateCategoryList(blogId);
+
         });
         $('#close-bots-container').click(function(){$('#bots-container').addClass('d-none')})
         $(document).ready(function() {
@@ -497,6 +500,8 @@ block mainContent
                     Swal.fire('エラー!', 'ブログデータの取得中にエラーが発生しました。', 'error');
                 });
             });
+
+
             function showBotForm(title, formHtml, formData = {}) {
                 const $form = $(formHtml);
                 
@@ -561,7 +566,6 @@ block mainContent
                 const formHtml = $('#hiddenBotFormContainer').html();
                 showBotForm('新しいボットを追加', formHtml);
             });
-
             $(document).on('click','.editBotBtn, #botContainer .card', function(e) {
                 e.stopPropagation();
                 const botId = $(this).data('id');
@@ -576,4 +580,63 @@ block mainContent
                     Swal.fire('エラー!', 'ボットデータの取得中にエラーが発生しました。', 'error');
                 });
             });
+            $(document).on('click', '.startBotBtn', function(e) {
+                e.stopPropagation();
+                const botId = $(this).data('id');
+                const $btn = $(this);
+                
+                // Add spinner
+                $btn.find('i').hide()
+                const spinner = $('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+                $btn.prop('disabled', true).append(spinner);
+
+                startBot(botId, function() {
+                    // Remove spinner and enable button
+                    $btn.prop('disabled', false);
+                    spinner.remove();
+                    $btn.find('i').show()
+                });
+            });
+
+            function startBot(botId, callback) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/api/autoblog/bot-start',
+                    data: JSON.stringify({ botId: botId }),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    }
+                });
+            }
+            $(document).on('click','.toggleBotStatusBtn', function(e) {
+                e.stopPropagation();
+            });
+
         });
+        function toggleBotStatus(botId, newState) {
+            fetch(`/api/autoblog/bot-info/ `, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ botId: botId, isActive: newState }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                $(`.toggle-bot-btn[data-id="${botId}"]`).each(function() {
+                    $(this).toggleClass('d-none');
+                });        
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }

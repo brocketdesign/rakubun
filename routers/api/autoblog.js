@@ -136,6 +136,27 @@ router.get('/bots',async (req, res) => {
 
 // BOT API
 
+
+const {autoBlog} = require('../../modules/init-bot.js')
+
+router.post('/bot-start', async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const {botId}= req.body
+    const botInfo = await global.db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
+    const blogInfo = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(botInfo.blogId) });
+
+    botInfo.botId = botInfo._id
+    blogInfo.blogId = blogInfo._id
+    const combinedPowers = { ...botInfo, ...blogInfo };
+    await autoBlog(combinedPowers,global.db)
+    res.send(`Job started for ${botId}`)
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('Internal server error');
+  }
+});
+
 router.get('/bot-info/:botId', async (req, res) => {
   const { botId } = req.params;
 

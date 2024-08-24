@@ -38,25 +38,14 @@ const setCronJobForUser = async (db, botId, schedule) => {
       autoBlog(combinedPowers,db)
     });
   }
-
 };
 
-// Function to initialize all cron jobs from database at app start
 const initializeCronJobs = async (db) => {
-  if (process.env.NODE_ENV !== 'local') {
-    //return
-  } 
-
-  // Assuming you have a function to get all user schedules from your database
-  const bots = await db.collection('botInfos').find({ isActive: true }).toArray(); // You'll need to implement this
+  const bots = await db.collection('botInfos').find({ isActive: true }).toArray(); 
   bots.forEach(bot => {
     setCronJobForUser(db, bot._id, bot.postFrequency);
   });
-  //RSS auto blog post
-  //rsspost(db)
-  let rssJob = cron.schedule('*/10 * * * *', () => {
-    //rsspost(db)
-  });
+
 };
 
 

@@ -2,22 +2,30 @@ extends ../dashboard/base
 
 block mainContent
   if !subscriptions.length
-    p There are no active memberships.
-    a.btn.btn-primary(href="/payment/subscription" data-user-id=user._id) Choose a Membership
+    p 現在、アクティブなメンバーシップはありません。
+    a.btn.btn-primary(href="/payment/subscription" data-user-id=user._id) メンバーシップを選択
   else
-    .d-flex.justify-content-between
-      h3 My Membership
-      button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) Update Payment Method
+    .d-flex.justify-content-between.align-items-center.mb-4
+      h3 私のメンバーシップ
+      button.btn.btn-primary(onclick="updatePaymentMethod(this)" data-user-id=user._id) 支払い方法を更新
     each subscription in subscriptions
-      .card.mt-3
+      .card.shadow-sm.mt-3
         .card-body
           h5.card-title #{subscription.productName}
           ul.list-group.list-group-flush
-            li.list-group-item Status: #{subscription.isActive == true ? 'Active':'Inactive'}
-            li.list-group-item Start Date: #{subscription.startDate}
-            li.list-group-item Next Payment Date: #{subscription.nextPaymentDate}
-            li.list-group-item Price: #{subscription.price}¥/month
+            li.list-group-item
+              strong 状態: 
+              span #{subscription.isActive == true ? 'アクティブ' : '非アクティブ'}
+            li.list-group-item
+              strong 開始日: 
+              span #{subscription.startDate}
+            li.list-group-item
+              strong 次回支払日: 
+              span #{subscription.nextPaymentDate}
+            li.list-group-item
+              strong 料金: 
+              span #{subscription.price}¥ / #{subscription.billingCycle}
           if subscription.isActive === true
-            .text-end
-              button.btn.btn-danger(type="submit" onclick=`cancelSubscription("${subscription.id}")`) Cancel
+            .text-end.mt-3
+              button.btn.btn-danger(type="submit" onclick=`cancelSubscription("${subscription.id}")`) キャンセル
   script(src='/js/stripe.js')

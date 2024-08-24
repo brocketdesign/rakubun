@@ -1,15 +1,20 @@
-var stripe = Stripe('pk_test_51Grb83C8xKGwQm6J0yFqNpWwgFu8MF582uq74ktVViobsBzM2hjVT2fXFvW5JQwLQnoaAmXBWtGevNodYi0bT5uv00sjuMNw1n'); // Replace with your public key
+let stripe
+if(window.location.href.indexOf('https://') >= 0){
+  stripe = Stripe('pk_live_51PjtRbE5sP7DA1XvCkdmezori9qPGoO21y7yKSVvgkQVyrhWZfHAUkNsjPMnbwpPlp4zzoYsRjn79Ad7XN7HTHcc00UjBA9adF'); // Use your publishable key here
+}else{
+  stripe = Stripe('pk_test_51PjtRbE5sP7DA1XvD68v7X7Qj7pG6ZJpQmvuNodJjxc7MbH1ss2Te2gahFAS9nms4pbmEdMYdfCPxFDWHBbu9CxR003ikTnRES'); // Use your publishable key here
+}
 
 function createCheckoutSession(e) {
-  const productId = $(e).data('id')
-  const priceId = $(e).data('price')
+  const cycle = $(e).data('cycle');
+  const priceId = cycle === 'yearly' ? $(e).data('price-yearly') : $(e).data('price-monthly');
+  
   fetch('/payment/create-checkout-session', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      product_id: productId,
       price_id: priceId
     })
   })
