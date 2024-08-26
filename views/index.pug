@@ -79,12 +79,18 @@ block content
                         p.generate-text#headline
                     .text-center
                         | 全自動でSEOランクも維持、記事作成に時間は不要です。
-                    .text-center.d-flex.flex-column.justify-content-center.align-items-center
-                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
+                    .text-center.d-flex.flex-column.justify-content-center.align-items-center.mt-3
+                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce"  data-delay="animate__delay-1s" onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
                         img(src="/img/mv_img02_pc_240530.png" style="width:100%")
                 .col-12.col-sm-6(data-animate="animate__slideInRight")
-                    .container.p-3
-                        img(src="img/bg-top1.png" style="width:90%")
+                    .container.p-3.text-center
+                        img(src="/img/network-robot-assistant-working-on-laptop.gif" style="width:90%")
+                        span.text-muted(style="font-size: 12px;position: absolute;bottom: 5px;right: 0;" data-animate="animate__fadeIn" data-delay="animate__delay-2s")
+                            | Illustration by 
+                            a(href="https://icons8.com/illustrations/author/Go8GMpKPAq1W") Polina M.
+                            |  from 
+                            a(href="https://icons8.com/illustrations") Ouch!
+
     div.container.pt-2(style="overflow-x:hidden;")
         section
             .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
@@ -147,7 +153,9 @@ block content
 
                 hr.my-5
 
-                h1.display-4.text-center.mb-5 RAKUBUNがあれば
+                h1.display-4.text-center.mb-5 
+                    span.b-custom-gradient-text.fw-bold RAKUBUN
+                    | があれば
 
                 .row.align-items-center.mb-5
                     .col-md-6.text-start(data-animate="animate__slideInLeft")
@@ -180,7 +188,7 @@ block content
                             .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
                                 .card-body.p-0
                                     ul.list-group.text-start
-                                        li.list-group-item.bg-dark.text-white
+                                        li.list-group-item.b-custom-gradient.text-white
                                             strong ユーザー名: 
                                             span(style="font-size:14px") Fさん
                                         li.list-group-item
@@ -204,7 +212,7 @@ block content
                             .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
                                 .card-body.p-0
                                     ul.list-group.text-start
-                                        li.list-group-item.bg-dark.text-white
+                                        li.list-group-item.b-custom-gradient.text-white
                                             strong ユーザー名: 
                                             span(style="font-size:14px") Yさん
                                         li.list-group-item
