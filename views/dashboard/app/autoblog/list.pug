@@ -280,20 +280,23 @@ block mainContent
         const user = !{JSON.stringify(user)};
         const blogData = !{JSON.stringify(blogData)}
         let botDataLength = 0
-        $(document).on('click','.delete-bot-btn', function() {
+        $(document).on('click','.delete-bot-btn', function(e) {
+            e.stopPropagation();
             var botId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
 
             Swal.fire({
                 title: '本当に削除しますか？',
                 text: "この操作は元に戻せません！",
                 icon: 'warning',
-                animation:false,
                 showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
                 confirmButtonText: 'はい、削除します！',
                 cancelButtonText: 'キャンセル',
-                reverseButtons: true
+                reverseButtons: true,
+                showClass: {
+                    popup: 'animate__animated animate__fadeIn'
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -325,13 +328,15 @@ block mainContent
                 title: '本当に削除しますか？',
                 text: "この操作は元に戻せません！",
                 icon: 'warning',
-                animation:false,
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'はい、削除します！',
                 cancelButtonText: 'キャンセル',
-                reverseButtons: true
+                reverseButtons: true,
+                showClass: {
+                    popup: 'animate__animated animate__fadeIn'
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
                     $.ajax({
@@ -472,7 +477,7 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    animation:false,
+                    allowOutsideClick: false,
                     showCancelButton: false,
                     showCloseButton: true,
                     confirmButtonText: '送信',
@@ -481,6 +486,9 @@ block mainContent
                         title: 'fs-6',
                         htmlContainer:'px-0',
                         popup: 'custom-editor bg-light'
+                    },
+                    showClass: {
+                        popup: 'animate__animated animate__fadeIn'
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -555,7 +563,7 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    animation:false,
+                    allowOutsideClick: false,
                     showCancelButton: false,
                     showCloseButton: true,
                     confirmButtonText: '送信',
@@ -564,6 +572,9 @@ block mainContent
                         title: 'fs-6',
                         htmlContainer:'px-0',
                         popup: 'custom-editor bg-light'
+                    },
+                    showClass: {
+                        popup: 'animate__animated animate__fadeIn'
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -710,14 +721,24 @@ block mainContent
 
             Swal.fire({
                 html: `
+                    <img class="logo mx-2" src='/img/logo.png' alt='ロゴ' style="max-width: 30px;" >
+                    <span> RAKUBUN </span>
                     <h3>アップグレードが必要です</h3>
                     <p class="text-muted small">${message}</p>
                     <div class="container">
                         <ul class="list-group small text-start">
-                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>ChatGPT-4oおよびChatGPT-4o-miniを利用可能</li>
-                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>利用制限: 無制限</li>
-                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>複数ブログの追加が可能</li>
-                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>各ブログに複数ボットを作成可能</li>
+                            <li class="list-group-item" style="font-size:12px;">
+                                <i class="fa fa-check text-primary me-3"></i>ChatGPT-4oおよびChatGPT-4o-miniを利用可能
+                            </li>
+                            <li class="list-group-item" style="font-size:12px;">
+                                <i class="fa fa-check text-primary me-3"></i>利用制限: 無制限
+                            </li>
+                            <li class="list-group-item" style="font-size:12px;">
+                                <i class="fa fa-check text-primary me-3"></i>複数ブログの追加が可能
+                            </li>
+                            <li class="list-group-item" style="font-size:12px;">
+                                <i class="fa fa-check text-primary me-3"></i>各ブログに複数ボットを作成可能
+                            </li>
                         </ul>
                     </div>
                 `,
