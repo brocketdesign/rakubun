@@ -1,7 +1,10 @@
 extends default
 
 block content
-
+    style.
+        .cta-button{
+            font-size:1.3em;
+        }
     //- ログインポップアップ
     #login-container.position-fixed.d-flex.align-items-center.d-none(onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
         .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
@@ -38,142 +41,160 @@ block content
 
     //- 背景画像
     div#intro.bg-image.shadow-1-strong
-        div(style="background:linear-gradient(45deg, rgb(23, 88, 213), rgb(14, 167, 214) 100%);")
-            div.container.d-flex.align-items-center.h-100(style="min-height:70vh;")
-                div.text-white.col-12.col-md-12.py-5
-                    h1.mb-3.fw-bold(style="height: 200px;")
+        div(style="background: linear-gradient(120.9deg, #fff 50.74%, #4facfe 102.92%);")
+            div.container.row.align-items-center.h-100.m-auto
+                div.col-12.col-md-6.py-5.text-dark
+                    h1.mb-3.fw-bold.text-dark.text-center#headline-container
                         span RAKUBUN
                         span(style="opacity: 0.8;") 、
                         p.generate-text#headline
-                        span.generate-text-fail(style="display:none")
-                            span AIを使用してコンテンツを10倍速で作成
-                    h6 数秒で高品質な記事、ソーシャルメディア、広告コピーを作成
-                    h6.mb-4 AIライティングアシスタント
-                    h5.mb-4.d-none らくぶんで、AIがブログをサクッと自動投稿！お任せで楽々更新！
-                    button.btn.btn-warning.btn-lg.m-2(onclick="displayLogin()", role="button", style="font-size:1em;") まずは無料でお試し
-
+                    .text-center 
+                        span 全自動でSEOランクも維持、記事作成に時間は不要です。
+                    .text-center.d-flex.flex-column.justify-content-center.align-items-center
+                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
+                        img(src="/img/mv_img02_pc_240530.png" style="width:100%")
+                .col-12.col-sm-6 
+                    .container.p-3
+                        img(src="img/mv_img01_pc.png" style="width:90%")
     div.container.pt-2(style="overflow-x:hidden;")
         section
-            div
-                h5.fw-bold.generate-text(data-context="チャットGPTよりも効率的にコンテンツ制作を合理化するための見出しを書いてください")
-                .generate-text-fail
-                h1.fw-bold 効率的にコンテンツ制作を合理化する
-            h6.fw-normal 100以上の効果的な日本語テンプレート（ブログ記事や広告コピーなど）を使用して、目的のジャンルのコンテンツをすぐに作成できます。
             .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
                 .col.d-flex.align-items-start
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-pencil-alt(style='width: 1.75em; height: 1.75em;')
+                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-file-alt(style='width: 1.75em; height: 1.75em;')
                     div
-                        h6.fw-bold.mb-0 SEOブログ作成
-                        p ChatGPTを使用して最適化されたブログ記事を作成します。
+                        h6.fw-bold.mb-0 自動記事投稿
+                        p 記事の作成から投稿まで、すべて自動で対応します。
                 .col.d-flex.align-items-start
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-share-alt(style='width: 1.75em; height: 1.75em;')
+                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-key(style='width: 1.75em; height: 1.75em;')
                     div
-                        h6.fw-bold.mb-0 Twitter投稿アシスタント
-                        p 効果的なツイートの作成のための提案とサポートを受け取ります。
+                        h6.fw-bold.mb-0 キーワードに基づく自動投稿
+                        p 特定のキーワードを狙った記事を自動で投稿します。
                 .col.d-flex.align-items-start
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-search-dollar(style='width: 1.75em; height: 1.75em;')
+                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-tags(style='width: 1.75em; height: 1.75em;')
                     div
-                        h6.fw-bold.mb-0 キーワード最適化
-                        p コンテンツを最適化するための検索上位キーワードを取得します。
-                .col.d-flex.align-items-start.d-none
+                        h6.fw-bold.mb-0 タグの自動生成
+                        p 記事に関連するタグも自動で生成し、SEO対策もバッチリ。
+                .col.d-flex.align-items-start
+                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-image(style='width: 1.75em; height: 1.75em;')
+                    div
+                        h6.fw-bold.mb-0 アイキャッチ画像の自動生成
+                        p 記事にぴったりのアイキャッチ画像も自動で作成します。
+                .col.d-flex.align-items-start
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')
                     div
-                        h4.fw-bold.mb-0 パフォーマンス分析
-                        p 投稿の効果を分析し、最適な戦略を見出します。
-                .col.d-flex.align-items-start.d-none
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-robot(style='width: 1.75em; height: 1.75em;')
+                        h6.fw-bold.mb-0 SEO最適化
+                        p RAKUBUNは最適化された記事を生成し、検索エンジンでのランキングを向上させます。
+                .col.d-flex.align-items-start
+                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-money-bill-wave(style='width: 1.75em; height: 1.75em;')
                     div
-                        h4.fw-bold.mb-0 AI対話
-                        p ユーザーリクエストに基づいて、ChatGPTと会話を交わします。
-                .col.d-flex.align-items-start.d-none
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-images(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h4.fw-bold.mb-0 ビジュアルコンテンツの提案
-                        p 画像やグラフィックを最適化するための提案を受け取ります。
-                .col.d-flex.align-items-start.d-none
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-share-alt(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h4.fw-bold.mb-0 ソーシャルメディア統合
-                        p 1つのプラットフォームから複数のソーシャルメディアプラットフォームに投稿できます。
-                .col.d-flex.align-items-start.d-none
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-cogs(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h4.fw-bold.mb-0 カスタマイズ設定
-                        p アプリを自分の好みに合わせてカスタマイズできます。
-
+                        h6.fw-bold.mb-0 ブログで収益を上げる
+                        p 高品質なコンテンツと自動化機能により、ブログで安定した収益を得ることが可能です。
 
         //- Section: Content
-        section
-            div.row
-                div.col-md-6.gx-5.mb-4
-                    div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="/img/img-1.webp")
-                        a(href="#")
-                            div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                div.col-md-6.gx-5.mb-4
-                    h6.fw-bold コンテンツ制作をより効率的に合理化
-                    p.text-muted
-                        | 100以上の効果的な日本語テンプレート（ブログ記事や広告コピーなど）を使用して、目的のジャンルのコンテンツをすぐに作成できます。
-                    p.strong 安全で信頼できる
-                    p.text-muted
-                        | 当社のサービスはセキュリティに優れており、個人情報と機密データを厳格に保護します。安心してお使いいただけます。
+        section.text-center.py-5
+            .container
+                h1.display-4.text-center.mb-5 こんなお悩みありませんか？
 
-        //- Section: Content
-        section
-            div.row
-                div.col-md-6.gx-5.mb-4.order-md-2
-                    div.bg-image.hover-overlay.ripple.shadow-2-strong.rounded-5(data-mdb-ripple-color="light")
-                        img.img-fluid(src="/img/img-2.webp")
-                        a(href="#")
-                            div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                div.col-md-6.gx-5.mb-4
-                    h6.fw-bold AIエディタで長編コンテンツを作成
-                    p.text-muted
-                        | 100以上の効果的な日本語テンプレート（ブログ記事や広告コピーなど）を使用して、目的のジャンルのコンテンツをすぐに作成できます。
-                    p.strong 安全で信頼できる
-                    p.text-muted
-                        | 当社のサービスはセキュリティに優れており、個人情報と機密データを厳格に保護します。安心してお使いいただけます。
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start
+                        h4.fw-bold.mb-3 アフィリエイトしたいけど時間がない
+                        p.text-muted.fs-6 忙しくてアフィリエイト記事を定期的に投稿する時間が取れないあなたに。RAKUBUNなら、自動で記事を投稿し、時間を有効に活用できます。
+                    .col-md-6
+                        i.fas.fa-clock.fa-3x.text-primary
 
-        //- Section: Content
-        section.text-center
-            h4.mb-5.strong 多彩な機能
-            div.row
-                div.col-lg-4.col-md-12.mb-4
-                    div.card
-                        div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/184.jpg")
-                            a(href="#")
-                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                        div.card-body
-                            h6.card-title 契約書作成
-                            p.card-text
-                                | CloudSign を使用すると、簡単に契約書を作成できます。カスタマイズ可能なテンプレートを使用して、契約書の詳細を簡単に記入できます。
-                            a.btn.btn-primary(href="/user/signup") 詳細を見る
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start.order-md-2
+                        h4.fw-bold.mb-3 いい記事を書いているけどキーワードSEOが弱いため、読まれない
+                        p.text-muted.fs-6 記事は素晴らしいのに、SEO対策が不十分で読まれない…そんな悩みを解決します。RAKUBUNが狙ったキーワードで自動投稿し、SEO効果を最大化します。
+                    .col-md-6.order-md-1
+                        i.fas.fa-search.fa-3x.text-primary
 
-                div.col-lg-4.col-md-6.mb-4
-                    div.card
-                        div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/023.jpg")
-                            a(href="#!")
-                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                        div.card-body
-                            h5.card-title 電子署名管理
-                            p.card-text
-                                | CloudSign は電子署名を簡単に管理できます。また、複数の参加者による契約もサポートしています。
-                            a.btn.btn-primary(href="/user/signup") 詳細を見る
-                div.col-lg-4.col-md-6.mb-4
-                    div.card
-                        div.bg-image.hover-overlay.ripple(data-mdb-ripple-color="light")
-                            img.img-fluid(src="https://mdbootstrap.com/img/new/standard/nature/111.jpg")
-                            a(href="#!")
-                                div.mask(style="background-color: rgba(251, 251, 251, 0.15);")
-                        div.card-body
-                            h5.card-title 安全で信頼できる
-                            p.card-text
-                                | CloudSign はセキュリティに優れており、個人情報と機密データを厳格に保護します。安心してお使いいただけます。
-                            a.btn.btn-primary(href="/user/signup") 詳細を見る
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start
+                        h4.fw-bold.mb-3 外注のライターさんがいるけど、記事の質の割に高額
+                        p.text-muted.fs-6 外注ライターのコストが高いと感じていませんか？RAKUBUNなら、高品質な記事を自動で生成し、コストを大幅に削減できます。
+                    .col-md-6
+                        i.fas.fa-dollar-sign.fa-3x.text-primary
+
+                hr.my-5
+
+                h1.display-4.text-center.mb-5 RAKUBUNがあれば
+
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start
+                        h4.fw-bold.mb-3 特定のキーワードを狙った記事を数日で作成できる
+                        p.text-muted.fs-6 RAKUBUNを使えば、ターゲットキーワードに基づいた高品質な記事を数日で自動生成。手間なくコンテンツを量産し、効率的にSEO対策を行えます。
+                    .col-md-6
+                        i.fas.fa-keyboard.fa-3x
+
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start.order-md-2
+                        h4.fw-bold.mb-3 ボリュームのあるブログを作って、売れる
+                        p.text-muted.fs-6 大量のコンテンツを素早く作成できるRAKUBUNで、ボリュームのあるブログを構築。質の高い記事でユーザーの信頼を得て、収益化を実現します。
+                    .col-md-6.order-md-1
+                        i.fas.fa-file-alt.fa-3x
+
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start
+                        h4.fw-bold.mb-3 すぐにPVが上がってきて、安定したアフィリエイト報酬が手に入る
+                        p.text-muted.fs-6 RAKUBUNの自動投稿機能とSEO対策により、短期間でページビュー（PV）が増加。安定したアフィリエイト報酬を確保するための強力なサポートを提供します。
+                    .col-md-6
+                        i.fas.fa-chart-line.fa-3x
 
 
+                hr.my-5
+
+                h1.display-4.text-center.mb-5 RAKUBUNで成果を上げたユーザーの声
+                .row 
+                    .col-12.col-sm-6
+                        .mb-4
+                            .card.border-0.shadow-0.p-0
+                                .card-body.p-0
+                                    ul.list-group.text-start
+                                        li.list-group-item.bg-dark.text-white
+                                            strong ユーザー名: 
+                                            span(style="font-size:14px") Fさん
+                                        li.list-group-item
+                                            strong 年齢: 
+                                            span(style="font-size:14px") 32歳
+                                        li.list-group-item
+                                            strong 職業: 
+                                            span(style="font-size:14px") アフィリエイター
+                                        li.list-group-item
+                                            strong 背景: 
+                                            span(style="font-size:14px") Fさんは本業が忙しく、記事の更新頻度が低いため、アフィリエイト収益が思うように伸び悩んでいました。限られた時間の中でコンテンツを更新し続けるのは大変で、サイトの活性化が課題となっていました。
+                                        li.list-group-item
+                                            strong 成果: 
+                                            span(style="font-size:14px") RAKUBUNを導入後、Fさんは特定のキーワードに基づいて自動で記事を投稿する機能を活用しました。その結果、2ヶ月でページビューが200%増加し、収益も大幅に向上しました。自動生成された記事がSEO効果を発揮し、サイトのトラフィックが急増しました。また、記事の更新頻度が改善され、安定した収益化が実現しました。
+                                        li.list-group-item
+                                            strong コメント: 
+                                            span(style="font-size:14px") 「RAKUBUNのおかげで、限られた時間の中でもコンテンツを継続的に更新できるようになりました。SEO対策も自動で行ってくれるので、収益の増加を実感しています。時間の節約と収益の向上の両方を実現できて、大変満足しています。」 – Fさん
+
+                    .col-12.col-sm-6
+                        .mb-4
+                            .card.border-0.shadow-0.p-0
+                                .card-body.p-0
+                                    ul.list-group.text-start
+                                        li.list-group-item.bg-dark.text-white
+                                            strong ユーザー名: 
+                                            span(style="font-size:14px") Yさん
+                                        li.list-group-item
+                                            strong 年齢: 
+                                            span(style="font-size:14px") 40代
+                                        li.list-group-item
+                                            strong 職業: 
+                                            span(style="font-size:14px") 専業主婦・アフィリエイター
+                                        li.list-group-item
+                                            strong 背景: 
+                                            span(style="font-size:14px") Yさんは、外注ライターに記事作成を依頼していましたが、記事の質は並程度で、毎月15,000円のコストがかかっていました。アフィリエイトからの収入は毎月4〜6万円程度で、外注費が高く感じていました。
+                                        li.list-group-item
+                                            strong 成果: 
+                                            span(style="font-size:14px") RAKUBUNを導入することで、月額3000円で毎日自動投稿されるようになりました。RAKUBUNによって生成される記事の質が向上し、外注ライターと同程度の成果を上げることが確認されました。これにより、外注ライターにはもっと文字数の多い、濃い内容の記事に集中して書いてもらうことができ、外注費用も半額に削減されました。結果として、PV数、売上、そして利益が大幅に向上しました。
+                                        li.list-group-item
+                                            strong コメント: 
+                                            span(style="font-size:14px") 「RAKUBUNを導入することで、コストを大幅に削減しながらも、記事の質と収益が改善されました。外注ライターにはより専門的な記事を書いてもらう余裕ができ、全体的な効率が向上しました。非常に満足しています。」 – Yさん
+
+                
         hr.my-5
         //- Section: Pricing
     section.text-center
@@ -181,6 +202,6 @@ block content
             h1.fw-bold 利用状況に合わせたプラン
             h1.fw-bold あなたにぴったりのプランが用意されています
             p.fs-5.text-muted
-            | このBootstrap例を利用すれば、見込み客向けの効果的な価格表を簡単に作成できます。カスタマイズはほとんどなく、デフォルトのBootstrapコンポーネントとユーティリティで作られています。
+            span(style="font-size:14px") このBootstrap例を利用すれば、見込み客向けの効果的な価格表を簡単に作成できます。カスタマイズはほとんどなく、デフォルトのBootstrapコンポーネントとユーティリティで作られています。
             include subscription/plan
 

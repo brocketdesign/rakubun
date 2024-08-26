@@ -183,7 +183,23 @@ style.
                         div.card-body.small
                             | #{item.answer}
 
+    script(src='https://cdn.jsdelivr.net/npm/sweetalert2@11')
     script.
+        const urlParams = new URLSearchParams(window.location.search);
+
+        if (urlParams.get('cancel-payment') === 'true') {
+            Swal.fire({
+                title: '支払いキャンセル',
+                text: 'お支払いは完了していません。お客様の口座からは引き落とされていません。',
+                icon: 'info',
+                confirmButtonText: '閉じる'
+            });
+            var currentUrl = window.location.href;
+            var urlParts = currentUrl.split('?');
+            urlParts[urlParts.length - 1] = '';
+            var newUrl = urlParts.join('');
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+        }
         $('#plan-switch').on('change', function() {
             const isChecked = $(this).is(':checked');
             

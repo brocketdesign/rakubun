@@ -147,10 +147,6 @@ router.get('/subscription-payment-success', async (req, res) => {
   res.render('subscription/payment-success', { user: req.user, subscription: newSubscription }); 
 });
 
-router.get('/subscription-payment-error', (req, res) => {
-  res.render('subscription/payment-error',{user:req.user}); // Render the login template
-});
-
 router.post('/subscription/cancel/:subscriptionId', async (req, res) => {
   const subscriptionId = req.params.subscriptionId;
   
@@ -199,7 +195,7 @@ router.post('/create-checkout-session', async (req, res) => {
     }],
     mode: 'subscription', 
     success_url: `${protocol}://${host}/payment/subscription-payment-success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${protocol}://${host}/payment/subscription-payment-error`,
+    cancel_url: `${protocol}://${host}/payment/subscription?cancel-payment=true`,
     customer_email: req.user.email,  // Add user email to the session
     locale: 'ja',  // Set the locale to Japanese
     metadata: { userId: req.user._id.toString() },  // Store userId in session metadata
@@ -227,7 +223,7 @@ router.post('/create-checkout-session-for-update', async (req, res) => {
       payment_method_types: ['card'],
       mode: 'setup', // Setting mode to 'setup' for updating payment details
       success_url: `${protocol}://${host}/payment/payment-update-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${protocol}://${host}/payment/payment-update-error`,
+      cancel_url: `${protocol}://${host}/payment/subscription?cancel-payment=true`,
       metadata: { userId: userId },  // Store userId in session metadata
     });
 

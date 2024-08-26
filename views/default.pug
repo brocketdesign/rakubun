@@ -24,7 +24,7 @@ html
   body
       if !user
         .top-nav
-          nav.navbar.navbar-expand-md.navbar-white.bg-white
+          nav.navbar.navbar-expand-md.navbar-white.bg-white.shadow-0.py-3
             .container-fluid
               a.navbar-brand(href='/')
                 img.logo.mx-2(src='/img/logo.png', alt='ロゴ' style="max-width: 30px;")
@@ -39,9 +39,9 @@ html
                           button.nav-link.btn.shadow-0(type='button', onclick='logout()') ログアウト
                     else
                       li.nav-item
-                          a.nav-link.shadow-0(href="#" onclick="displayLogin()") ログイン
+                          a.nav-link.shadow-0.bg-outline-primary.border.border-primary.text-primary.px-4.me-2(href="#" onclick="displayLogin()" style="border-radius:50px") ログイン
                       li.nav-item
-                          button.btn.btn-outline-warning.btn-lg.shadow-0(onclick="displayLogin()" role="button") 今すぐ無料で始める
+                          button.btn.b-custom-gradient.text-white.btn-lg.shadow-0(onclick="displayLogin()" role="button" style="border-radius:50px") 今すぐ無料で始める
 
       else 
         .top-nav.auto-hide

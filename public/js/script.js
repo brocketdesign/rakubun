@@ -1132,10 +1132,27 @@ const headlines = [
     "AIとらくぶんで、ブログが勝手にどんどん増える！"
 ];
 
-  
-let $headlineElement = $("#headline"); // replace this with your actual jQuery selector
+let $headlineElement = $("#headline"); // Your headline element
 let currentHeadlineIndex = 0;
+
+setContainerHeight();  // Set the container height at page load
 showNextHeadline();
+
+function setContainerHeight() {
+    let maxHeight = 0;
+    const $tempElement = $("#headline");
+
+    headlines.forEach(function(headline) {
+        $tempElement.text(headline);
+        let height = $("#headline-container").height();
+        if (height > maxHeight) {
+            maxHeight = height;
+        }
+        $tempElement.text('');
+    });
+
+    $("#headline-container").height(maxHeight);
+}
 
 function appendHeadlineCharacterByCharacter($element, headline, callback) {
     let index = 0;
@@ -1165,6 +1182,22 @@ function showNextHeadline() {
         }, 2000); // waits for 2 seconds after displaying a headline before clearing and showing the next one
     });
 }
+
+function clearContentFromEnd($element, callback) {
+    let content = $element.text();
+    let index = content.length;
+
+    let intervalID = setInterval(function() {
+        if (index > 0) {
+            $element.text(content.substring(0, index - 1));
+            index--;
+        } else {
+            clearInterval(intervalID);
+            if (callback) callback();
+        }
+    }, 30);
+}
+
 
 function handleGenerateText() {
     // Iterate through each .generate-text element

@@ -13,6 +13,8 @@ const { ObjectId } = require('mongodb');
 // Route for handling '/dashboard/'
 router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
+    return res.redirect('/dashboard/app/autoblog')
+
     res.render('dashboard/top', {
       user: req.user,
       title: "RAKUBUN - Dashboard",
