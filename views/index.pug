@@ -25,7 +25,7 @@ block content
             font-size:1.3em;
         }
     //- ログインポップアップ
-    #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" data-delay="animate__delay-2s" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
+    #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
         .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
             .col(style="max-width: 90%;")
                 #login-form.card.shadow.bg-light.border.border-white
@@ -78,32 +78,32 @@ block content
     div.container.pt-2(style="overflow-x:hidden;")
         section
             .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-file-alt(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 自動記事投稿
                         p 記事の作成から投稿まで、すべて自動で対応します。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-key(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 キーワードに基づく自動投稿
                         p 特定のキーワードを狙った記事を自動で投稿します。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-tags(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 タグの自動生成
                         p 記事に関連するタグも自動で生成し、SEO対策もバッチリ。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-image(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 アイキャッチ画像の自動生成
                         p 記事にぴったりのアイキャッチ画像も自動で作成します。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 SEO最適化
                         p RAKUBUNは最適化された記事を生成し、検索エンジンでのランキングを向上させます。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-money-bill-wave(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 ブログで収益を上げる
@@ -112,7 +112,7 @@ block content
         //- Section: Content
         section.text-center.py-5
             .container
-                h1.display-4.text-center.mb-5(data-animate="animate__fadeInUp" data-delay="animate__delay-3s") こんなお悩みありませんか？
+                h1.display-4.text-center.mb-5(data-animate="animate__fadeInUp") こんなお悩みありませんか？
 
                 .row.align-items-center.mb-5
                     .col-md-6.text-start(data-animate="animate__slideInLeft")
