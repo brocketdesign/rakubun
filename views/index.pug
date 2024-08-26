@@ -1,12 +1,31 @@
 extends default
 
 block content
+    script.
+        document.addEventListener('DOMContentLoaded', function() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate__animated');
+                        entry.target.classList.add(entry.target.dataset.animate); // Apply the animation class
+                        entry.target.classList.add(entry.target.dataset.delay); // Apply delay if present
+                        observer.unobserve(entry.target); // Stop observing after animation
+                    }
+                });
+            }, {
+                threshold: 0.1 // Adjust the threshold as needed
+            });
+
+            document.querySelectorAll('[data-animate]').forEach(element => {
+                observer.observe(element);
+            });
+        });
     style.
         .cta-button{
             font-size:1.3em;
         }
     //- ログインポップアップ
-    #login-container.position-fixed.d-flex.align-items-center.d-none(onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
+    #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" data-delay="animate__delay-2s" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
         .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
             .col(style="max-width: 90%;")
                 #login-form.card.shadow.bg-light.border.border-white
@@ -43,48 +62,48 @@ block content
     div#intro.bg-image.shadow-1-strong
         div(style="background: linear-gradient(120.9deg, #fff 50.74%, #4facfe 102.92%);")
             div.container.row.align-items-center.h-100.m-auto
-                div.col-12.col-md-6.py-5.text-dark
+                div.col-12.col-md-6.py-5.text-dark(data-animate="animate__slideInLeft")
                     h1.mb-3.fw-bold.text-dark.text-center#headline-container
                         span RAKUBUN
                         span(style="opacity: 0.8;") 、
                         p.generate-text#headline
-                    .text-center 
-                        span 全自動でSEOランクも維持、記事作成に時間は不要です。
+                    .text-center
+                        | 全自動でSEOランクも維持、記事作成に時間は不要です。
                     .text-center.d-flex.flex-column.justify-content-center.align-items-center
-                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
+                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" data-delay="animate__delay-1s" onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
                         img(src="/img/mv_img02_pc_240530.png" style="width:100%")
-                .col-12.col-sm-6 
+                .col-12.col-sm-6(data-animate="animate__slideInRight")
                     .container.p-3
                         img(src="img/bg-top1.png" style="width:90%")
     div.container.pt-2(style="overflow-x:hidden;")
         section
             .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-file-alt(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 自動記事投稿
                         p 記事の作成から投稿まで、すべて自動で対応します。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-key(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 キーワードに基づく自動投稿
                         p 特定のキーワードを狙った記事を自動で投稿します。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-tags(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 タグの自動生成
                         p 記事に関連するタグも自動で生成し、SEO対策もバッチリ。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-image(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 アイキャッチ画像の自動生成
                         p 記事にぴったりのアイキャッチ画像も自動で作成します。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 SEO最適化
                         p RAKUBUNは最適化された記事を生成し、検索エンジンでのランキングを向上させます。
-                .col.d-flex.align-items-start
+                .col.d-flex.align-items-start(data-animate="animate__fadeInUp" data-delay="animate__delay-2s")
                     i.bi.text-muted.flex-shrink-0.me-3.fa.fa-money-bill-wave(style='width: 1.75em; height: 1.75em;')
                     div
                         h6.fw-bold.mb-0 ブログで収益を上げる
@@ -93,53 +112,53 @@ block content
         //- Section: Content
         section.text-center.py-5
             .container
-                h1.display-4.text-center.mb-5 こんなお悩みありませんか？
+                h1.display-4.text-center.mb-5(data-animate="animate__fadeInUp" data-delay="animate__delay-3s") こんなお悩みありませんか？
 
                 .row.align-items-center.mb-5
-                    .col-md-6.text-start
+                    .col-md-6.text-start(data-animate="animate__slideInLeft")
                         h4.fw-bold.mb-3 アフィリエイトしたいけど時間がない
                         p.text-muted.fs-6 忙しくてアフィリエイト記事を定期的に投稿する時間が取れないあなたに。RAKUBUNなら、自動で記事を投稿し、時間を有効に活用できます。
                     .col-md-6
-                        img(src="/img/feature-1.png" style="width:200px;")
+                        img(src="/img/feature-1.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
 
                 .row.align-items-center.mb-5
-                    .col-md-6.text-start.order-md-2
+                    .col-md-6.text-start.order-md-2(data-animate="animate__slideInRight")
                         h4.fw-bold.mb-3 いい記事を書いているけどキーワードSEOが弱いため、読まれない
                         p.text-muted.fs-6 記事は素晴らしいのに、SEO対策が不十分で読まれない…そんな悩みを解決します。RAKUBUNが狙ったキーワードで自動投稿し、SEO効果を最大化します。
                     .col-md-6.order-md-1
-                        img(src="/img/feature-2.png" style="width:200px;")
+                        img(src="/img/feature-2.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
 
                 .row.align-items-center.mb-5
-                    .col-md-6.text-start
+                    .col-md-6.text-start(data-animate="animate__slideInLeft")
                         h4.fw-bold.mb-3 外注のライターさんがいるけど、記事の質の割に高額
                         p.text-muted.fs-6 外注ライターのコストが高いと感じていませんか？RAKUBUNなら、高品質な記事を自動で生成し、コストを大幅に削減できます。
                     .col-md-6
-                        img(src="/img/feature-3.png" style="width:200px;")
+                        img(src="/img/feature-3.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
 
                 hr.my-5
 
                 h1.display-4.text-center.mb-5 RAKUBUNがあれば
 
                 .row.align-items-center.mb-5
-                    .col-md-6.text-start
+                    .col-md-6.text-start(data-animate="animate__slideInLeft")
                         h4.fw-bold.mb-3 特定のキーワードを狙った記事を数日で作成できる
                         p.text-muted.fs-6 RAKUBUNを使えば、ターゲットキーワードに基づいた高品質な記事を数日で自動生成。手間なくコンテンツを量産し、効率的にSEO対策を行えます。
                     .col-md-6
-                        img(src="/img/feature-4.png" style="width:200px;")
+                        img(src="/img/feature-4.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
 
                 .row.align-items-center.mb-5
-                    .col-md-6.text-start.order-md-2
+                    .col-md-6.text-start.order-md-2(data-animate="animate__slideInRight")
                         h4.fw-bold.mb-3 ボリュームのあるブログを作って、売れる
                         p.text-muted.fs-6 大量のコンテンツを素早く作成できるRAKUBUNで、ボリュームのあるブログを構築。質の高い記事でユーザーの信頼を得て、収益化を実現します。
                     .col-md-6.order-md-1
-                        img(src="/img/feature-5.png" style="width:200px;")
+                        img(src="/img/feature-5.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
 
                 .row.align-items-center.mb-5
-                    .col-md-6.text-start
+                    .col-md-6.text-start(data-animate="animate__slideInLeft")
                         h4.fw-bold.mb-3 すぐにPVが上がってきて、安定したアフィリエイト報酬が手に入る
                         p.text-muted.fs-6 RAKUBUNの自動投稿機能とSEO対策により、短期間でページビュー（PV）が増加。安定したアフィリエイト報酬を確保するための強力なサポートを提供します。
                     .col-md-6
-                        img(src="/img/feature-6.png" style="width:200px;")
+                        img(src="/img/feature-6.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
 
 
                 hr.my-5
@@ -148,7 +167,7 @@ block content
                 .row 
                     .col-12.col-sm-6
                         .mb-4
-                            .card.border-0.shadow-0.p-0
+                            .card.border-0.shadow-0.p-0(data-animate="animate__zoomIn")
                                 .card-body.p-0
                                     ul.list-group.text-start
                                         li.list-group-item.bg-dark.text-white
@@ -172,7 +191,7 @@ block content
 
                     .col-12.col-sm-6
                         .mb-4
-                            .card.border-0.shadow-0.p-0
+                            .card.border-0.shadow-0.p-0(data-animate="animate__zoomIn")
                                 .card-body.p-0
                                     ul.list-group.text-start
                                         li.list-group-item.bg-dark.text-white
@@ -204,4 +223,3 @@ block content
             p.fs-5.text-muted
             span(style="font-size:14px") このBootstrap例を利用すれば、見込み客向けの効果的な価格表を簡単に作成できます。カスタマイズはほとんどなく、デフォルトのBootstrapコンポーネントとユーティリティで作られています。
             include subscription/plan
-
