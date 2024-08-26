@@ -91,7 +91,7 @@ block content
                             |  from 
                             a(href="https://icons8.com/illustrations") Ouch!
 
-    div.container.pt-2(style="overflow-x:hidden;")
+    div.pt-2(style="overflow-x:hidden;")
         section
             .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
                 .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
@@ -178,58 +178,69 @@ block content
                     .col-md-6
                         img(src="/img/feature-6.png" style="width:200px;" data-animate="animate__fadeIn")
 
+        section.section-with-sticky-cta.text-center.mb-5.py-5.border(style="background: linear-gradient(10.9deg, #fff 50.74%, #4facfe 102.92%);")
+            .container
+                .row.align-items-center
+                    .col
+                        h2.fw-bold.mb-4 コンテンツを自動で作成
+                        p.text-muted.fs-5 RAKUBUNがあなたのために、SEO最適化された高品質な記事を自動で生成します。時間を節約しながら、収益を最大化しましょう。
 
-                hr.my-5
+            .p-3
+                .container.text-center
+                    button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" onclick="displayLogin()", role="button", style="border-radius:50px") 今すぐ無料で始める
+        section.section-with-sticky-cta
+                .container
+                    h1.display-4.text-center.mb-5 
+                        span.b-custom-gradient-text.fw-bold RAKUBUN
+                        | で成果を上げたユーザーの声
+                    .row 
+                        .col-12.col-sm-6
+                            .mb-4
+                                .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
+                                    .card-body.p-0
+                                        ul.list-group.text-start
+                                            li.list-group-item.b-custom-gradient.text-white
+                                                strong ユーザー名: 
+                                                span(style="font-size:14px") Fさん
+                                            li.list-group-item
+                                                strong 年齢: 
+                                                span(style="font-size:14px") 32歳
+                                            li.list-group-item
+                                                strong 職業: 
+                                                span(style="font-size:14px") アフィリエイター
+                                            li.list-group-item
+                                                strong 背景: 
+                                                span(style="font-size:14px") Fさんは本業が忙しく、記事の更新頻度が低いため、アフィリエイト収益が思うように伸び悩んでいました。限られた時間の中でコンテンツを更新し続けるのは大変で、サイトの活性化が課題となっていました。
+                                            li.list-group-item
+                                                strong 成果: 
+                                                span(style="font-size:14px") RAKUBUNを導入後、Fさんは特定のキーワードに基づいて自動で記事を投稿する機能を活用しました。その結果、2ヶ月でページビューが200%増加し、収益も大幅に向上しました。自動生成された記事がSEO効果を発揮し、サイトのトラフィックが急増しました。また、記事の更新頻度が改善され、安定した収益化が実現しました。
+                                            li.list-group-item
+                                                strong コメント: 
+                                                span(style="font-size:14px") 「RAKUBUNのおかげで、限られた時間の中でもコンテンツを継続的に更新できるようになりました。SEO対策も自動で行ってくれるので、収益の増加を実感しています。時間の節約と収益の向上の両方を実現できて、大変満足しています。」 – Fさん
 
-                h1.display-4.text-center.mb-5 RAKUBUNで成果を上げたユーザーの声
-                .row 
-                    .col-12.col-sm-6
-                        .mb-4
-                            .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
-                                .card-body.p-0
-                                    ul.list-group.text-start
-                                        li.list-group-item.b-custom-gradient.text-white
-                                            strong ユーザー名: 
-                                            span(style="font-size:14px") Fさん
-                                        li.list-group-item
-                                            strong 年齢: 
-                                            span(style="font-size:14px") 32歳
-                                        li.list-group-item
-                                            strong 職業: 
-                                            span(style="font-size:14px") アフィリエイター
-                                        li.list-group-item
-                                            strong 背景: 
-                                            span(style="font-size:14px") Fさんは本業が忙しく、記事の更新頻度が低いため、アフィリエイト収益が思うように伸び悩んでいました。限られた時間の中でコンテンツを更新し続けるのは大変で、サイトの活性化が課題となっていました。
-                                        li.list-group-item
-                                            strong 成果: 
-                                            span(style="font-size:14px") RAKUBUNを導入後、Fさんは特定のキーワードに基づいて自動で記事を投稿する機能を活用しました。その結果、2ヶ月でページビューが200%増加し、収益も大幅に向上しました。自動生成された記事がSEO効果を発揮し、サイトのトラフィックが急増しました。また、記事の更新頻度が改善され、安定した収益化が実現しました。
-                                        li.list-group-item
-                                            strong コメント: 
-                                            span(style="font-size:14px") 「RAKUBUNのおかげで、限られた時間の中でもコンテンツを継続的に更新できるようになりました。SEO対策も自動で行ってくれるので、収益の増加を実感しています。時間の節約と収益の向上の両方を実現できて、大変満足しています。」 – Fさん
-
-                    .col-12.col-sm-6
-                        .mb-4
-                            .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
-                                .card-body.p-0
-                                    ul.list-group.text-start
-                                        li.list-group-item.b-custom-gradient.text-white
-                                            strong ユーザー名: 
-                                            span(style="font-size:14px") Yさん
-                                        li.list-group-item
-                                            strong 年齢: 
-                                            span(style="font-size:14px") 40代
-                                        li.list-group-item
-                                            strong 職業: 
-                                            span(style="font-size:14px") 専業主婦・アフィリエイター
-                                        li.list-group-item
-                                            strong 背景: 
-                                            span(style="font-size:14px") Yさんは、外注ライターに記事作成を依頼していましたが、記事の質は並程度で、毎月15,000円のコストがかかっていました。アフィリエイトからの収入は毎月4〜6万円程度で、外注費が高く感じていました。
-                                        li.list-group-item
-                                            strong 成果: 
-                                            span(style="font-size:14px") RAKUBUNを導入することで、月額3000円で毎日自動投稿されるようになりました。RAKUBUNによって生成される記事の質が向上し、外注ライターと同程度の成果を上げることが確認されました。これにより、外注ライターにはもっと文字数の多い、濃い内容の記事に集中して書いてもらうことができ、外注費用も半額に削減されました。結果として、PV数、売上、そして利益が大幅に向上しました。
-                                        li.list-group-item
-                                            strong コメント: 
-                                            span(style="font-size:14px") 「RAKUBUNを導入することで、コストを大幅に削減しながらも、記事の質と収益が改善されました。外注ライターにはより専門的な記事を書いてもらう余裕ができ、全体的な効率が向上しました。非常に満足しています。」 – Yさん
+                        .col-12.col-sm-6
+                            .mb-4
+                                .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
+                                    .card-body.p-0
+                                        ul.list-group.text-start
+                                            li.list-group-item.b-custom-gradient.text-white
+                                                strong ユーザー名: 
+                                                span(style="font-size:14px") Yさん
+                                            li.list-group-item
+                                                strong 年齢: 
+                                                span(style="font-size:14px") 40代
+                                            li.list-group-item
+                                                strong 職業: 
+                                                span(style="font-size:14px") 専業主婦・アフィリエイター
+                                            li.list-group-item
+                                                strong 背景: 
+                                                span(style="font-size:14px") Yさんは、外注ライターに記事作成を依頼していましたが、記事の質は並程度で、毎月15,000円のコストがかかっていました。アフィリエイトからの収入は毎月4〜6万円程度で、外注費が高く感じていました。
+                                            li.list-group-item
+                                                strong 成果: 
+                                                span(style="font-size:14px") RAKUBUNを導入することで、月額3000円で毎日自動投稿されるようになりました。RAKUBUNによって生成される記事の質が向上し、外注ライターと同程度の成果を上げることが確認されました。これにより、外注ライターにはもっと文字数の多い、濃い内容の記事に集中して書いてもらうことができ、外注費用も半額に削減されました。結果として、PV数、売上、そして利益が大幅に向上しました。
+                                            li.list-group-item
+                                                strong コメント: 
+                                                span(style="font-size:14px") 「RAKUBUNを導入することで、コストを大幅に削減しながらも、記事の質と収益が改善されました。外注ライターにはより専門的な記事を書いてもらう余裕ができ、全体的な効率が向上しました。非常に満足しています。」 – Yさん
 
                 
         hr.my-5
