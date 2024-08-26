@@ -6,6 +6,7 @@ block content
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
+                        entry.target.classList.remove('hidden'); // Remove the hidden class
                         entry.target.classList.add('animate__animated');
                         entry.target.classList.add(entry.target.dataset.animate); // Apply the animation class
                         entry.target.classList.add(entry.target.dataset.delay); // Apply delay if present
@@ -17,12 +18,16 @@ block content
             });
 
             document.querySelectorAll('[data-animate]').forEach(element => {
+                element.classList.add('hidden'); // Add the hidden class initially
                 observer.observe(element);
             });
         });
     style.
         .cta-button{
             font-size:1.3em;
+        }
+        .hidden {
+            opacity: 0;
         }
     //- ログインポップアップ
     #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
@@ -70,7 +75,7 @@ block content
                     .text-center
                         | 全自動でSEOランクも維持、記事作成に時間は不要です。
                     .text-center.d-flex.flex-column.justify-content-center.align-items-center
-                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" data-delay="animate__delay-1s" onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
+                        button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" onclick="displayLogin()", role="button", style="border-radius:50px") まずは無料でお試し
                         img(src="/img/mv_img02_pc_240530.png" style="width:100%")
                 .col-12.col-sm-6(data-animate="animate__slideInRight")
                     .container.p-3
@@ -119,21 +124,21 @@ block content
                         h4.fw-bold.mb-3 アフィリエイトしたいけど時間がない
                         p.text-muted.fs-6 忙しくてアフィリエイト記事を定期的に投稿する時間が取れないあなたに。RAKUBUNなら、自動で記事を投稿し、時間を有効に活用できます。
                     .col-md-6
-                        img(src="/img/feature-1.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
+                        img(src="/img/feature-1.png" style="width:200px;" data-animate="animate__fadeIn")
 
                 .row.align-items-center.mb-5
                     .col-md-6.text-start.order-md-2(data-animate="animate__slideInRight")
                         h4.fw-bold.mb-3 いい記事を書いているけどキーワードSEOが弱いため、読まれない
                         p.text-muted.fs-6 記事は素晴らしいのに、SEO対策が不十分で読まれない…そんな悩みを解決します。RAKUBUNが狙ったキーワードで自動投稿し、SEO効果を最大化します。
                     .col-md-6.order-md-1
-                        img(src="/img/feature-2.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
+                        img(src="/img/feature-2.png" style="width:200px;" data-animate="animate__fadeIn")
 
                 .row.align-items-center.mb-5
                     .col-md-6.text-start(data-animate="animate__slideInLeft")
                         h4.fw-bold.mb-3 外注のライターさんがいるけど、記事の質の割に高額
                         p.text-muted.fs-6 外注ライターのコストが高いと感じていませんか？RAKUBUNなら、高品質な記事を自動で生成し、コストを大幅に削減できます。
                     .col-md-6
-                        img(src="/img/feature-3.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
+                        img(src="/img/feature-3.png" style="width:200px;" data-animate="animate__fadeIn")
 
                 hr.my-5
 
@@ -144,21 +149,21 @@ block content
                         h4.fw-bold.mb-3 特定のキーワードを狙った記事を数日で作成できる
                         p.text-muted.fs-6 RAKUBUNを使えば、ターゲットキーワードに基づいた高品質な記事を数日で自動生成。手間なくコンテンツを量産し、効率的にSEO対策を行えます。
                     .col-md-6
-                        img(src="/img/feature-4.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
+                        img(src="/img/feature-4.png" style="width:200px;" data-animate="animate__fadeIn")
 
                 .row.align-items-center.mb-5
                     .col-md-6.text-start.order-md-2(data-animate="animate__slideInRight")
                         h4.fw-bold.mb-3 ボリュームのあるブログを作って、売れる
                         p.text-muted.fs-6 大量のコンテンツを素早く作成できるRAKUBUNで、ボリュームのあるブログを構築。質の高い記事でユーザーの信頼を得て、収益化を実現します。
                     .col-md-6.order-md-1
-                        img(src="/img/feature-5.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
+                        img(src="/img/feature-5.png" style="width:200px;" data-animate="animate__fadeIn")
 
                 .row.align-items-center.mb-5
                     .col-md-6.text-start(data-animate="animate__slideInLeft")
                         h4.fw-bold.mb-3 すぐにPVが上がってきて、安定したアフィリエイト報酬が手に入る
                         p.text-muted.fs-6 RAKUBUNの自動投稿機能とSEO対策により、短期間でページビュー（PV）が増加。安定したアフィリエイト報酬を確保するための強力なサポートを提供します。
                     .col-md-6
-                        img(src="/img/feature-6.png" style="width:200px;" data-animate="animate__fadeIn" data-delay="animate__delay-1s")
+                        img(src="/img/feature-6.png" style="width:200px;" data-animate="animate__fadeIn")
 
 
                 hr.my-5
@@ -167,7 +172,7 @@ block content
                 .row 
                     .col-12.col-sm-6
                         .mb-4
-                            .card.border-0.shadow-0.p-0(data-animate="animate__zoomIn")
+                            .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
                                 .card-body.p-0
                                     ul.list-group.text-start
                                         li.list-group-item.bg-dark.text-white
@@ -191,7 +196,7 @@ block content
 
                     .col-12.col-sm-6
                         .mb-4
-                            .card.border-0.shadow-0.p-0(data-animate="animate__zoomIn")
+                            .card.border-0.shadow-0.p-0(data-animate="animate__fadeIn")
                                 .card-body.p-0
                                     ul.list-group.text-start
                                         li.list-group-item.bg-dark.text-white

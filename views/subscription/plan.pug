@@ -174,7 +174,7 @@ style.
 
         div#accordionExample.accordion.mt-3
             each item, index in faq
-                div.card.shadow-0.border.mb-2
+                div.card.shadow-0.border.mb-2(data-animate="animate__slideInLeft")
                     div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
                         h6.mb-0.small
                             i(class="fas fa-question-circle me-2")
