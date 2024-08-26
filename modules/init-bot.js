@@ -99,8 +99,6 @@ async function autoBlog(blogInfo,db){
   // Content
   const promptDataContent = contentPromptGen(fetchTitle, blogInfo);
   let promise_content = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 1000})
-
-
   
   // Post
     try {
@@ -112,7 +110,7 @@ async function autoBlog(blogInfo,db){
         console.log(error);
         console.log(`Error Saving Article`);
       }
-  
+      content = markdownToHtml(content)
       await post(fetchTitle, content, categories, tags, image, blogInfo.postStatus, client);
   
       console.log('All tasks completed successfully');
@@ -138,7 +136,15 @@ function contentPromptGenForSearch(search_results, blogInfo){
 }
 function contentPromptGen(fetchTitle,blogInfo){
   //return `Write 5 paragraphs related to "${fetchTitle}", a paragraph contain a title and a description about the subject and a link to a REAL up and running ${blogInfo.postLanguage}  website  about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The titles you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
-  return  `Write a detailed blog post about "${fetchTitle}".The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}.Craft a well structured content. Style: ${blogInfo.writingStyle}, Tone: ${blogInfo.writingTone}. Focus on one topic. Only one topic and detail it. Use Markdown for formatting.`;
+  return  `Write a detailed blog post about "${fetchTitle}".
+  The main keyword/theme is : ${blogInfo.botDescription}.
+  Target audience is : ${blogInfo.targetAudience}.
+  Category :  ${blogInfo.articleCategories}. 
+  Language : ${blogInfo.postLanguage}.
+  Style: ${blogInfo.writingStyle}, 
+  Tone: ${blogInfo.writingTone}. 
+  Craft a well structured content. Focus on one topic. 
+  Only one topic and detail it. Use Markdown for formatting.`;
 }
 function titlePromptGen(blogInfo) {
   return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. The title you provide must engage a broad audience by combining high-profile personnality and famous keywords in the audience country. Respond with the title string only.`;

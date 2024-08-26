@@ -164,26 +164,26 @@ style.
                         if user
                             button.w-100.btn.btn-lg.b-custom-gradient.text-white.fw-bold(onclick="createCheckoutSession(this)" data-cycle="yearly" data-price-yearly=premiumYearly data-price-monthly=premiumMonthly type="button") アップグレード
                          
-                            
-    .card.shadow-0.border
-        .card-body(class= !user ? 'bg-light' : 'bg-white')
-            .my-2
-                p.me-2.tag.border.border-dark.px-3.py-2.rounded.w-auto.d-inline-block
-                    | 提供元:
-                    span.fw-bold stripe
-                h5.fw-bold  RAKUBUNは「Stripe」を利用して決済処理を行っています。
-                p.text-sm.f-muted 「Stripe」は業界団体の定める厳格な基準に準拠しており、各国規制当局によるライセンス
+    section.px-4
+        .card.shadow-0.border
+            .card-body.bg-light
+                .my-2
+                    p.me-2.tag.border.border-dark.px-3.py-2.rounded.w-auto.d-inline-block.small
+                        | 提供元:
+                        img(src="/img/stripe-logo.png" alt="Stripe" style="width: 60px;")
+                    h5.fw-bold  RAKUBUNは「Stripe」を利用して決済処理を行っています。
+                    p.text-sm.f-muted 「Stripe」は業界団体の定める厳格な基準に準拠しており、各国規制当局によるライセンス
 
-    div#accordionExample.accordion.mt-3
-        each item, index in faq
-            div.card.shadow-0.border
-                div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
-                    h6.mb-0
-                        button.btn.btn-link
-                        | #{item.question}
-                div(class='collapse' id=`collapse${index}` aria-labelledby=`heading${index}` data-bs-parent='#accordionExample')
-                    div.card-body
-                        | #{item.answer}
+        div#accordionExample.accordion.mt-3
+            each item, index in faq
+                div.card.shadow-0.border.mb-2
+                    div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
+                        h6.mb-0.small
+                            i(class="fas fa-question-circle me-2")
+                            | #{item.question}
+                    div(class='collapse' id=`collapse${index}` aria-labelledby=`heading${index}` data-bs-parent='#accordionExample')
+                        div.card-body.small
+                            | #{item.answer}
 
     script.
         $('#plan-switch').on('change', function() {

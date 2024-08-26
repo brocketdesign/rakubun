@@ -44,10 +44,10 @@ block mainContent
                 #botContainer
     #hiddenFormContainer(style="display:none;")
         form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
-            .row.row-cols-1
+            .row.row-cols-1.m-0
                 .col
                     input.blogId(type="hidden", name="blogId")
-                    .card.border.shadow-0.rounded-0.my-2
+                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
@@ -64,7 +64,7 @@ block mainContent
                                                 i.fas.fa-external-link-alt
                                     div.invalid-feedback ブログURLは必須です。
 
-                    .card.border.shadow-0.rounded-0.my-2
+                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
@@ -75,9 +75,9 @@ block mainContent
                                     input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
     #hiddenBotFormContainer(style="display:none;")
         form#botForm(method="post", action="/submit-bot-info" class="needs-validation" novalidate)
-            .row.row-cols-1
+            .row.row-cols-1.m-0
                 .col
-                    .card.border.shadow-0.rounded-0.my-2
+                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
                                 div.form-group.col-12.col-sm-6
@@ -104,45 +104,28 @@ block mainContent
                                     select#postStatus(name="postStatus" class="form-select")
                                         option(value="publish") 公開
                                         option(value="draft") 下書き
-
                                 div.form-group.col-12.col-sm-6
                                     label.text-muted.text-start(for="writingStyle", class="form-label") 好みの執筆スタイル：
                                     select#writingStyle(name="writingStyle" class="form-select")
-                                        option(value="Descriptive", selected) 記述的
-                                        option(value="Informative") 情報的
+                                        option(value="Descriptive") 記述的
+                                        option(value="Informative", selected) 情報的
                                         option(value="Creative") 創造的
-                                        option(value="Narrative") 物語性
-                                        option(value="Persuasive") 説得力のある
-                                        option(value="Reflective") 内省的
-                                        option(value="Argumentative") 議論的
                                         option(value="Analytical") 分析的
                                         option(value="Technical") 技術的
-                                        option(value="Journalistic") ジャーナリスティック
-                                        option(value="Neutral", selected) 中立的
 
                                 div.form-group.col-12.col-sm-6
                                     label.text-muted.text-start(for="writingTone", class="form-label") 好みの執筆トーン：
                                     select#writingTone(name="writingTone" class="form-select")
-                                        option(value="Formal") フォーマル
+                                        option(value="Formal", selected) フォーマル
                                         option(value="Assertive") 断定的
-                                        option(value="Cheerful") 快活な
                                         option(value="Humorous") ユーモラス
-                                        option(value="Informal") カジュアル
-                                        option(value="Inspirational") インスピレーション
                                         option(value="Professional") プロフェッショナル
-                                        option(value="Coincidental") 偶然の
                                         option(value="Emotional") 感情的な
-                                        option(value="Persuasive") 説得力のある
-                                        option(value="Supportive") 支援的な
-                                        option(value="Sarcastic") 皮肉な
-                                        option(value="Condescending") 遠慮なく
-                                        option(value="Skeptical") 懐疑的な
-                                        option(value="Narrative") 物語的な
-                                        option(value="Journalistic") ジャーナリスティック
+
                 .col
                     input.blogId(type="hidden", name="blogId")
                     input#botId(type="hidden", name="botId")
-                    .card.border.shadow-0.rounded-0.my-2
+                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
                                 div.form-group
@@ -227,7 +210,7 @@ block mainContent
                                         option(value="Travel Enthusiasts") 旅行愛好家
                                         option(value="Fashion Enthusiasts") ファッション愛好家
 
-                    .card.border.shadow-0.rounded-0.my-2
+                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
                                 div.form-group
@@ -244,9 +227,16 @@ block mainContent
 
 
     style.
+        .b-custom-gradient {
+            background: linear-gradient(90.9deg, #4facfe 2.74%, #00f2fe 102.92%);
+        }
         label {
             font-size: 12px;
             width: 100%;
+        }
+        label.text-muted {
+            font-size: 11px;
+            font-weight: 700;
         }
         .card-body {
             padding-top: 5px;
@@ -255,7 +245,41 @@ block mainContent
         .m-vh-100{
             height: calc(var(--vh, 1vh) * 100 - 75px);
         }
+        .custom-editor {
+            width: 90%;
+        }
+        select.form-select {
+            appearance: none;
+            width: 100%;
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            background-image: url('data:image/svg+xml;base64,...'); /* Custom dropdown arrow */
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 14px;
+            font-size: 16px;
+            color: #333;
+            transition: border-color 0.3s ease;
+        }
+
+        select.form-select:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+            outline: none;
+        }
+
+        @media (max-width: 768px) {
+            .custom-editor {
+                width: 100%;
+            }
+        }
+
     script.
+        const user = !{JSON.stringify(user)};
+        const blogData = !{JSON.stringify(blogData)}
+        let botDataLength = 0
         $(document).on('click','.delete-bot-btn', function() {
             var botId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
 
@@ -346,16 +370,18 @@ block mainContent
                 data: { blogId: blogId },
                 dataType: 'json',
                 success: function(response) {
+                    botDataLength = 0
                     if (response.success) {
                         let botsHtml = '';
                         if (response.botData.length == 0) {
                             $('#botContainer').html(`<p class="alert-info mt-2 px-2 py-3 rounded text-center" style="font-size: 12px;">データがありません</p>`);
                             return;
                         }
+                        botDataLength = response.botData.length
                         response.botData.forEach(function(bot) {
                             botsHtml += `
                                 <div class="col my-2">
-                                    <div class="card bg-light shadow-0 border" data-id="${bot._id}">
+                                    <div type="button" class="card bg-white shadow-0 border border-secondary" data-id="${bot._id}">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between mb-1">
                                                 <div>
@@ -372,7 +398,7 @@ block mainContent
                                                 </div>
                                             </div>
                                             <p class="card-text" style="font-size: 12px;">${bot.botDescription ? bot.botDescription.substring(0, 50) : ''}...</p>
-                                            <a href="#" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
+                                            <a href="#" type="button" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
                                             </a>                                            
                                             <button class="toggle-bot-btn btn btn-success btn-sm shadow-0 mx-2 toggleBotStatusBtn ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on"></i></button>
@@ -446,7 +472,6 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    width: '100%',
                     animation:false,
                     showCancelButton: false,
                     showCloseButton: true,
@@ -454,7 +479,8 @@ block mainContent
                     focusConfirm: false,
                     customClass: {
                         title: 'fs-6',
-                        htmlContainer:'px-0'
+                        htmlContainer:'px-0',
+                        popup: 'custom-editor bg-light'
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -482,6 +508,10 @@ block mainContent
             }
 
             $('#addBlogBtn').on('click', function() {
+                if(blogData.length > 0 && !user.subscriptionStatus){
+                    displayUpgradePopup(1)
+                    return
+                }
                 const formHtml = $('#hiddenFormContainer').html();
                 showBlogForm('新しいブログを追加', formHtml);
             });
@@ -525,7 +555,6 @@ block mainContent
                 Swal.fire({
                     title: title,
                     html: $form,
-                    width: '100%',
                     animation:false,
                     showCancelButton: false,
                     showCloseButton: true,
@@ -533,7 +562,8 @@ block mainContent
                     focusConfirm: false,
                     customClass: {
                         title: 'fs-6',
-                        htmlContainer:'px-0'
+                        htmlContainer:'px-0',
+                        popup: 'custom-editor bg-light'
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -563,6 +593,10 @@ block mainContent
                 });
             }
             $('#addBotBtn').on('click', function() {
+                if(botDataLength >= 2 && !user.subscriptionStatus){
+                    displayUpgradePopup(2)
+                    return
+                }
                 const formHtml = $('#hiddenBotFormContainer').html();
                 showBotForm('新しいボットを追加', formHtml);
             });
@@ -640,3 +674,62 @@ block mainContent
                 console.error('Error:', error);
             });
         }
+        function getUserInfo(callback){
+                $.ajax({
+                    type: 'GET',
+                    url: '/user/user-info',
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (typeof callback === 'function') {
+                            callback(response);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error:', error);
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
+                    }
+                });
+
+        }
+        function displayUpgradePopup(messageCode) {
+            let message;
+
+            switch(messageCode) {
+                case 1:
+                    message = "新しいブログを追加するには、プレミアムプランにアップグレードする必要があります。";
+                    break;
+                case 2:
+                    message = "新しい機能を利用するには、プレミアムプランへのアップグレードが必要です。";
+                    break;
+                default:
+                    message = "アップグレードが必要です。";
+                    break;
+            }
+
+            Swal.fire({
+                html: `
+                    <h3>アップグレードが必要です</h3>
+                    <p class="text-muted small">${message}</p>
+                    <div class="container">
+                        <ul class="list-group small text-start">
+                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>ChatGPT-4oおよびChatGPT-4o-miniを利用可能</li>
+                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>利用制限: 無制限</li>
+                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>複数ブログの追加が可能</li>
+                            <li class="list-group-item" style="font-size:12px;"><i class="fa fa-check text-primary me-3"></i>各ブログに複数ボットを作成可能</li>
+                        </ul>
+                    </div>
+                `,
+                showConfirmButton: false,
+                position: 'bottom-center',
+                showClass: {
+                    popup: 'animate__animated animate__slideInUp'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__slideOutDown'
+                },
+                footer: '<a href="/payment/subscription" class="btn b-custom-gradient text-white">プレミアムプランにアップグレード</a>'
+            });
+        }
+

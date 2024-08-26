@@ -1105,7 +1105,7 @@ const handleEvents = () => {
         $(this).tooltip('hide');
     });
 
-      
+    /*
     // Initialize the showdown converter
     const converter = new showdown.Converter();
 
@@ -1117,6 +1117,7 @@ const handleEvents = () => {
         // Replace the content of the element with the converted HTML
         $(this).html(htmlContent);
     });
+    */
 }
 const headlines = [
     "AIがブログ記事をサクッとお届け！",

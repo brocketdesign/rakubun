@@ -282,9 +282,21 @@ router.post('/login', async (req, res, next) => {
         }
       });
     });
-    
   });
-  
+  router.get('/user-info', (req, res) => {
+    try{
+      let user = req.user;
+      global.db.collection('users').findOne({ _id: new ObjectId(user._id) }).then((user)=>{
+        res.status(200).json({ user :{
+          _id : user._id,
+          subscriptionStatus: user.subscriptionStatus,
+        }});
+      });
+    }catch(e){
+      console.log(e)
+      res.status(500).json({ message: 'An error occurred while retrieving user info' });
+    }
+  });
 
 router.post('/isOldPasswordCorrect', (req, res) => {
   const { oldPassword } = req.body;

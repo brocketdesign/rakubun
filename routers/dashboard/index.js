@@ -59,9 +59,15 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       botData = await global.db.collection('botInfos').findOne({ _id: botId });
       postData = await global.db.collection('articles').find({ botId }).toArray();
     }
-
+    const user = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+    const sanitizedUser = {
+      _id: user._id,
+      subscriptionStatus: user.subscriptionStatus,
+      profileImage: user.profileImage
+    };
+        
     res.render('dashboard/app/autoblog/list', {
-      user: req.user,
+      user: sanitizedUser,
       blogData,
       botData,
       postData,

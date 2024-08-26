@@ -4,22 +4,22 @@
       li#sidebarMenuToggle.list-group-item.list-group-item-action.p-3.ripple.toggler.align-items-center.d-none(type="button", onclick='toggleSidebar()')
         i.fas.fa-bars
         .hide-text.mx-2
-          | RAKUBUN
-      li.list-group-item.list-group-item-action.p-3.text-primary(data-bs-toggle="tooltip" title="Setting", onclick="window.location.href='/user/setting'")
+          | 楽文
+      li.list-group-item.list-group-item-action.p-3.text-primary(data-bs-toggle="tooltip" title="設定", onclick="window.location.href='/user/setting'")
         if user
           i.fas.fa-user-circle
-          span.hide-text.ms-3 Account
-      li.list-group-item.list-group-item-action.p-3.ripple.text-primary(data-bs-toggle="tooltip" title="Upgrade", onclick="window.location.href='/payment/subscription'")
+          span.hide-text.ms-3 アカウント
+      li.list-group-item.list-group-item-action.p-3.ripple.text-primary(data-bs-toggle="tooltip" title="アップグレード", onclick="window.location.href='/payment/subscription'")
         i.fas.fa-arrow-up
-        span.hide-text.ms-3=user && user.subscriptionId?"Subscription":"Upgrade"
-      li.list-group-item.list-group-item-action.p-3.ripple.text-primary(data-bs-toggle="tooltip" title="Contact Us", onclick="window.location.href='/contact'")
+        span.hide-text.ms-3=user && user.subscriptionId?"サブスクリプション":"アップグレード"
+      li.list-group-item.list-group-item-action.p-3.ripple.text-primary(data-bs-toggle="tooltip" title="お問い合わせ", onclick="window.location.href='/contact'")
         i.fas.fa-question
-        span.hide-text.ms-3 Contact Us
-      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="Logout", onclick="logout()")
+        span.hide-text.ms-3 お問い合わせ
+      li.list-group-item.list-group-item-action.p-3(data-bs-toggle="tooltip" title="ログアウト", onclick="logout()")
         if user
           i.fas.fa-sign-out-alt.text-danger
-          span.hide-text.ms-3.text-danger Logout
+          span.hide-text.ms-3.text-danger ログアウト
         else
           a(href='/user/login') 
             i.fas.fa-sign-in-alt.text-primary
-            span.hide-text.ms-3.text-primary Login
+            span.hide-text.ms-3.text-primary ログイン
