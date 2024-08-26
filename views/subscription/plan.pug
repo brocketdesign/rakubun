@@ -93,10 +93,6 @@ style.
         color: #fff;
     }   
 .row.justify-content-center.my-3
-    .text-center
-        h2 メンバーシップ
-        p プランをアップグレード ✨
-    .tab-content.my-5
     .div.switch-container.text-center.my-3
         .switch-button-container
             label.switch
@@ -104,6 +100,8 @@ style.
                 span.slider.round
                 span.label.monthly 月額
                 span.label.yearly(select) 年額
+        .text-center.badge.badge-info.mb-3
+            | 年額プランは12,000円お得です。
         .row.row-cols-1.row-cols-md-3.mb-3.text-center.m-auto.justify-content-center
             .col.d-none
                 .card.mb-4.rounded-3.shadow-sm.border
@@ -135,7 +133,7 @@ style.
                         a.btn.w-100.btn.btn-lg.btn-light.border.border-primary.text-primary(href="/dashboard" type="button") 今すぐ利用する
             .col
                 .card.mb-4.rounded-3.shadow-sm.border-primary.yearly
-                    .card-header.py-3.text-white.bg-primary.border-primary
+                    .card-header.py-3.text-white.b-custom-gradient
                         h4.my-0.fw-bold プレミアムプラン
                         h6.mt-1.fw-normal Rakubun: 高機能ボットで複数ブログの管理を可能に。
                     .card-body
