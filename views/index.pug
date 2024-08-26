@@ -29,6 +29,12 @@ block content
         .hidden {
             opacity: 0;
         }
+        .b-custom-gradient-text {
+            background: linear-gradient(90.9deg, #4facfe 2.74%, #00f2fe 102.92%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
     //- ログインポップアップ
     #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
         .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
@@ -69,8 +75,7 @@ block content
             div.container.row.align-items-center.h-100.m-auto
                 div.col-12.col-md-6.py-5.text-dark(data-animate="animate__slideInLeft")
                     h1.mb-3.fw-bold.text-dark.text-center#headline-container
-                        span RAKUBUN
-                        span(style="opacity: 0.8;") 、
+                        span.b-custom-gradient-text RAKUBUN
                         p.generate-text#headline
                     .text-center
                         | 全自動でSEOランクも維持、記事作成に時間は不要です。
