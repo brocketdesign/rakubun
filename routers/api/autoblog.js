@@ -133,20 +133,20 @@ router.delete('/blog/:blogId', async (req, res) => {
   const { blogId } = req.params;
 
   try {
-    // Optional: Check if the blog info belongs to the user before deletion
     const deletionResult = await global.db.collection('blogInfos')
                                   .deleteOne({_id: new ObjectId(blogId), userId: new ObjectId(req.user._id)});
     
     if (deletionResult.deletedCount === 0) {
-      return res.status(404).json({ message: 'Blog information not found or access denied.' });
+      return res.status(404).json({ message: 'ブログ情報が見つからないか、アクセスが拒否されました。' });
     }
 
-    res.json({ message: 'Blog information deleted successfully' });
+    res.json({ message: 'ブログ情報が正常に削除されました。' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: '内部サーバーエラー' });
   }
 });
+
 router.post('/duplicate-blog/:blogId', async (req, res) => {
   const { blogId } = req.params;
   try {
