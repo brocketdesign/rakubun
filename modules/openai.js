@@ -89,7 +89,9 @@ const moduleCompletion = async (promptData, PossibleAnswersExtraction = null) =>
     try {
       const modelGPT = promptData.model;
       const messages = [
-        { role: "system", content: "You are a proficient blog writer." },
+        { 
+          role: "system", 
+          content: "You are a proficient blog writer. Provide concise, simply written content. Do not include subchapters, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."        },
         { role: "user", content: promptData.prompt },
       ];
 
