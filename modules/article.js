@@ -10,7 +10,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
 
     const getHeadlines = async () => {
         const prompt = `
-            Return 3 sub chapters: 
+            Return 3 sub chapters to structure the article: 
             # 記事タイトル${fetchTitle}
             # メインテーマ${blogInfo.botDescription}
         `;
@@ -26,7 +26,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
     };
 
     const headlines = await getHeadlines();
-
+    
     const introPrompt = generatePrompt(`次の見出しに基づいて、ブログ記事のイントロを生成してください: ${headlines.join(", ")}`);
     const introduction = await generateContent(introPrompt,600);
 
