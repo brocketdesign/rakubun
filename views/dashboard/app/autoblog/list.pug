@@ -4,7 +4,7 @@ block mainContent
     .container-fluid.px-0
         .row
             // Sidebar for blogs
-            .col-md-3.position-fixed.sidebar.d-flex.flex-column.px-0.m-vh-100
+            .col-md-3.col-lg-2.position-fixed.sidebar.d-flex.flex-column.px-0.m-vh-100
                 button#addBlogBtn.btn.btn-lg.btn-primary.shadow-0.btn-block.my-2.mx-auto.w-100
                     i(class="fas fa-plus me-2")
                     | 新しいブログを追加
@@ -12,7 +12,7 @@ block mainContent
 
 
             // Main content area
-            #bots-container.col-md-9.offset-md-3.position-fixed.d-none.d-sm-inline.bg-white.m-vh-100(style="overflow-y: scroll;")
+            #bots-container.col-md-9.col-lg-10.offset-md-3.position-fixed.d-none.d-sm-inline.bg-white.m-vh-100(style="overflow-y: scroll;")
                 .toolbar.btn-toolbar.py-2.sticky-top.bg-white
                     .toolbar-body.d-flex.justify-content-between.w-100.align-items-center
                         button#close-bots-container.btn.btn-light.d-inline.d-sm-none
