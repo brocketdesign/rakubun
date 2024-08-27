@@ -64,7 +64,7 @@ async function autoBlog(blogInfo,db){
     const promptDataImage = imagePromptGen(fetchTitle);
     let promise_image = moduleCompletion({ model: modelGPT, prompt: promptDataImage, max_tokens: 400 })
       .then(fetchPromptImage => {
-        return txt2imgOpenAI({ prompt: fetchPromptImage, negativePrompt: '', blogId: blogInfo.blogId });
+        return txt2img({ prompt: fetchPromptImage, negativePrompt: '', blogId: blogInfo.blogId });
       })
       .then(async imageData => {
         if (imageData.imageBuffer) {

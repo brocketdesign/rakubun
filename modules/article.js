@@ -42,7 +42,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
     const conclusionPrompt = generatePrompt(`次の内容に基づいて、ブログ記事の結論を生成してください: ${articleContent}`);
     const conclusion = await generateContent(conclusionPrompt);
 
-    return `${introduction}\n\n${articleContent}\n\n${conclusion}`.trim();
+    return `${articleContent}\n\n${conclusion}`.trim();
 };
 
 module.exports = { generateCompleteArticle };
