@@ -42,7 +42,6 @@ async function autoBlog(blogInfo,db){
   const promptDataTitle = titlePromptGen(blogInfo)
   const untreatedTitle = await moduleCompletion({model:modelGPT,prompt:promptDataTitle,max_tokens:100});
   const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
-  console.log(`Generated title : ${fetchTitle}`)
     
   // Tags
   const PossibleAnswersExtraction = z.object({
@@ -52,7 +51,6 @@ async function autoBlog(blogInfo,db){
   let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600},PossibleAnswersExtraction)
     .then(parsedTags =>{
       if (parsedTags !== null) {
-        console.log("Behold, your tags:", parsedTags.toString());
         //parsedTags.push('RAKUBUN')
         return addTaxonomy(parsedTags,'post_tag',client,language)
       }else{
@@ -359,7 +357,6 @@ async function addTaxonomy(taxonomyArray,type,client,language){
       const checkTag = await categoryExists(tag,type,client);
       
       if(!checkTag){
-        console.log(`Creating new taxonomy (${type}) : ${tag}`)
         const catObj = await createTaxonomy(tag,type,language,client)
         result.push(catObj)
       }else{

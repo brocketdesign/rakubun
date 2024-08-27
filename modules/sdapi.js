@@ -23,7 +23,7 @@ const path = require('path');
         guidance_scale: 7.5,
         sampler_name: "DPM++ 2S a Karras",
       }
-      console.log(image_request)
+      //console.log(image_request)
       const response = await axios.post('https://api.novita.ai/v3/async/txt2img', {
         extra: {
           response_image_type: 'jpeg',
