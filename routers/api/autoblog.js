@@ -3,10 +3,31 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { ObjectId } = require('mongodb');
-const { getCategoryId } = require('../../modules/post')
+const { getCategoryId, checkLoginInfo } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
-
 var wordpress = require("wordpress");
+
+router.get('/user-blogs', async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Fetch the user's blog data, sorted by the most recent
+    const blogData = await global.db.collection('blogInfos')
+      .find({ userId: new ObjectId(userId) })
+      .sort({ _id: -1 })
+      .toArray();
+    for (let i = 0; i < blogData.length; i++) {
+      const botCount = await global.db.collection('botInfos')
+        .countDocuments({ blogId: (blogData[i]._id.toString()) });
+      blogData[i].botCount = botCount;
+    }
+    // Return the blog data to the client
+    res.status(200).send(blogData);
+  } catch (error) {
+    console.error('Error fetching user blogs:', error);
+    res.status(500).send('Internal server error');
+  }
+});
 
 router.get('/info/category/:blogId', async (req, res) => {
   const { blogId } = req.params;
@@ -56,13 +77,19 @@ router.get('/blog-info/:blogId', async (req, res) => {
 });
 
 router.post('/blog-info', async (req, res) => {
-
   try {
-  const userId = req.user._id;
-  const blogData = req.body;
-    if(blogData.additionalUrls){
+    const userId = req.user._id;
+    const blogData = req.body;
+    
+    const loginResult = await checkLoginInfo(blogData);
+    if (!loginResult.success) {
+      return res.status(401).send({ message: 'Login failed', error: loginResult.error });
+    }
+
+    if (blogData.additionalUrls) {
       blogData.additionalUrls = blogData.additionalUrls.filter(url => url !== "");
     }
+
     const blogId = await saveBlogInfo(userId, blogData);
     res.status(201).send({ message: 'Blog info saved successfully', blogId });
   } catch (error) {
@@ -70,6 +97,7 @@ router.post('/blog-info', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
 
 router.delete('/blog/:blogId', async (req, res) => {
   const { blogId } = req.params;
@@ -181,7 +209,6 @@ router.post('/bot-info', async (req, res) => {
   try {
     const botId = await saveBotInfo(userId, botData);
     const botInfo = await db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
-
     await setCronJobForUser(db, botId, botInfo.postFrequency)
     res.status(201).send({ message: 'Bot info saved successfully', botId });
   } catch (error) {
@@ -189,6 +216,7 @@ router.post('/bot-info', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
 router.delete('/bot/:botId', async (req, res) => {
   const { botId } = req.params;
 

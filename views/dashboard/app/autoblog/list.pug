@@ -9,26 +9,6 @@ block mainContent
                     i(class="fas fa-plus me-2")
                     | 新しいブログを追加
                 ul#blogList.list-group.list-group-flush.mt-1.px-1(style="flex-grow: 1;overflow-y:scroll")
-                    each blog in blogData
-                        li.list-group-item-action.list-group-item.rounded.border.mb-1(data-id=blog._id)
-                            .d-flex.justify-content-between.align-items-center
-                                div
-                                    button.badge.badge-light.border.btn-sm.shadow-0.me-2.editBlogBtn(
-                                        type="button", 
-                                        data-id=blog._id, 
-                                        title="編集"
-                                    )
-                                        i.fas.fa-edit
-                                    button.badge.badge-primary.border.btn-sm.shadow-0.me-2(
-                                        type="button", 
-                                        onclick=`window.open('${blog.blogUrl}', '_blank')` 
-                                        title="URL"
-                                    )
-                                        i.fas.fa-link
-                                    p.m-1(style="font-size:14px")
-                                        span.badge.me-2(class=blog.botCount === 0 ? 'badge-danger' : 'badge-primary') #{blog.botCount}
-                                        | #{blog.blogName.substring(0, 10)}
-                                i.fas.fa-chevron-right
 
 
             // Main content area
@@ -43,36 +23,38 @@ block mainContent
                                 i(class="fas fa-plus")
                 #botContainer
     #hiddenFormContainer(style="display:none;")
-        form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
-            .row.row-cols-1.m-0
-                .col
-                    input.blogId(type="hidden", name="blogId")
-                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
-                        .card-body.px-1
-                            .row
-                                div.form-group.col-12.col-sm-6
-                                    label.text-muted.text-start(for="blogName", class="form-label") ブログ名:
-                                    input#blogName(type="text", name="blogName", required=true class="form-control")
-                                    div.invalid-feedback ブログ名は必須です。
+        .container
+            form#autoBlogForm(method="post", action="/submit-blog-info" class="needs-validation" novalidate)
+                .row.row-cols-1.m-0
+                    .col
+                        input.blogId(type="hidden", name="blogId")
+                        .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
+                            .card-body.px-1
+                                .row
+                                    div.form-group.col-12.col-sm-6
+                                        label.text-muted.text-start(for="blogName", class="form-label") ブログ名:
+                                        input#blogName(type="text", name="blogName", required=true class="form-control")
+                                        div.invalid-feedback ブログ名は必須です。
 
-                                div.form-group.col-12.col-sm-6
-                                    label.text-muted.text-start(for="blogUrl", class="form-label") ブログURL:
-                                    .input-group
-                                        input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
-                                        span.input-group-text(id="openNewPageIcon" style="display: none;")
-                                            a(href="#" target="_blank")
-                                                i.fas.fa-external-link-alt
-                                    div.invalid-feedback ブログURLは必須です。
+                                    div.form-group.col-12.col-sm-6
+                                        label.text-muted.text-start(for="blogUrl", class="form-label") ブログURL:
+                                        .input-group
+                                            input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
+                                            span.input-group-text(id="openNewPageIcon" style="display: none;")
+                                                a(href="#" target="_blank")
+                                                    i.fas.fa-external-link-alt
+                                        div.invalid-feedback ブログURLは必須です。
 
-                    .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
-                        .card-body.px-1
-                            .row
-                                div.form-group.col-12.col-sm-6
-                                    label.text-muted.text-start(for='blogUsername') ユーザー名
-                                    input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
-                                div.form-group.col-12.col-sm-6
-                                    label.text-muted.text-start(for='blogPassword') パスワード
-                                    input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
+                        .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
+                            .card-body.px-1
+                                .row
+                                    div.form-group.col-12.col-sm-6
+                                        label.text-muted.text-start(for='blogUsername') ユーザー名
+                                        input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
+                                    div.form-group.col-12.col-sm-6
+                                        label.text-muted.text-start(for='blogPassword') パスワード
+                                        input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
+
     #hiddenBotFormContainer(style="display:none;")
         form#botForm(method="post", action="/submit-bot-info" class="needs-validation" novalidate)
             .row.row-cols-1.m-0
@@ -279,6 +261,52 @@ block mainContent
         const user = !{JSON.stringify(user)};
         const blogData = !{JSON.stringify(blogData)}
         let botDataLength = 0
+        function fetchAndRenderBlogs() {
+            $.ajax({
+                url: '/api/autoblog//user-blogs',
+                method: 'GET',
+                success: function(blogData) {
+                    const $blogList = $('#blogList');
+                    $blogList.empty(); // Clear existing list items
+                    
+                    blogData.forEach(function(blog) {
+                        const botBadgeClass = blog.botCount === 0 ? 'badge-danger' : 'badge-primary';
+                        const blogItem = `
+                            <li class="list-group-item-action list-group-item rounded border mb-1" data-id="${blog._id}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <button class="badge badge-light border btn-sm shadow-0 me-2 editBlogBtn" 
+                                                type="button" 
+                                                data-id="${blog._id}" 
+                                                title="編集">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="badge badge-primary border btn-sm shadow-0 me-2" 
+                                                type="button" 
+                                                onclick="window.open('${blog.blogUrl}', '_blank')" 
+                                                title="URL">
+                                            <i class="fas fa-link"></i>
+                                        </button>
+                                        <p class="m-1" style="font-size:14px">
+                                            <span class="badge me-2 ${botBadgeClass}">${blog.botCount}</span>
+                                            ${blog.blogName.substring(0, 10)}
+                                        </p>
+                                    </div>
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </li>
+                        `;
+                        $blogList.append(blogItem);
+                    });
+                },
+                error: function() {
+                    showNotification('ブログデータを取得できませんでした。', 'error');
+                }
+            });
+        }
+
+        fetchAndRenderBlogs();
+
         $(document).on('click','.delete-bot-btn', function(e) {
             e.stopPropagation();
             var botId = $(this).data('id'); // Assuming the button's id attribute contains the blogId
@@ -302,19 +330,11 @@ block mainContent
                         url: '/api/autoblog/bot/' + botId,
                         type: 'DELETE',
                         success: function(response) {
-                            Swal.fire(
-                                '削除されました！',
-                                'ブログ情報が正常に削除されました。',
-                                'success'
-                            );
+                            showNotification('削除されました！', 'success');
                             $(`.card[data-id="${botId}"]`).fadeOut();
                         },
                         error: function(xhr, status, error) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: '削除できませんでした',
-                                text: "ブログ情報の削除に失敗しました: " + error
-                            });
+                            showNotification('削除できませんでした', 'error');
                         }
                     });
                 }
@@ -405,8 +425,8 @@ block mainContent
                                             <a href="#" type="button" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
                                             </a>                                            
-                                            <button class="toggle-bot-btn btn btn-success btn-sm shadow-0 mx-2 toggleBotStatusBtn ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on"></i></button>
-                                            <button class="toggle-bot-btn btn btn-secondary btn-sm shadow-0 mx-2 toggleBotStatusBtn ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off"></i></button>
+                                            <button class="toggle-bot-btn btn btn-primary btn-sm shadow-0 mx-2 toggleBotStatusBtn ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on me-2"></i>ON</button>
+                                            <button class="toggle-bot-btn btn btn-warning btn-sm shadow-0 mx-2 toggleBotStatusBtn ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off me-2"></i>OFF</button>
                                             <button class="btn btn-secondary btn-sm shadow-0 mx-2 startBotBtn" data-id="${bot._id}"><i class="fas fa-play"></i></button>
                                             <a href="/dashboard/app/autoblog?botId=${bot._id}" class="d-none btn btn-secondary btn-sm shadow-0 mx-2"><i class="fa fa-file-alt"></i></a>
                                             <button class="delete-bot-btn btn btn-danger btn-sm shadow-0 float-end mx-2" data-id="${bot._id}"><i class="fas fa-trash-alt"></i></button>
@@ -426,7 +446,7 @@ block mainContent
         }
 
         // Attach loadBots to the blog list items dynamically
-        $('#blogList li').on('click', function() {
+        $(document).on('click','#blogList li', function() {
             const blogId = $(this).data('id');
             $('input.blogId').each(function(){$(this).val(blogId)})
             loadBots(blogId);
@@ -504,10 +524,11 @@ block mainContent
                             url: '/api/autoblog/blog-info',
                             data: result.value,
                             success: () => {
-                                Swal.fire('完了!', '正常に処理されました。', 'success').then(() => location.reload());
+                                showNotification('情報が更新されました。', 'success');
+                                fetchAndRenderBlogs()
                             },
                             error: () => {
-                                Swal.fire('エラー!', 'エラーが発生しました。再試行してください。', 'error');
+                                showNotification('エラーが発生しました。再試行してください。', 'error');
                             }
                         });
                     }
@@ -523,7 +544,7 @@ block mainContent
                 showBlogForm('新しいブログを追加', formHtml);
             });
 
-            $('.editBlogBtn').on('click', function(e) {
+            $(document).on('click','.editBlogBtn', function(e) {
                 e.stopPropagation();
                 const blogId = $(this).data('id');
                 $.get('/api/autoblog/blog-info/' + blogId, (response) => {
@@ -590,13 +611,12 @@ block mainContent
                             url: '/api/autoblog/bot-info',
                             data: result.value,
                             success: () => {
-                                Swal.fire('完了!', '正常に処理されました。', 'success').then(() => {
-                                    const blogId = $('#blogList li.active').data('id');
-                                    loadBots(blogId);
-                                });
+                                showNotification('情報が更新されました。', 'success');
+                                const blogId = $('#blogList li.active').data('id');
+                                loadBots(blogId);
                             },
                             error: () => {
-                                Swal.fire('エラー!', 'エラーが発生しました。再試行してください。', 'error');
+                                showNotification('エラーが発生しました。再試行してください。', 'error');
                             }
                         });
                     }
@@ -667,6 +687,7 @@ block mainContent
 
         });
         function toggleBotStatus(botId, newState) {
+            console.log({newState})
             fetch(`/api/autoblog/bot-info/ `, {
                 method: 'POST',
                 headers: {
@@ -752,4 +773,23 @@ block mainContent
                 footer: '<a href="/payment/subscription" class="btn b-custom-gradient text-white">プレミアムプランにアップグレード</a>'
             });
         }
-
+        function showNotification(message, icon) {
+            Swal.fire({
+                position: 'top-end',
+                icon: icon,
+                title: message,
+                showConfirmButton: false,
+                timer: 3000,
+                toast: true,
+                customClass: {
+                    title: 'swal2-custom-title',
+                    popup: 'swal2-custom-popup'
+                },
+                showClass: {
+                    popup: 'animate__animated animate__slideInRight'
+                },
+                hideClass: {
+                    popup: 'animate__animated animate__slideOutRight'
+                }
+            });
+        }

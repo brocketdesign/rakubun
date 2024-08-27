@@ -1,3 +1,30 @@
+const wordpress = require('wordpress');
+
+async function checkLoginInfo(blogInfo) {
+  blogInfo.username = blogInfo.blogUsername;
+  blogInfo.url = blogInfo.blogUrl;
+  blogInfo.password = blogInfo.blogPassword;
+
+  const client = wordpress.createClient(blogInfo);
+
+  try {
+      const posts = await new Promise((resolve, reject) => {
+          client.getPosts({ number: 1 }, (err, posts) => {
+              if (err) {
+                  return reject(err);
+              }
+              if (!Array.isArray(posts)) {
+                  return reject(new Error('Invalid response: posts is not an array.'));
+              }
+              resolve(posts);
+          });
+      });
+      return { success: true, message: 'Login successful', posts };
+  } catch (error) {
+      return { success: false, message: 'Login failed', error: error.message };
+  }
+}
+
 
 async function getCategoryId(type, client) {
 
@@ -107,4 +134,4 @@ async function post(title, content, categories, tags, image, postStatus, client)
   }
 }
 
-module.exports = { getCategoryId, categoryExists,ensureCategory,getTermDetails, post };
+module.exports = { getCategoryId, categoryExists,ensureCategory,getTermDetails,checkLoginInfo, post };
