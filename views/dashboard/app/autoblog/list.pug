@@ -674,9 +674,9 @@ block mainContent
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error:', error);
+                        console.log('Error:', error);
                         if (typeof callback === 'function') {
-                            callback();
+                            callback({satus:false,error:error});
                         }
                     }
                 });

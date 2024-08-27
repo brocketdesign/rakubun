@@ -110,12 +110,13 @@ async function autoBlog(blogInfo,db){
         console.log(error);
         console.log(`Error Saving Article`);
       }
-      content = markdownToHtml(content)
-      await post(fetchTitle, content, categories, tags, image, blogInfo.postStatus, client);
+      const content_HTML = markdownToHtml(content)
+      await post(fetchTitle, content_HTML, categories, tags, image, blogInfo.postStatus, client);
   
       console.log('All tasks completed successfully');
     } catch (err) {
       console.log(err);
+      return err
     }
 
 }
