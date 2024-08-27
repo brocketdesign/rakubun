@@ -314,7 +314,7 @@ block mainContent
                     $blogList.empty(); // Clear existing list items
                     
                     blogData.forEach(function(blog) {
-                        const botBadgeClass = blog.botCount === 0 ? 'badge-danger' : 'badge-primary';
+                        const botBadgeClass = blog.botCount === 0 ? 'badge-secondary' : 'badge-success';
                         const blogItem = `
                             <li class="list-group-item-action list-group-item rounded border mb-1" data-id="${blog._id}">
                                 <div class="d-flex justify-content-between align-items-center">
