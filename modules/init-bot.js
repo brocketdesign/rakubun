@@ -32,11 +32,18 @@ async function autoBlog(blogInfo,db){
   console.log(`Generating article for: ${blogInfo.botName}`);
 
   // Categories
+  /*
   let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language)
     .then(myCategories => {
       let newCategories = blogInfo.postCategory;
       return updateCategories(myCategories, newCategories, 'category', client);
     });
+  */
+  let promise_categories = Promise.resolve(blogInfo.postCategory)
+  .then(newCategories => {
+    return updateCategories([], newCategories, 'category', client);
+  });
+
 
   // Title
   const promptDataTitle = titlePromptGen(blogInfo)
