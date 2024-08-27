@@ -7,6 +7,7 @@ const { getCategoryId, checkLoginInfo } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
 var wordpress = require("wordpress");
 const { txt2img,txt2imgOpenAI } = require('../../modules/sdapi.js')
+const { fetchFavicon } = require('../../services/tools.js')
 
 router.post('/generate-image', async (req, res) => {
   const { prompt, negativePrompt, aspectRatio, height, width, size, blogId } = req.body;
@@ -118,6 +119,16 @@ router.post('/blog-info', async (req, res) => {
 
     if (blogData.additionalUrls) {
       blogData.additionalUrls = blogData.additionalUrls.filter(url => url !== "");
+    }
+
+    try {
+      const domain = new URL(blogData.blogUrl).hostname;
+      const faviconData = await fetchFavicon(domain);  
+      if (faviconData && faviconData.hasIcon) {
+        blogData.favicon = faviconData.icon;
+      }
+    } catch (faviconError) {
+      console.error('Failed to fetch favicon:', faviconError);
     }
 
     const blogId = await saveBlogInfo(userId, blogData);

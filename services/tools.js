@@ -3,6 +3,7 @@ const { premiumPlan } = require('../modules/products');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const imageSize = require('image-size');
+const { MongoClient, ObjectId } = require('mongodb');
 
 /**
  * Add a user to the freePlan on Stripe.
@@ -151,12 +152,36 @@ async function updateFavicon() {
   }
 }
 
+async function updateAllFavicons(db) {
+  try {
+    const blogs = await db.collection('blogInfos').find().toArray();
+    for (const blog of blogs) {
+      try {
+        const domain = new URL(blog.blogUrl).hostname;
+        console.log(`Fetch favicon for ${domain}`)
+        const faviconData = await fetchFavicon(domain);        
+        if (faviconData && faviconData.hasIcon) {
+          await db.collection('blogInfos').updateOne(
+            { _id: new ObjectId(blog._id) },
+            { $set: { favicon: faviconData.icon } }
+          );
+        }
+      } catch (faviconError) {
+        console.error(`Failed to update favicon for blog ID ${blog._id}:`, faviconError);
+        // Optionally: log this error to a database or logging service
+      }
+    }
+    console.log('All favicons updated successfully.');
+  } catch (error) {
+    console.error('Error updating favicons:', error);
+  }
+}
 
 module.exports = {
   addUsertoFreePlan,
   formatDateToDDMMYYHHMMSS,
   getSearchResult,
   getImageSearchResult,
-  updateFavicon,
+  updateFavicon,updateAllFavicons,
   fetchFavicon
 };

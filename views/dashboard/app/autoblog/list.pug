@@ -5,7 +5,7 @@ block mainContent
         .row
             // Sidebar for blogs
             .col-md-3.position-fixed.sidebar.d-flex.flex-column.px-0.m-vh-100
-                button#addBlogBtn.btn.btn-sm.btn-outline-primary.shadow-0.btn-block.my-2.mx-auto.w-75
+                button#addBlogBtn.btn.btn-lg.btn-primary.shadow-0.btn-block.my-2.mx-auto.w-100
                     i(class="fas fa-plus me-2")
                     | 新しいブログを追加
                 ul#blogList.list-group.list-group-flush.mt-1.px-1(style="flex-grow: 1;overflow-y:scroll")
@@ -336,9 +336,10 @@ block mainContent
                                                 title="URL">
                                             <i class="fas fa-link"></i>
                                         </button>
-                                        <p class="m-1" style="font-size:14px">
-                                            <span class="badge me-2 ${botBadgeClass}">${blog.botCount}</span>
+                                        <p class="mx-1 mt-2 mb-0 d-flex justifi-content-start align-items-center" style="font-size:14px">
+                                            <img src="${blog.favicon}" class="me-2" style="width: 20px;height: auto;">
                                             ${blog.blogName.substring(0, 10)}
+                                            <span class="badge ms-2 ${botBadgeClass}">${blog.botCount}</span>
                                         </p>
                                     </div>
                                     <i class="fas fa-chevron-right"></i>

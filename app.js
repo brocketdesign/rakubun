@@ -10,7 +10,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
 
 const { initializeCronJobs } = require('./modules/cronJobs-bot.js');
-
+const { updateAllFavicons } = require('./services/tools.js')
 const passport = require("passport");
 const passportConfig = require('./middleware/passport')(passport);
 const path = require('path'); // Add path module
