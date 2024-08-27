@@ -33,7 +33,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
     let articleContent = introduction;
     const contentPromises = headlines.map(async (headline) => {
         const contentPrompt = generatePrompt(`現在の記事内容: ${articleContent}\n以下の見出しに基づいて、深く掘り下げたブログ記事の内容を500文字で生成してください。「${headline}」。既に書かれている内容を繰り返さず、新しいコンテンツを生成してください。見出しや結論、サブチャプターは含めないでください。`);
-        const content = await generateContent(contentPrompt);
+        let content = await generateContent(contentPrompt);
         content = content.replace(headline,'')
         articleContent += `\n\n### ${headline}\n\n${content}`;
         return content;
