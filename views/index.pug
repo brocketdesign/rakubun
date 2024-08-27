@@ -39,33 +39,35 @@ block content
     #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
         .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
             .col(style="max-width: 90%;")
-                #login-form.card.shadow.bg-light.border.border-white
+                #login-form.card.shadow.bg-light.border.border-white.text-center
                     .card-body.d-flex.flex-column.justify-content-center(style="min-height: 250px;")
-                        h1.card-title.text-start RAKUBUNへようこそ
-                        span コミュニティに参加して、素晴らしい機能をアンロックしよう！🧙
+                        h1.card-title.text-center 
+                            span.b-custom-gradient-text.fw-bold RAKUBUN
+                            span.small(style="font-size:18px;") へようこそ
+                        span.fw-bold(style="font-size:16px;") リラックスしながら、AIに任せよう！🧘‍♂️
                         .mb-3
                         .verify-email.d-none(style="min-height: 60px;")
                             span メールアドレスを確認してログインしてください
                             a#resend-email(href="#" style="display:block" onclick="resendSigninMail()") メールを再送する
 
-                        form
+                        form.d-none
                             .mb-3
                                 label.d-none(for='email', class='form-label') メールアドレス:
                                 .input-group
                                     input(type='email', name='email', id='email', class='form-control' placeholder="メールアドレスを入力してください")
                                     button.btn.btn-primary.shadow-0.input-group-append(type='submit') 
                                         i.fas.fa-arrow-circle-right
-                        .separator.mb-3
+                        .separator.mb-3.d-none
                             hr
                             span または
                             hr
-                        .container
+                        .container.text-center
                             a(href='/auth/google', class='google-login-button')
-                                img(src='/img/googleauth.png', alt='Googleで続ける')
-
+                                img.me-2(src='/img/googleauth.svg', alt='Googleで続ける')
+                                span で続ける
                         .copyright.mt-3
-                            input.d-none.me-2(type="checkbox")
-                            span 続行することで、当社の利用規約およびプライバシーポリシーに同意するものとします。
+                            hr
+                            span.text-muted.small(style="font-size:12px") 続行することで、当社の利用規約およびプライバシーポリシーに同意するものとします。
 
 
 
@@ -93,37 +95,38 @@ block content
 
     div.pt-2(style="overflow-x:hidden;")
         section
-            .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-file-alt(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h6.fw-bold.mb-0 自動記事投稿
-                        p 記事の作成から投稿まで、すべて自動で対応します。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-key(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h6.fw-bold.mb-0 キーワードに基づく自動投稿
-                        p 特定のキーワードを狙った記事を自動で投稿します。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-tags(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h6.fw-bold.mb-0 タグの自動生成
-                        p 記事に関連するタグも自動で生成し、SEO対策もバッチリ。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-image(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h6.fw-bold.mb-0 アイキャッチ画像の自動生成
-                        p 記事にぴったりのアイキャッチ画像も自動で作成します。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h6.fw-bold.mb-0 SEO最適化
-                        p RAKUBUNは最適化された記事を生成し、検索エンジンでのランキングを向上させます。
-                .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
-                    i.bi.text-muted.flex-shrink-0.me-3.fa.fa-money-bill-wave(style='width: 1.75em; height: 1.75em;')
-                    div
-                        h6.fw-bold.mb-0 ブログで収益を上げる
-                        p 高品質なコンテンツと自動化機能により、ブログで安定した収益を得ることが可能です。
+            .container
+                .row.row-cols-1.row-cols-sm-2.row-cols-md-3.row-cols-lg-3.g-4.pt-5.mb-4
+                    .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
+                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-file-alt(style='width: 1.75em; height: 1.75em;')
+                        div
+                            h6.fw-bold.mb-0 自動記事投稿
+                            p 記事の作成から投稿まで、すべて自動で対応します。
+                    .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
+                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-key(style='width: 1.75em; height: 1.75em;')
+                        div
+                            h6.fw-bold.mb-0 キーワードに基づく自動投稿
+                            p 特定のキーワードを狙った記事を自動で投稿します。
+                    .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
+                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-tags(style='width: 1.75em; height: 1.75em;')
+                        div
+                            h6.fw-bold.mb-0 タグの自動生成
+                            p 記事に関連するタグも自動で生成し、SEO対策もバッチリ。
+                    .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
+                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-image(style='width: 1.75em; height: 1.75em;')
+                        div
+                            h6.fw-bold.mb-0 アイキャッチ画像の自動生成
+                            p 記事にぴったりのアイキャッチ画像も自動で作成します。
+                    .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
+                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-chart-line(style='width: 1.75em; height: 1.75em;')
+                        div
+                            h6.fw-bold.mb-0 SEO最適化
+                            p RAKUBUNは最適化された記事を生成し、検索エンジンでのランキングを向上させます。
+                    .col.d-flex.align-items-start(data-animate="animate__fadeInUp")
+                        i.bi.text-muted.flex-shrink-0.me-3.fa.fa-money-bill-wave(style='width: 1.75em; height: 1.75em;')
+                        div
+                            h6.fw-bold.mb-0 ブログで収益を上げる
+                            p 高品質なコンテンツと自動化機能により、ブログで安定した収益を得ることが可能です。
 
         //- Section: Content
         section.text-center.py-5

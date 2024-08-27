@@ -76,21 +76,21 @@ block mainContent
     #hiddenBotFormContainer(style="display:none;")
         form#botForm(method="post", action="/submit-bot-info" class="needs-validation" novalidate)
             .row.row-cols-1.m-0
-                .col
+                .col-12.col-sm-4
                     .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
-                                div.form-group.col-12.col-sm-6
+                                div.form-group.col-6
                                     label.text-muted.text-start(for="postLanguage", class="form-label") テキストの言語：
                                     select#postLanguage(name="postLanguage" class="form-select")
                                         option(value="japanese") 日本語
                                         option(value="english") 英語
-                                div.form-group.col-12.col-sm-6
+                                div.form-group.col-6
                                     label.text-muted.text-start(for="postgpt", class="form-label") GPT
                                     select#postgpt(name="postgpt" class="form-select")
                                         option(value="gpt4o") GPT-4o
                                         option(value="gpt4o-mini") GPT-4o-mini
-                                div.form-group.col-12.col-sm-6
+                                div.form-group.col-6
                                     label.text-muted.text-start(for="postFrequency", class="form-label") 投稿頻度：
                                     select#postFrequency(name="postFrequency" class="form-select")
                                         option(value="0 0,12 * * *") 1日に2回
@@ -99,12 +99,12 @@ block mainContent
                                         option(value="*/10 * * * *") 10分ごと
                                         option(value="0 0 * * *") 毎日
                                         option(value="0 0 * * 0") 毎週
-                                div.form-group.col-12.col-sm-6
+                                div.form-group.col-6
                                     label.text-muted.text-start(for="postStatus", class="form-label") 投稿頻度：
                                     select#postStatus(name="postStatus" class="form-select")
                                         option(value="publish") 公開
                                         option(value="draft") 下書き
-                                div.form-group.col-12.col-sm-6
+                                div.form-group.col-6
                                     label.text-muted.text-start(for="writingStyle", class="form-label") 好みの執筆スタイル：
                                     select#writingStyle(name="writingStyle" class="form-select")
                                         option(value="Descriptive") 記述的
@@ -112,8 +112,7 @@ block mainContent
                                         option(value="Creative") 創造的
                                         option(value="Analytical") 分析的
                                         option(value="Technical") 技術的
-
-                                div.form-group.col-12.col-sm-6
+                                div.form-group.col-6
                                     label.text-muted.text-start(for="writingTone", class="form-label") 好みの執筆トーン：
                                     select#writingTone(name="writingTone" class="form-select")
                                         option(value="Formal", selected) フォーマル
@@ -122,7 +121,7 @@ block mainContent
                                         option(value="Professional") プロフェッショナル
                                         option(value="Emotional") 感情的な
 
-                .col
+                
                     input.blogId(type="hidden", name="blogId")
                     input#botId(type="hidden", name="botId")
                     .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
@@ -209,7 +208,7 @@ block mainContent
                                         option(value="Food Enthusiasts") 食品愛好家
                                         option(value="Travel Enthusiasts") 旅行愛好家
                                         option(value="Fashion Enthusiasts") ファッション愛好家
-
+                .col-12.col-sm-8
                     .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
@@ -222,7 +221,7 @@ block mainContent
                                     div.invalid-feedback ボット名が必要です。
                                 div.form-group
                                     label.text-muted.text-start(for="botDescription", class="form-label") ボットの説明：
-                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=5)
+                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=7)
                                     div.invalid-feedback ボットの説明が必要です。
 
 
