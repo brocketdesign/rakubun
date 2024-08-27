@@ -28,15 +28,15 @@ block mainContent
                 .row.row-cols-1.m-0
                     .col
                         input.blogId(type="hidden", name="blogId")
-                        .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
-                            .card-body.px-1
+                        .card.border.shadow-0.rounded-0.mt-1.bg-light.border-0
+                            .card-body.px-1.py-0
                                 .row
-                                    div.form-group.col-12.col-sm-6
+                                    div.form-group.col-12
                                         label.text-muted.text-start(for="blogName", class="form-label") ブログ名:
                                         input#blogName(type="text", name="blogName", required=true class="form-control")
                                         div.invalid-feedback ブログ名は必須です。
 
-                                    div.form-group.col-12.col-sm-6
+                                    div.form-group.col-12
                                         label.text-muted.text-start(for="blogUrl", class="form-label") ブログURL:
                                         .input-group
                                             input#blogUrl(type="text", name="blogUrl", required=true class="form-control")
@@ -45,13 +45,13 @@ block mainContent
                                                     i.fas.fa-external-link-alt
                                         div.invalid-feedback ブログURLは必須です。
 
-                        .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
-                            .card-body.px-1
+                        .card.border.shadow-0.rounded-0.bg-light.border-0
+                            .card-body.px-1.py-0
                                 .row
-                                    div.form-group.col-12.col-sm-6
+                                    div.form-group.col-12
                                         label.text-muted.text-start(for='blogUsername') ユーザー名
                                         input#blogUsername.form-control(name="blogUsername", type='text', placeholder='', required)
-                                    div.form-group.col-12.col-sm-6
+                                    div.form-group.col-12
                                         label.text-muted.text-start(for='blogPassword') パスワード
                                         input#blogPassword.form-control(name="blogPassword", type='password', placeholder='', required)
 
