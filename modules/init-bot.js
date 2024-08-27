@@ -10,6 +10,7 @@ const axios = require('axios');
 var wordpress = require("wordpress");
 const fs = require('fs');
 const  {generateCompleteArticle} = require('./article.js')
+const { z } = require("zod");
 require('dotenv').config({ path: './.env' });
 
 async function autoBlog(blogInfo,db){
@@ -44,13 +45,15 @@ async function autoBlog(blogInfo,db){
   console.log(`Generated title : ${fetchTitle}`)
     
   // Tags
+  const PossibleAnswersExtraction = z.object({
+    answers: z.array(z.string()),
+  });
   const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
-  let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600})
-    .then(fetchTag =>{
-      let parsedTags = extractArrayFromString(fetchTag.trim());
+  let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600},PossibleAnswersExtraction)
+    .then(parsedTags =>{
       if (parsedTags !== null) {
         console.log("Behold, your tags:", parsedTags.toString());
-        parsedTags.push('RAKUBUN')
+        //parsedTags.push('RAKUBUN')
         return addTaxonomy(parsedTags,'post_tag',client,language)
       }else{
         return []
@@ -341,7 +344,9 @@ function disclaimer(language) {
 }
 
 function categoryPromptGen(title,type,language){
-  return  `For a blog post titled: '${title}', provide 5 ${type} names. Respond in ${language} only with a json string array only.Only include the json string , with no variable declaration`
+  return  `For a blog post titled: '${title}', provide 5 ${type}. It should increase SEO. Do not provide names or celebrity names. 
+  Respond in ${language} only with a json string array only.
+  Only include the json string , with no variable declaration`
 }
 
 function categoryDescriptionPromptGen(category,type,language){
