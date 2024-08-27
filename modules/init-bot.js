@@ -2,7 +2,7 @@ const { getCategoryId, categoryExists, ensureCategory, getTermDetails, post } = 
 const { generatePrompt } = require('../services/prompt.js')
 const { moduleCompletion, moduleCompletionOllama } = require('./openai.js');
 const { getSearchResult, getImageSearchResult } = require('../services/tools.js')
-const { txt2img } = require('../modules/sdapi.js')
+const { txt2img, txt2imgOpenAI } = require('../modules/sdapi.js')
 const { ObjectId } = require('mongodb');
 const fetch = require('node-fetch');
 const marked = require('marked');
@@ -69,32 +69,62 @@ async function autoBlog(blogInfo,db){
       }
     })
 
-  // Image Generation
-  const promptDataImage = imagePromptGen(fetchTitle)
-  let promise_image = moduleCompletion({model:modelGPT,prompt:promptDataImage,max_tokens:400})
-  .then(fetchPromptImage => {
-    return txt2img({prompt:fetchPromptImage,negativePrompt:'',blogId:blogInfo.blogId});
-  })
-  .then(imageData => { //{ imageID , imageBuffer }
-    return new Promise((resolve, reject) => {
-      client.uploadFile({
-        name: `${imageData.imageID}.png`,
-        type: 'image/png',
-        bits: imageData.imageBuffer,
-      }, (error, file) => {
-        if (error) {
-          console.log('Error when adding the thumbnail');
-          reject(error); // Reject the promise on error
+    // Image Generation
+    const promptDataImage = imagePromptGen(fetchTitle);
+    let promise_image = moduleCompletion({ model: modelGPT, prompt: promptDataImage, max_tokens: 400 })
+      .then(fetchPromptImage => {
+        return txt2imgOpenAI({ prompt: fetchPromptImage, negativePrompt: '', blogId: blogInfo.blogId });
+      })
+      .then(async imageData => {
+        if (imageData.imageBuffer) {
+          // Handle case with image buffer
+          return new Promise((resolve, reject) => {
+            client.uploadFile({
+              name: `${imageData.imageID}.png`,
+              type: 'image/png',
+              bits: imageData.imageBuffer,
+            }, (error, file) => {
+              if (error) {
+                console.log('Error when adding the thumbnail');
+                reject(error); // Reject the promise on error
+              } else {
+                resolve(file); // Resolve the promise with the file on success
+              }
+            });
+          });
+        } else if (imageData.imageUrl) {
+          // Handle case with image URL
+          try {
+            const response = await axios.get(imageData.imageUrl, { responseType: 'arraybuffer' });
+            const imageBuffer = Buffer.from(response.data, 'binary');
+            
+            return new Promise((resolve, reject) => {
+              client.uploadFile({
+                name: `${imageData.imageID}.png`,
+                type: 'image/png',
+                bits: imageBuffer,
+              }, (error, file) => {
+                if (error) {
+                  console.log('Error when adding the thumbnail');
+                  reject(error); // Reject the promise on error
+                } else {
+                  resolve(file); // Resolve the promise with the file on success
+                }
+              });
+            });
+          } catch (error) {
+            console.log('Error when downloading the image from URL');
+            throw error;
+          }
         } else {
-          resolve(file); // Resolve the promise with the file on success
+          throw new Error('No image data available');
         }
+      })
+      .catch(error => {
+        // Handle any errors in the promise chain
+        console.error("Error in image processing:", error);
       });
-    });
-  })  
-  .catch(error => {
-    // Handle any errors in the promise chain
-    console.error("Error in image processing");
-  });
+    
 
   // Content
   const promptDataContent = contentPromptGen(fetchTitle, blogInfo);

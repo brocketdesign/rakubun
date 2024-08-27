@@ -205,7 +205,50 @@ block mainContent
                                     label.text-muted.text-start(for="botDescription", class="form-label") ボットの説明：
                                     textarea#botDescription(name="botDescription", required=true class="form-control", rows=7)
                                     div.invalid-feedback ボットの説明が必要です。
+    #hiddenImageGenFormContainer(style="display:none;")
+        .container
+            .row
+                .col-md-6.col-12
+                    form#imageGenForm(method="post", action="/submit-image-gen" class="needs-validation" novalidate)
+                        .row.row-cols-1.m-0
+                            .col-12
+                                .form-group
+                                    label.text-muted.text-start(for="prompt") プロンプト：
+                                    textarea#prompt.form-control(name="prompt" row="5" required)
+                            .col-12.d-none
+                                .form-group
+                                    label.text-muted.text-start(for="negativePrompt") ネガティブプロンプト：
+                                    input#negativePrompt.form-control(name="negativePrompt")
+                            .col-4.d-none
+                                .form-group
+                                    label.text-muted.text-start(for="aspectRatio") アスペクト比：
+                                    select#aspectRatio.form-select(name="aspectRatio")
+                                        option(value="16:9") 16:9
+                                        option(value="4:3") 4:3
+                                        option(value="1:1") 1:1
+                            .col-4
+                                .form-group
+                                    label.text-muted.text-start(for="size") サイズ：
+                                    select#size.form-select(name="size" required)
+                                        option(value="1024x1024") 1024x1024
+                                        option(value="1024x1792") 1024x1792
+                                        option(value="1792x1024") 1792x1024
 
+                            .col-4.d-none
+                                .form-group
+                                    label.text-muted.text-start(for="width") 幅：
+                                    input#width.form-control(type="number" name="width" value="712" required max="1024")
+                            .col-4.d-none
+                                .form-group
+                                    label.text-muted.text-start(for="height") 高さ：
+                                    input#height.form-control(type="number" name="height" value="512" required max="1024")
+                            .col-12.text-start.mt-3
+                                button.btn.btn-primary#generateImageButton(type="button") 画像を生成する
+                                input.blogId(type="hidden" name="blogId")
+                .col-md-6.col-12.text-center
+                    #imagePlaceholderContainer
+                        p.text-muted.alert-info.text-center.py-2.rounded.d-none(style="font-size:12px;font-weight: 600;") 生成された画像がここに表示されます
+                        img.imagePlaceholder(src="/img/placeholder-image.png" alt="生成された画像がここに表示されます" style="max-width: 100%; height: auto;")
 
     style.
         .b-custom-gradient {
@@ -424,7 +467,10 @@ block mainContent
                                             <p class="card-text" style="font-size: 12px;">${bot.botDescription ? bot.botDescription.substring(0, 50) : ''}...</p>
                                             <a href="#" type="button" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
-                                            </a>                                            
+                                            </a>              
+                                            <button class="btn btn-secondary btn-sm shadow-0 mx-2 imageGenButton" data-id="${bot._id}">
+                                                <i class="fas fa-image"></i>
+                                            </button>                              
                                             <button class="toggle-bot-btn btn btn-primary btn-sm shadow-0 mx-2 toggleBotStatusBtn ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on me-2"></i>ON</button>
                                             <button class="toggle-bot-btn btn btn-warning btn-sm shadow-0 mx-2 toggleBotStatusBtn ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off me-2"></i>OFF</button>
                                             <button class="btn btn-secondary btn-sm shadow-0 mx-2 startBotBtn" data-id="${bot._id}"><i class="fas fa-play"></i></button>
@@ -684,10 +730,91 @@ block mainContent
             $(document).on('click','.toggleBotStatusBtn', function(e) {
                 e.stopPropagation();
             });
+            $(document).on('click', '.imageGenButton', function(e) {
+                e.stopPropagation();
+                const botId = $(this).data('id');
+                const formHtml = $('#hiddenImageGenFormContainer').html();
+                showImageGenForm('画像生成フォーム', formHtml, { blogId: botId });
+            });
+
+            function showImageGenForm(title, formHtml, formData = {}) {
+                const uniqueId = `image-gen-form-${Date.now()}`;
+                const $form = $(formHtml).attr('id', uniqueId); // Assign a unique ID to the form
+
+                if (formData) {
+                    $form.find('.blogId').val(formData.blogId || '');
+                }
+
+                Swal.fire({
+                    title: title,
+                    html: $form,
+                    allowOutsideClick: false,
+                    showCancelButton: false,
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        title: 'fs-6',
+                        htmlContainer: 'px-0',
+                        popup: 'custom-editor bg-light'
+                    },
+                    showClass: {
+                        popup: 'animate__animated animate__fadeIn'
+                    },
+                });
+
+                // Handle image generation click event
+                $(`#${uniqueId} #generateImageButton`).on('click', async function () {
+                    const $button = $(this);
+                    const $imagePlaceholder = $(`#${uniqueId} .imagePlaceholder`);
+
+                    if (!document.querySelector(`#${uniqueId} form`).checkValidity()) {
+                        Swal.showValidationMessage(`フォームを全て入力してください`);
+                        return;
+                    }
+
+                    $button.html('<div class="spinner-border spinner-border-sm me-2" role="status"><span class="visually-hidden">Loading...</span></div> 画像を生成する');
+
+                    $imagePlaceholder.attr('src', '/img/placeholder-image-loading.gif');
+
+                    const options = {
+                        prompt: $(`#${uniqueId} form`).find('#prompt').val(),
+                        negativePrompt: $(`#${uniqueId} form`).find('#negativePrompt').val(),
+                        aspectRatio: $(`#${uniqueId} form`).find('#aspectRatio').val(),
+                        height: parseInt($(`#${uniqueId} form`).find('#height').val(), 10),
+                        width: parseInt($(`#${uniqueId} form`).find('#width').val(), 10),
+                        size: $(`#${uniqueId} form`).find('#size').val(),
+                        blogId: $(`#${uniqueId} form`).find('.blogId').val()
+                    };
+                    
+                    try {
+                        const response = await $.ajax({
+                            url: '/api/autoblog/generate-image',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify(options),
+                            dataType: 'json'
+                        });
+
+                        const { imageID, imageBuffer, imageUrl } = response;
+
+                        if(imageBuffer){
+                            imageUrl = URL.createObjectURL(new Blob([new Uint8Array(imageBuffer)]));
+                        }
+                        $imagePlaceholder.attr('src', imageUrl);
+                    } catch (error) {
+                        console.error('Error generating image:', error);
+                        showNotification('画像の生成中にエラーが発生しました。再試行してください。', 'error');
+                    } finally {
+                        // Remove the spinner and restore the button text
+                        $button.html('画像を生成する');
+                    }
+                });
+            }
 
         });
+
+
         function toggleBotStatus(botId, newState) {
-            console.log({newState})
             fetch(`/api/autoblog/bot-info/ `, {
                 method: 'POST',
                 headers: {

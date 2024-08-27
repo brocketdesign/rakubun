@@ -1,6 +1,8 @@
 const { ObjectId } = require('mongodb');
 const axios = require('axios');
-
+const { OpenAI } = require('openai');
+const fs = require('fs');
+const path = require('path');
 
 
 // NOVITA
@@ -128,7 +130,6 @@ const axios = require('axios');
   async function txt2img(options){
     const { prompt, negativePrompt, aspectRatio, height, width, blogId } = options
     try {
-      const apiKey = process.env.NOVITA_API_KEY;
       
       const taskId = await fetchNovitaMagic({
         prompt,
@@ -138,14 +139,45 @@ const axios = require('axios');
       });
   
       const imageBuffer = await fetchNovitaResult(taskId);
-      const imageID = await saveImageToDB(db, options.blogId, prompt);
+      const imageID = await saveImageToDB(db, blogId, prompt);
       console.log('Image Fetch End')
       return { imageID , imageBuffer };
     } catch (err) {
       console.error(err);
-      reply.status(500).send('Error generating image');
+      return false
     }
   };
 
-module.exports = {txt2img}
+
+
+  const configuration = {
+    apiKey: process.env.OPENAI_API_KEY, 
+  };
+
+  const openai = new OpenAI(configuration);
+
+  async function txt2imgOpenAI(options) {
+    const { prompt, negativePrompt, aspectRatio, height, width, size, blogId } = options;
+    try {
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: prompt,
+        n: 1,
+        size,
+        user: blogId 
+      });
+      
+      const imageUrl = response.data[0].url;
+    
+      const imageID = await saveImageToDB(db, blogId, prompt);
+  
+      console.log('Image Fetch End');
+      return { imageID, imageUrl };
+    } catch (err) {
+      console.error('Error generating image:', err);
+      return false;
+    }
+  }
+  
+module.exports = {txt2img, txt2imgOpenAI}
 

@@ -6,6 +6,36 @@ const { ObjectId } = require('mongodb');
 const { getCategoryId, checkLoginInfo } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
 var wordpress = require("wordpress");
+const { txt2img,txt2imgOpenAI } = require('../../modules/sdapi.js')
+
+router.post('/generate-image', async (req, res) => {
+  const { prompt, negativePrompt, aspectRatio, height, width, size, blogId } = req.body;
+
+  try {
+      const { imageID, imageBuffer, imageUrl } = await txt2imgOpenAI({ 
+          prompt, 
+          negativePrompt, 
+          aspectRatio, 
+          height, 
+          width, 
+          size,
+          blogId 
+      });
+
+      const result = { imageID };
+      if (imageBuffer) {
+        result.imageBuffer = Array.from(new Uint8Array(imageBuffer));
+      }
+      if (imageUrl) {
+        result.imageUrl = imageUrl;
+      }
+
+      res.json(result);
+  } catch (error) {
+      console.error('Error generating image:', error);
+      res.status(500).json({ error: 'Error generating image' });
+  }
+});
 
 router.get('/user-blogs', async (req, res) => {
   try {
