@@ -316,7 +316,6 @@ async function saveBlogInfo(userId, blogData) {
 
       return blogId;
     } else {
-      console.log(`New blog`)
       // Insert a new blog info document
       const blogInfo = {
         userId: new ObjectId(userId),
