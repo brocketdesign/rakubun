@@ -9,7 +9,7 @@ const marked = require('marked');
 const axios = require('axios');
 var wordpress = require("wordpress");
 const fs = require('fs');
-
+const  {generateCompleteArticle} = require('./article.js')
 require('dotenv').config({ path: './.env' });
 
 async function autoBlog(blogInfo,db){
@@ -20,19 +20,7 @@ async function autoBlog(blogInfo,db){
 
   const language = blogInfo.postLanguage
   const client = wordpress.createClient(blogInfo);
-  let modelGPT;
-
-  switch (blogInfo.postgpt) {
-    case 'gpt4o':
-      modelGPT = 'gpt-4o';
-      break;
-    case 'gpt4o-mini':
-      modelGPT = 'gpt-4o-mini';
-      break;
-    default:
-      modelGPT = 'gpt-4o'; // Default to GPT-3 if no match
-      break;
-  }  
+  let modelGPT='gpt-4o-mini'
 
   console.log({modelGPT})
   if(!isBlogInfoComplete(blogInfo)){
@@ -126,11 +114,9 @@ async function autoBlog(blogInfo,db){
       });
     
 
-  // Content
-  const promptDataContent = contentPromptGen(fetchTitle, blogInfo);
-  let promise_content = moduleCompletion({model: modelGPT, prompt: promptDataContent, max_tokens: 1000})
+    const promise_content = generateCompleteArticle(fetchTitle, blogInfo, modelGPT)
   
-  // Post
+    // Post
     try {
       const [content, categories, tags, image] = await Promise.all([promise_content, promise_categories, promise_tags, promise_image]);
   
@@ -150,7 +136,6 @@ async function autoBlog(blogInfo,db){
     }
 
 }
-
 function imagePromptGen(fetchTitle){
   return `
   I will provide a title and you will respond with an image prompt\n
@@ -165,18 +150,7 @@ function contentPromptGenForSearch(search_results, blogInfo){
 
   }
 }
-function contentPromptGen(fetchTitle,blogInfo){
-  //return `Write 5 paragraphs related to "${fetchTitle}", a paragraph contain a title and a description about the subject and a link to a REAL up and running ${blogInfo.postLanguage}  website  about the subject. The main keyword/theme is : ${blogInfo.botDescription}.Target audience is : ${blogInfo.targetAudience}.Category :  ${blogInfo.articleCategories}. Language : ${blogInfo.postLanguage}. The titles you provide must engage a broad audience by combining high-profile personnality name with latest drama title or famous places in countries that speaks ${blogInfo.postLanguage}. Your respond MUST be in ${blogInfo.postLanguage}. Write like a profesional ${blogInfo.postLanguage}  blog writer.`
-  return  `Write a detailed blog post about "${fetchTitle}".
-  The main keyword/theme is : ${blogInfo.botDescription}.
-  Target audience is : ${blogInfo.targetAudience}.
-  Category :  ${blogInfo.articleCategories}. 
-  Language : ${blogInfo.postLanguage}.
-  Style: ${blogInfo.writingStyle}, 
-  Tone: ${blogInfo.writingTone}. 
-  Craft a well structured content. Focus on one topic. 
-  Only one topic and detail it. Use Markdown for formatting.`;
-}
+
 function titlePromptGen(blogInfo) {
   return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. The title you provide must engage a broad audience by combining high-profile personnality and famous keywords in the audience country. Respond with the title string only.`;
 }  
