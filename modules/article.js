@@ -10,10 +10,9 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
 
     const getHeadlines = async () => {
         const prompt = `
-            Return 3 headlines: 
-            # 命令文：${fetchTitle}
-            # 補足：${blogInfo.botDescription}
-            # 出力形式：番号付きリスト
+            Return 3 sub chapters: 
+            # 記事タイトル${fetchTitle}
+            # メインテーマ${blogInfo.botDescription}
         `;
         const headlines = await moduleCompletion(
             { model: modelGPT, prompt, max_tokens: 400 },
@@ -22,18 +21,20 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
         return headlines.slice(0, 3);
     };
 
-    const generateContent = async (prompt, max_tokens = 1000) => {
+    const generateContent = async (prompt, max_tokens = 600) => {
         return await moduleCompletion({ model: modelGPT, prompt, max_tokens });
     };
 
     const headlines = await getHeadlines();
+    console.log({headlines})
     const introPrompt = generatePrompt(`次の見出しに基づいて、ブログ記事のイントロを生成してください: ${headlines.join(", ")}`);
     const introduction = await generateContent(introPrompt,600);
-
+    console.log({introduction})
     let articleContent = introduction;
     const contentPromises = headlines.map(async (headline) => {
         const contentPrompt = generatePrompt(`現在の記事内容: ${articleContent}\n以下の見出しに基づいて、深く掘り下げたブログ記事の内容を生成してください。「${headline}」。既に書かれている内容を繰り返さず、新しいコンテンツを生成してください。見出しや結論は含めないでください。`);
         const content = await generateContent(contentPrompt);
+        console.log({headline,content})
         articleContent += `\n\n### ${headline}\n\n${content}`;
         return content;
     });
@@ -41,6 +42,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
     await Promise.all(contentPromises);
     const conclusionPrompt = generatePrompt(`次の内容に基づいて、ブログ記事の結論を生成してください: ${articleContent}`);
     const conclusion = await generateContent(conclusionPrompt);
+    console.log({conclusion})
 
     return `${articleContent}\n\n${conclusion}`.trim();
 };
