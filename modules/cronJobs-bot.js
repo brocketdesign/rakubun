@@ -8,10 +8,6 @@ let cronJobsMap = {};
 // Function to set a cron job for a user
 const setCronJobForUser = async (db, botId, schedule) => {
 
-  if (process.env.NODE_ENV !== 'local') {
-    //return
-  } 
-  
   const botInfo = await db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
   const blogInfo = await db.collection('blogInfos').findOne({ _id: new ObjectId(botInfo.blogId) });
 
