@@ -526,18 +526,9 @@ block mainContent
         $('#close-bots-container').click(function(){$('#bots-container').addClass('d-none')})
         $(document).ready(function() {
             function showBlogForm(title, formHtml, formData = {}) {
-                const $form = $(formHtml);
+                const uniqueId = `bot-form-${Date.now()}`;
+                const $form = $(formHtml).attr('id', uniqueId);
                 
-                if (formData) {
-                    $form.find('input.blogId').val(formData._id || '');
-                    $form.find('#blogName').val(formData.blogName || '');
-                    $form.find('#blogUrl').val(formData.blogUrl || '');
-                    $form.find('#blogUsername').val(formData.blogUsername || '');
-                    $form.find('#blogPassword').val(formData.blogPassword || '');
-                    $form.find('#postLanguage').val(formData.postLanguage || '');
-                    $form.find('#postgpt').val(formData.postgpt || '');
-                    $form.find('#postFrequency').val(formData.postFrequency || '');
-                }
 
                 Swal.fire({
                     title: title,
@@ -554,6 +545,18 @@ block mainContent
                     },
                     showClass: {
                         popup: 'animate__animated animate__fadeIn'
+                    },
+                    didOpen: () => {
+                        if (formData) {
+                            $(`#${uniqueId}`).find('input.blogId').val(formData._id || '');
+                            $(`#${uniqueId}`).find('#blogName').val(formData.blogName || '');
+                            $(`#${uniqueId}`).find('#blogUrl').val(formData.blogUrl || '');
+                            $(`#${uniqueId}`).find('#blogUsername').val(formData.blogUsername || '');
+                            $(`#${uniqueId}`).find('#blogPassword').val(formData.blogPassword || '');
+                            $(`#${uniqueId}`).find('#postLanguage').val(formData.postLanguage || '');
+                            $(`#${uniqueId}`).find('#postgpt').val(formData.postgpt || '');
+                            $(`#${uniqueId}`).find('#postFrequency').val(formData.postFrequency || '');
+                        }
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -607,24 +610,8 @@ block mainContent
 
 
             function showBotForm(title, formHtml, formData = {}) {
-                const $form = $(formHtml);
-                
-                if (formData) {
-                    $form.find('#botId').val(formData._id || '');
-                    $form.find('#botName').val(formData.botName || '');
-                    $form.find('#botDescription').val(formData.botDescription || '');
-                    $form.find('#postCategory').val(formData.postCategory || '');
-                    $form.find('#articleLength').val(formData.articleLength || '');
-                    $form.find('#articleCategories').val(formData.articleCategories || '');
-                    $form.find('#targetAudience').val(formData.targetAudience || '');
-                    $form.find('#postLanguage').val(formData.postLanguage || '');
-                    $form.find('#postgpt').val(formData.postgpt || '');
-                    $form.find('#postFrequency').val(formData.postFrequency || '');
-                    $form.find('#postStatus').val(formData.postStatus || '');
-                    $form.find('#writingStyle').val(formData.writingStyle || '');
-                    $form.find('#writingTone').val(formData.writingTone || '');
-
-                }
+                const uniqueId = `bot-form-${Date.now()}`;
+                const $form = $(formHtml).attr('id', uniqueId);
 
                 Swal.fire({
                     title: title,
@@ -641,6 +628,25 @@ block mainContent
                     },
                     showClass: {
                         popup: 'animate__animated animate__fadeIn'
+                    },
+                    didOpen: () => {
+
+                            if (formData) {
+                                console.log(formData.postLanguage)
+                                $(`#${uniqueId}`).find('#botId').val(formData._id || '');
+                                $(`#${uniqueId}`).find('#botName').val(formData.botName || '');
+                                $(`#${uniqueId}`).find('#botDescription').val(formData.botDescription || '');
+                                $(`#${uniqueId}`).find('#postCategory').val(formData.postCategory || '');
+                                $(`#${uniqueId}`).find('#articleLength').val(formData.articleLength || '');
+                                $(`#${uniqueId}`).find('#articleCategories').val(formData.articleCategories || '');
+                                $(`#${uniqueId}`).find('#targetAudience').val(formData.targetAudience || '');
+                                $(`#${uniqueId}`).find('#postLanguage').val(formData.postLanguage || '');
+                                $(`#${uniqueId}`).find('#postgpt').val(formData.postgpt || '');
+                                $(`#${uniqueId}`).find('#postFrequency').val(formData.postFrequency || '');
+                                $(`#${uniqueId}`).find('#postStatus').val(formData.postStatus || '');
+                                $(`#${uniqueId}`).find('#writingStyle').val(formData.writingStyle || '');
+                                $(`#${uniqueId}`).find('#writingTone').val(formData.writingTone || '');
+                            }
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -739,7 +745,7 @@ block mainContent
 
             function showImageGenForm(title, formHtml, formData = {}) {
                 const uniqueId = `image-gen-form-${Date.now()}`;
-                const $form = $(formHtml).attr('id', uniqueId); // Assign a unique ID to the form
+                const $form = $(formHtml).attr('id', uniqueId);
 
                 if (formData) {
                     $form.find('.blogId').val(formData.blogId || '');
