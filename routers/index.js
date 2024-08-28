@@ -20,6 +20,10 @@ router.get('/',async(req, res, next) => {
 });
 
 // This route renders the contact form
+router.get('/login', async (req, res, next) => {
+  res.redirect('/');
+});
+// This route renders the contact form
 router.get('/contact', async (req, res, next) => {
   res.render('contact', { user: req.user, sent: false });
 });

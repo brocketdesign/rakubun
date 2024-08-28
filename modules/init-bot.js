@@ -47,7 +47,11 @@ async function autoBlog(blogInfo,db){
 
   // Title
   const promptDataTitle = titlePromptGen(blogInfo)
-  const untreatedTitle = await moduleCompletion({model:modelGPT,prompt:promptDataTitle,max_tokens:100});
+  const promptDataTitle_messages = [        
+      { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+      { role: "user", content:promptDataTitle}
+  ]
+  const untreatedTitle = await moduleCompletion({model:modelGPT,messages:promptDataTitle_messages,max_tokens:100});
   const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
     
   // Tags
@@ -55,7 +59,11 @@ async function autoBlog(blogInfo,db){
     answers: z.array(z.string()),
   });
   const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
-  let promise_tags = moduleCompletion({model:modelGPT, prompt:tagPrompt,max_tokens:600},PossibleAnswersExtraction)
+  const tagPrompt_messages = [        
+    { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+    { role: "user", content:tagPrompt}
+  ]
+  let promise_tags = moduleCompletion({model:modelGPT, messages:tagPrompt_messages,max_tokens:600},PossibleAnswersExtraction)
     .then(parsedTags =>{
       if (parsedTags !== null) {
         //parsedTags.push('RAKUBUN')
@@ -67,7 +75,11 @@ async function autoBlog(blogInfo,db){
 
     // Image Generation
     const promptDataImage = imagePromptGen(fetchTitle);
-    let promise_image = moduleCompletion({ model: modelGPT, prompt: promptDataImage, max_tokens: 400 })
+    const promptDataImage_messages = [        
+      { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+      { role: "user", content:promptDataImage}
+    ]
+    let promise_image = moduleCompletion({ model: modelGPT, messages: promptDataImage_messages, max_tokens: 400 })
       .then(fetchPromptImage => {
         return txt2img({ prompt: fetchPromptImage, negativePrompt: '', blogId: blogInfo.blogId });
       })
@@ -383,7 +395,11 @@ async function addTaxonomy(taxonomyArray,type,client,language){
 }
 async function createTaxonomy(taxonomyName,type,language, client){
   const tagDescriptionPrompt = categoryDescriptionPromptGen(taxonomyName,type,language)
-  const fetchtagDescription = await moduleCompletion({model:"gpt-4o",prompt:tagDescriptionPrompt,max_tokens:600});
+  const tagDescriptionPrompt_messages = [        
+      { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+      { role: "user", content:tagDescriptionPrompt}
+  ]
+  const fetchtagDescription = await moduleCompletion({model:"gpt-4o",messages:tagDescriptionPrompt_messages,max_tokens:600});
   const catObj = {name:capitalizeFirstLetter(taxonomyName),description:fetchtagDescription}
   await ensureCategory(catObj, type, client)
   return catObj

@@ -14,27 +14,39 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
             # 記事タイトル${fetchTitle}
             # メインテーマ${blogInfo.botDescription}
         `;
+        const messages = [        
+            { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+            { role: "user", content:prompt}
+        ]
         const headlines = await moduleCompletion(
-            { model: modelGPT, prompt, max_tokens: 400 },
+            { model: modelGPT, messages, max_tokens: 400 },
             PossibleAnswersExtraction
         );
         return headlines.slice(0, 3);
     };
 
-    const generateContent = async (prompt, max_tokens = 600) => {
-        return await moduleCompletion({ model: modelGPT, prompt, max_tokens });
+    const generateContent = async (messages, max_tokens = 600) => {
+        return await moduleCompletion({ model: modelGPT, messages, max_tokens });
     };
     console.log(`Headings`)
     const headlines = await getHeadlines();
     
     console.log(`Intro`)
     const introPrompt = generatePrompt(`次の見出しに基づいて、1段落で短いブログ記事のイントロを生成してください: ${headlines.join(", ")}`);
-    const introduction = await generateContent(introPrompt,500);
+    const introPrompt_messages = [        
+        { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+        { role: "user", content:introPrompt}
+    ]
+    const introduction = await generateContent(introPrompt_messages,500);
 
     let articleContent = introduction;
     const contentPromises = headlines.map(async (headline) => {
         const contentPrompt = generatePrompt(`現在の記事内容: ${articleContent}\n以下の見出しに基づいて、続きを500文字以内で生成してください。「${headline}」。既に書かれている内容を繰り返さず、新しいコンテンツを生成してください。見出しや結論、サブチャプターは含めないでください。`);
-        let content = await generateContent(contentPrompt);
+        const contentPrompt_messages = [        
+            { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+            { role: "user", content:contentPrompt}
+        ]
+        let content = await generateContent(contentPrompt_messages);
         content = content.replace(headline,'')
         articleContent += `\n\n### ${headline}\n\n${content}`;
         return content;
@@ -45,12 +57,20 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
 
     console.log(`Conclusion`)
     const conclusionPrompt = generatePrompt(`次の内容に基づいて、ブログ記事の結論を生成してください: ${articleContent}`);
-    const conclusion = await generateContent(conclusionPrompt);
+    const conclusionPrompt_messages = [        
+        { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
+        { role: "user", content:conclusionPrompt}
+    ]
+    const conclusion = await generateContent(conclusionPrompt_messages);
 
     console.log(`Rewriting ...`)
     articleContent = `${articleContent}\n\n${conclusion}`.trim();
     const rewriteArticlePrompt = generatePrompt(`次の内容と構造に基づいて、ブログ記事の内容を全体的に書き直し、見出しも含めてください: ${articleContent}。記事の構造: ${headlines.join(", ")}。繰り返しを避け、新しい視点で書き直してください。`);
-    const rewrittenArticle = await generateContent(rewriteArticlePrompt,1500);
+    const rewriteArticlePrompt_messages = [        
+        { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not the names of celebrities. Do not invent false stories that involve real people."},
+        { role: "user", content:rewriteArticlePrompt}
+    ]
+    const rewrittenArticle = await generateContent(rewriteArticlePrompt_messages,1500);
 
     return rewrittenArticle.trim();
 

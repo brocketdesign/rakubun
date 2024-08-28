@@ -11,7 +11,7 @@ const path = require('path');
   async function fetchNovitaMagic(data) {
     try {
       const image_request = {
-        model_name: data.checkpoint || "sudachi_v10_62914.safetensors",
+        model_name: data.checkpoint || "protovisionXLHighFidelity3D_beta0520Bakedvae_106612.safetensors",
         prompt: data.prompt,
         negative_prompt: "(worst quality, low quality:1.4), boring_e621, bad anatomy, (human, smooth skin:1.3), (mutated body:1.3), blurry, text, error, missing fingers, , extra digit, fewer digits, cropped, jpeg artifacts, signature, watermark, username, blurry, pregnant,",          
         width: data.width,          
@@ -134,8 +134,8 @@ const path = require('path');
       const taskId = await fetchNovitaMagic({
         prompt,
         negativePrompt,
-        width: width || 712,
-        height: height || 512,
+        width: width || 877,
+        height: height || 480,
       });
   
       const imageBuffer = await fetchNovitaResult(taskId);

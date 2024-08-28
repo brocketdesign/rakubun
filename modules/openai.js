@@ -88,12 +88,6 @@ const moduleCompletion = async (promptData, PossibleAnswersExtraction = null) =>
   async function getChatResponse(promptData, max_tokens, PossibleAnswersExtraction) {
     try {
       const modelGPT = promptData.model;
-      const messages = [
-        { 
-          role: "system", 
-          content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter unless asked, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."        },
-        { role: "user", content: promptData.prompt },
-      ];
       
       let response;
       
@@ -101,14 +95,14 @@ const moduleCompletion = async (promptData, PossibleAnswersExtraction = null) =>
         // Using the response_format for parsing with Zod
         response = await openai.beta.chat.completions.parse({
           model: modelGPT,
-          messages: messages,
+          messages: promptData.messages,
           response_format: zodResponseFormat(PossibleAnswersExtraction, "possible_answers_extraction"),
         });
       } else {
         // Standard completion request
         const options = {
           model: modelGPT,
-          messages: messages,
+          messages: promptData.messages,
           max_tokens: max_tokens,
           temperature: 1,
           top_p: 0.95,
