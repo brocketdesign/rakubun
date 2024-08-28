@@ -91,7 +91,7 @@ const moduleCompletion = async (promptData, PossibleAnswersExtraction = null) =>
       const messages = [
         { 
           role: "system", 
-          content: "You are a proficient blog writer. Provide concise, simply written content. Do not include subchapters, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."        },
+          content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter unless asked, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."        },
         { role: "user", content: promptData.prompt },
       ];
       
