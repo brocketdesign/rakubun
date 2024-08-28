@@ -147,7 +147,7 @@ async function autoBlog(blogInfo,db){
         console.log(error);
         console.log(`Error Saving Article`);
       }
-      const content_HTML = markdownToHtml(content.replace(fetchTitle,''))
+      const content_HTML = markdownToHtml(content).replace(/<h1>.*?<\/h1>/, '');
       await post(fetchTitle, content_HTML, categories, tags, image, blogInfo.postStatus, client);
   
       console.log('All tasks completed successfully');
