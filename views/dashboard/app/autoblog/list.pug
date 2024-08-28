@@ -382,6 +382,7 @@ block mainContent
                         success: function(response) {
                             showNotification('削除されました！', 'success');
                             $(`.card[data-id="${botId}"]`).fadeOut();
+                            botDataLength --
                         },
                         error: function(xhr, status, error) {
                             showNotification('削除できませんでした', 'error');

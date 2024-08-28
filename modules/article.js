@@ -28,8 +28,8 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
     const headlines = await getHeadlines();
     
     console.log(`Intro`)
-    const introPrompt = generatePrompt(`次の見出しに基づいて、ブログ記事のイントロを生成してください: ${headlines.join(", ")}`);
-    const introduction = await generateContent(introPrompt,600);
+    const introPrompt = generatePrompt(`次の見出しに基づいて、1段落で短いブログ記事のイントロを生成してください: ${headlines.join(", ")}`);
+    const introduction = await generateContent(introPrompt,500);
 
     let articleContent = introduction;
     const contentPromises = headlines.map(async (headline) => {
@@ -42,7 +42,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
     
     console.log(`Content`)
     await Promise.all(contentPromises);
-    
+
     console.log(`Conclusion`)
     const conclusionPrompt = generatePrompt(`次の内容に基づいて、ブログ記事の結論を生成してください: ${articleContent}`);
     const conclusion = await generateContent(conclusionPrompt);
