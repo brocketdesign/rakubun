@@ -450,6 +450,7 @@ block mainContent
                         }
                         botDataLength = response.botData.length
                         response.botData.forEach(function(bot) {
+                            const botFrquency = translateFrequency(bot.postFrequency)
                             botsHtml += `
                                 <div class="col my-2">
                                     <div type="button" class="card bg-white shadow-0 border border-secondary" data-id="${bot._id}">
@@ -464,7 +465,7 @@ block mainContent
                                                 <div>
                                                     <span class="badge bg-secondary">
                                                         <i class="fa fa-clock"></i>
-                                                        $(".card-subtitle.small.mx-1").text(translateFrequency("${bot.postFrequency}"));
+                                                        <span class="card-subtitle small mx-1">${botFrequency}</span>
                                                     </span>
                                                 </div>
                                             </div>
