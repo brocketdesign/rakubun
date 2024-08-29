@@ -55,7 +55,7 @@ router.get('/user-blogs', async (req, res) => {
     // Return the blog data to the client
     res.status(200).send(blogData);
   } catch (error) {
-    console.error('Error fetching user blogs:', error);
+    console.log('Error fetching user blogs:', error);
     res.status(500).send('Internal server error');
   }
 });

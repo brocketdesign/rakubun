@@ -67,9 +67,10 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       subscriptionStatus: user.subscriptionStatus,
       profileImage: user.profileImage
     };
-        
+    const isAdmin = user?.email === 'japanclassicstore@gmail.com';
     res.render('dashboard/app/autoblog/list', {
       user: sanitizedUser,
+      isAdmin,
       blogData,
       botData,
       postData,

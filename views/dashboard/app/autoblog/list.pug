@@ -304,10 +304,12 @@ block mainContent
     script.
         const user = !{JSON.stringify(user)};
         const blogData = !{JSON.stringify(blogData)}
+        const isAdmin = !{JSON.stringify(isAdmin)}
+        
         let botDataLength = 0
         function fetchAndRenderBlogs() {
             $.ajax({
-                url: '/api/autoblog//user-blogs',
+                url: '/api/autoblog/user-blogs',
                 method: 'GET',
                 success: function(blogData) {
                     const $blogList = $('#blogList');
@@ -337,7 +339,7 @@ block mainContent
                                             <i class="fas fa-link"></i>
                                         </button>
                                         <p class="mx-1 mt-2 mb-0 d-flex justifi-content-start align-items-center" style="font-size:14px">
-                                            <img src="${blog.favicon}" class="me-2" style="width: 20px;height: auto;">
+                                            <img src="${blog.favicon || '/img/logo.png'}" class="me-2" style="width: 20px;height: auto;">
                                             ${blog.blogName.substring(0, 10)}
                                             <span class="badge ms-2 ${botBadgeClass}">${blog.botCount}</span>
                                         </p>
@@ -587,7 +589,7 @@ block mainContent
             }
 
             $('#addBlogBtn').on('click', function() {
-                if(blogData.length > 0 && !user.subscriptionStatus){
+                if(blogData.length > 0 && !user.subscriptionStatus && !isAdmin){
                     displayUpgradePopup(1)
                     return
                 }
@@ -633,7 +635,6 @@ block mainContent
                     didOpen: () => {
 
                             if (formData) {
-                                console.log(formData.postLanguage)
                                 $(`#${uniqueId}`).find('#botId').val(formData._id || '');
                                 $(`#${uniqueId}`).find('#botName').val(formData.botName || '');
                                 $(`#${uniqueId}`).find('#botDescription').val(formData.botDescription || '');
@@ -676,7 +677,7 @@ block mainContent
                 });
             }
             $('#addBotBtn').on('click', function() {
-                if(botDataLength >= 2 && !user.subscriptionStatus){
+                if(botDataLength >= 2 && !user.subscriptionStatus && !isAdmin){
                     displayUpgradePopup(2)
                     return
                 }
