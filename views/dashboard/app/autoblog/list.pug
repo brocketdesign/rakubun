@@ -838,10 +838,12 @@ block mainContent
             .then(data => {
                 $(`.toggle-bot-btn[data-id="${botId}"]`).each(function() {
                     $(this).toggleClass('d-none');
-                });        
+                });   
+                showNotification(`自動投稿公開が${newState ? 'オン' : 'オフ'}になりました`, 'success');
             })
             .catch((error) => {
                 console.error('Error:', error);
+                showNotification(`ボットにエラーが発生しました`, 'error');
             });
         }
         function getUserInfo(callback){
