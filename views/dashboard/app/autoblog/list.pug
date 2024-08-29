@@ -464,7 +464,7 @@ block mainContent
                                                 <div>
                                                     <span class="badge bg-secondary">
                                                         <i class="fa fa-microchip"></i>
-                                                        <span class="card-subtitle small mx-1">${bot.postgpt ? bot.postgpt.toUpperCase() : ''}</span>
+                                                        $(".card-subtitle.small.mx-1").text(translateFrequency("${bot.postFrequency}"));
                                                     </span>
                                                 </div>
                                             </div>
@@ -933,4 +933,15 @@ block mainContent
                     popup: 'animate__animated animate__slideOutRight'
                 }
             });
+        }
+        function translateFrequency(frequency) {
+            var translations = {
+                "0 0,12 * * *": "1日に2回",
+                "0 * * * *": "1時間ごと",
+                "*/30 * * * *": "30分ごと",
+                "*/10 * * * *": "10分ごと",
+                "0 0 * * *": "毎日",
+                "0 0 * * 0": "毎週"
+            };
+            return translations[frequency] || "";
         }
