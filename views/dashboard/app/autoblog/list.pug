@@ -823,6 +823,10 @@ block mainContent
 
 
         function toggleBotStatus(botId, newState) {
+            if(blogData.length > 0 && !user.subscriptionStatus && !isAdmin){
+                displayUpgradePopup(3)
+                return
+            }
             fetch(`/api/autoblog/bot-info/ `, {
                 method: 'POST',
                 headers: {
