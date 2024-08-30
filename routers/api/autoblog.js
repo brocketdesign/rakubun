@@ -49,7 +49,7 @@ router.get('/user-blogs', async (req, res) => {
       .toArray();
     for (let i = 0; i < blogData.length; i++) {
       const botCount = await global.db.collection('botInfos')
-        .countDocuments({ blogId: (blogData[i]._id.toString()) });
+        .countDocuments({ blogId: (blogData[i]._id.toString()), isActive:true });
       blogData[i].botCount = botCount;
     }
     // Return the blog data to the client
