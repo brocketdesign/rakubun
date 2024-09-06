@@ -3,8 +3,8 @@ const { ObjectId } = require('mongodb');
 
 const ensureMembership = async (req, res, next) => {
     try {
-        if(req.user && req.user.subscriptionId){
-
+        if(req.user && !req.user.subscriptionId){
+            return res.redirect('/payment/subscription')
         }
         next();
     } catch (error) {

@@ -92,6 +92,51 @@ style.
     input:not(:checked) ~.label.monthly  {
         color: #fff;
     }   
+section.bg-primary.text-white.text-center.py-5
+  .container
+    h1.display-4 7日間無料トライアルを開始して、今すぐAIの力で記事作成を簡単に！
+    p.lead RAKUBUNを使えばこんなことができます！
+    a.btn.btn-light.btn-lg.mt-3(href="#register") 7日間無料トライアルを始める
+section.py-5
+  .container
+    .row.text-center
+      .col-md-4.mb-4
+        .card.h-100
+          .card-body
+            h3.card-title 🔍 狙ったキーワードで自動記事作成！
+            p.card-text RAKUBUNは、指定したキーワードに基づいて、自動的に高品質な記事を作成します。
+      .col-md-4.mb-4
+        .card.h-100
+          .card-body
+            h3.card-title 🖥️ WordPressへの自動投稿もおまかせ！
+            p.card-text WordPressに一度設定すれば、AIが自動で記事を投稿。面倒な手間は不要です。
+      .col-md-4.mb-4
+        .card.h-100
+          .card-body
+            h3.card-title 🤖 最新のGPT-4oをフル活用！
+            p.card-text RAKUBUNは最新のAI技術で、あなたのコンテンツ作成を大幅に効率化します。
+section.bg-light.py-5
+  .container
+    h2.text-center.mb-4 📈 SEO対策もプロ並みに！
+    p.text-center 7日間にわたって毎日、プロが実践するSEOの基本を解説するメールが届きます。これを読むだけでSEO対策が理解でき、PV数がアップするはず！
+section.py-5
+  .container.text-center
+    h2 ＼ 気に入らなければキャンセルOK！ ／
+    p トライアル期間内にいつでもキャンセル可能。7日以内にキャンセルすれば料金は発生しません。
+    a.btn.btn-primary.btn-lg(href="#register") 今すぐ7日間無料トライアルを始める
+section#register.py-5
+  .container
+    h2.text-center.mb-4 ＼ 7日間無料トライアルに登録する方法 ／
+    .row
+      .col-md-4
+        h3 1. クレジットカード情報を登録
+        p RAKUBUNのトライアルを利用するには、まず安全な決済システムを通してクレジットカード情報を登録してください。
+      .col-md-4
+        h3 2. 7日間の無料トライアルを満喫
+        p AIを使った自動記事作成、WordPressへの自動投稿、SEO対策のメール講座をお試しください！
+      .col-md-4
+        h3 3. 有料プランに移行
+        p トライアル終了後、自動的に有料プランに移行。7日以内にキャンセルすれば料金は発生しません。
 .row.justify-content-center.my-3
     .div.switch-container.text-center.my-3
         .switch-button-container
@@ -131,7 +176,7 @@ style.
                                 i.fa.fa-times.me-3
                                 | 50+テンプレート利用可能
                         a.btn.w-100.btn.btn-lg.btn-light.border.border-primary.text-primary(href="/dashboard" type="button") 今すぐ利用する
-            .col
+            .col-12
                 .card.mb-4.rounded-3.shadow-sm.border-primary.yearly
                     .card-header.py-3.text-white.b-custom-gradient
                         h4.my-0.fw-bold プレミアムプラン
@@ -161,27 +206,31 @@ style.
 
                         if user
                             button.w-100.btn.btn-lg.b-custom-gradient.text-white.fw-bold(onclick="createCheckoutSession(this)" data-cycle="yearly" data-price-yearly=premiumYearly data-price-monthly=premiumMonthly type="button") アップグレード
-                         
-    section.px-4
-        .card.shadow-0.border
-            .card-body.bg-light
-                .my-2
-                    p.me-2.tag.border.border-dark.px-3.py-2.rounded.w-auto.d-inline-block.small
-                        | 提供元:
-                        img(src="/img/stripe-logo.png" alt="Stripe" style="width: 60px;")
-                    h5.fw-bold  RAKUBUNは「Stripe」を利用して決済処理を行っています。
-                    p.text-sm.f-muted 「Stripe」は業界団体の定める厳格な基準に準拠しており、各国規制当局によるライセンス
+                section.px-4
+                    .card.shadow-0.border
+                        .card-body.bg-light
+                            .my-2
+                                p.me-2.tag.border.border-dark.px-3.py-2.rounded.w-auto.d-inline-block.small
+                                    | 提供元:
+                                    img(src="/img/stripe-logo.png" alt="Stripe" style="width: 60px;")
+                                h5.fw-bold  RAKUBUNは「Stripe」を利用して決済処理を行っています。
+                                p.text-sm.f-muted 「Stripe」は業界団体の定める厳格な基準に準拠しており、各国規制当局によるライセンス
 
-        div#accordionExample.accordion.mt-3
-            each item, index in faq
-                div.card.shadow-0.border.mb-2(data-animate="animate__slideInLeft")
-                    div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
-                        h6.mb-0.small
-                            i(class="fas fa-question-circle me-2")
-                            | #{item.question}
-                    div(class='collapse' id=`collapse${index}` aria-labelledby=`heading${index}` data-bs-parent='#accordionExample')
-                        div.card-body.small
-                            | #{item.answer}
+    section.bg-light.py-5
+        .container.text-center
+            h2 安心のサポート体制
+            p トライアル期間中、わからないことがあればいつでもサポートが受けられます。
+            a.btn.btn-primary(href="mailto:contact@hatoltd.com") サポートに連絡する
+            div#accordionExample.accordion.mt-3
+                each item, index in faq
+                    div.card.shadow-0.border.mb-2(data-animate="animate__slideInLeft")
+                        div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)
+                            h6.mb-0.small
+                                i(class="fas fa-question-circle me-2")
+                                | #{item.question}
+                        div(class='collapse' id=`collapse${index}` aria-labelledby=`heading${index}` data-bs-parent='#accordionExample')
+                            div.card-body.small
+                                | #{item.answer}
 
     script(src='https://cdn.jsdelivr.net/npm/sweetalert2@11')
     script.

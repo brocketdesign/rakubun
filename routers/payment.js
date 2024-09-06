@@ -23,7 +23,7 @@ router.get('/subscription',ensureAuthenticated, async (req, res) => {
       premiumMonthly : process.env.STRIPE_PREMIUM_PLAN_PRICE_MONTHLY, 
       user:req.user,
       faq,
-      title: "Choose a membership"
+      title: "7日間無料トライアル"
     });
   } catch (error) {
     console.log(error);
@@ -194,6 +194,9 @@ router.post('/create-checkout-session', async (req, res) => {
       quantity: 1,
     }],
     mode: 'subscription', 
+    subscription_data: {
+        trial_period_days: 7
+    },
     success_url: `${protocol}://${host}/payment/subscription-payment-success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${protocol}://${host}/payment/subscription?cancel-payment=true`,
     customer_email: req.user.email,  // Add user email to the session
