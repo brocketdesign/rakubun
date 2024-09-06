@@ -96,7 +96,9 @@ section.bg-primary.text-white.text-center.py-5
   .container
     h1.display-4 7日間無料トライアルを開始して、今すぐAIの力で記事作成を簡単に！
     p.lead RAKUBUNを使えばこんなことができます！
-    a.btn.btn-light.btn-lg.mt-3(href="#register") 7日間無料トライアルを始める
+    button.btn.btn-lg.b-custom-gradient.text-white.fw-bold.mt-3(
+        onclick="createCheckoutSession(this)" data-cycle="yearly" data-price-yearly=premiumYearly data-price-monthly=premiumMonthly type="button") 
+        | 7日間無料トライアルを始める
 section.py-5
   .container
     .row.text-center
@@ -123,7 +125,9 @@ section.py-5
   .container.text-center
     h2 ＼ 気に入らなければキャンセルOK！ ／
     p トライアル期間内にいつでもキャンセル可能。7日以内にキャンセルすれば料金は発生しません。
-    a.btn.btn-primary.btn-lg(href="#register") 今すぐ7日間無料トライアルを始める
+    button.btn.btn-lg.b-custom-gradient.text-white.fw-bold.mt-3(
+        onclick="createCheckoutSession(this)" data-cycle="yearly" data-price-yearly=premiumYearly data-price-monthly=premiumMonthly type="button") 
+        | 7日間無料トライアルを始める
 section#register.py-5
   .container
     h2.text-center.mb-4 ＼ 7日間無料トライアルに登録する方法 ／
@@ -205,7 +209,9 @@ section#register.py-5
                                 | 100+テンプレート利用可能
 
                         if user
-                            button.w-100.btn.btn-lg.b-custom-gradient.text-white.fw-bold(onclick="createCheckoutSession(this)" data-cycle="yearly" data-price-yearly=premiumYearly data-price-monthly=premiumMonthly type="button") アップグレード
+                            button.w-100.btn.btn-lg.b-custom-gradient.text-white.fw-bold(
+                                onclick="createCheckoutSession(this)" data-cycle="yearly" data-price-yearly=premiumYearly data-price-monthly=premiumMonthly type="button") 
+                                | 7日間無料トライアルを始める
                 section.px-4
                     .card.shadow-0.border
                         .card-body.bg-light
