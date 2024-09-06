@@ -227,7 +227,8 @@ router.post('/create-checkout-session-for-update', async (req, res) => {
       mode: 'setup', // Setting mode to 'setup' for updating payment details
       success_url: `${protocol}://${host}/payment/payment-update-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${protocol}://${host}/payment/subscription?cancel-payment=true`,
-      metadata: { userId: userId },  // Store userId in session metadata
+      metadata: { userId: userId },
+      locale: 'ja', 
     });
 
     res.json({ id: session.id });

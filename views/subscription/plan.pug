@@ -230,7 +230,7 @@ section#register.py-5
             h2 安心のサポート体制
             p トライアル期間中、わからないことがあればいつでもサポートが受けられます。
             a.btn.btn-primary(href="mailto:contact@hatoltd.com") サポートに連絡する
-        div#accordionExample.accordion.mt-3
+        div#accordionExample.accordion.mt-3.container
             each item, index in faq
                 div.card.shadow-0.border.mb-2(data-animate="animate__slideInLeft")
                     div(class='card-header' id=`heading${index}` type='button' data-bs-toggle='collapse' data-bs-target=`#collapse${index}` aria-expanded='false' aria-controls=`collapse${index}`)

@@ -68,6 +68,7 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       profileImage: user.profileImage
     };
     const isAdmin = user?.email === 'japanclassicstore@gmail.com';
+
     res.render('dashboard/app/autoblog/list', {
       user: sanitizedUser,
       isAdmin,
@@ -76,6 +77,7 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       postData,
       botId,
       blogId,
+      user:req.user,
       title: "RAKUBUN - Dashboard"
     });
   } catch (error) {

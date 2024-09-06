@@ -1,15 +1,18 @@
 extends ../dashboard/base
 
 block mainContent
-  h1 Payment Completed
+  h1 支払いが完了しました
   .d-flex.justify-content-between.mb-4
-    p Your payment was successful. Thank you for subscribing!
-    a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") My Membership
-  p Subscription ID: #{subscription.id}
-  p Amount: ¥#{subscription.plan.amount}
-  p Description: #{subscription.plan.product}
+    p お支払いが成功しました。ご購読ありがとうございます！
+    a.btn.btn-primary(type="button" href="/payment/subscription/bought-products") マイメンバーシップ
+  p サブスクリプションID: #{subscription.id}
+  p 金額: ¥#{subscription.plan.amount}
+  p 説明: #{subscription.plan.product}
   if subscription.latest_invoice && subscription.latest_invoice.payment_method_details && subscription.latest_invoice.payment_method_details.card
-    p Payment Method: #{subscription.latest_invoice.payment_method_details.card.brand}, Last 4 digits: #{subscription.latest_invoice.payment_method_details.card.last4}
+    p 支払い方法: #{subscription.latest_invoice.payment_method_details.card.brand}, 最後の4桁: #{subscription.latest_invoice.payment_method_details.card.last4}
   else 
-    p No card information available.
-  p Subscription Start Date: #{new Date(subscription.created * 1000).toLocaleDateString()}
+    p カード情報は利用できません。
+  p サブスクリプション開始日: #{new Date(subscription.created * 1000).toLocaleDateString()}
+
+  p サブスクリプションのキャンセルについては、以下のリンクから管理できます。サブスクリプションの管理はこちら:
+    a.btn.btn-secondary(type="button" href="/payment/subscription/bought-products") サブスクリプション管理
