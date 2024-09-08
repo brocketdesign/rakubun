@@ -37,6 +37,9 @@ block content
         .b-custom-gradient {
             background: linear-gradient(90.9deg, #4facfe 2.74%, #00f2fe 102.92%);
         }
+        h4 {
+            color: #4ab1fe;
+        }
 
     //- ログインポップアップ
     #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
@@ -184,16 +187,48 @@ block content
                     .col-md-6
                         img(src="/img/feature-6.png" style="width:200px;" data-animate="animate__fadeIn")
 
+
         section.section-with-sticky-cta.text-center.mb-5.py-5.border(style="background: linear-gradient(10.9deg, #fff 50.74%, #4facfe 102.92%);")
             .container
                 .row.align-items-center
                     .col
                         h2.fw-bold.mb-4 コンテンツを自動で作成
                         p.text-muted.fs-5 RAKUBUNがあなたのために、SEO最適化された高品質な記事を自動で生成します。時間を節約しながら、収益を最大化しましょう。
+            .p-3
+                .container.text-center
+                    button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" onclick="displayLogin()", role="button", style="border-radius:50px") 今すぐ無料で始める
+
+        section.text-center.py-5
+            .container
+                h1.display-4.text-center.mb-5(data-animate="animate__fadeInUp") 記事作成からWordPress投稿まで
+                p.text-center.text-muted.fs-5 ワンステップで簡単に
+
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start(data-animate="animate__slideInLeft")
+                        h4.fw-bold.mb-3 記事のアイデアを書き込もう
+                        p.text-muted.fs-6 記事の内容を選んで、ブログのアイデアやキーワードを入力します。投稿は下書き、公開、カテゴリーを選ベル
+                    .col-md-6
+                        img(src="/img/wordpress1.jpg" style="width:100%;" class="shadow rounded" data-animate="animate__fadeIn")
+
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start.order-md-2(data-animate="animate__slideInRight")
+                        h4.fw-bold.mb-3 複数のブログを一箇所で簡単管理
+                        p.text-muted.fs-6 Botは無制限に作成可能です。また、自動投稿機能のオンオフを簡単に管理でき、記事の即時生成にも対応しています。
+                    .col-md-6.order-md-1
+                        img(src="/img/wordpress2.jpg" style="width:100%;" class="shadow rounded" data-animate="animate__fadeIn")
+
+                .row.align-items-center.mb-5
+                    .col-md-6.text-start(data-animate="animate__slideInLeft")
+                        h4.fw-bold.mb-3 Wordpressへそのまま投稿
+                        p.text-muted.fs-6 生成された文章はそのままWordPressに投稿され、アイキャッチ画像も自動生成・挿入されます。さらに、タグやカテゴリーも自動入力され、手間なく完了します！
+                    .col-md-6
+                        img(src="/img/wordpress3.jpg" style="width:100%;" class="shadow rounded" data-animate="animate__fadeIn")
+
 
             .p-3
                 .container.text-center
                     button.btn.b-custom-gradient.text-white.btn-lg.m-2.px-5.py-3.mb-3.cta-button(data-animate="animate__bounce" onclick="displayLogin()", role="button", style="border-radius:50px") 今すぐ無料で始める
+        
         section.section-with-sticky-cta
                 .container
                     h1.display-4.text-center.mb-5 
