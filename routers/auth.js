@@ -52,12 +52,7 @@ router.get('/google/callback',
   });
 
 router.get('/zoho/code', function(req, res) {
-    const authorizationUrl = `https://accounts.zoho.com/oauth/v2/auth?
-    scope=ZohoCampaigns.contact.UPDATE&
-    client_id=${process.env.ZOHO_CLIENT_ID}&
-    response_type=code&
-    access_type=offline&
-    redirect_uri=https://app.rakubun.com/auth/zoho/callback`;
+    const authorizationUrl = `https://accounts.zoho.com/oauth/v2/auth?scope=ZohoCampaigns.contact.UPDATE&client_id=${process.env.ZOHO_CLIENT_ID}&response_type=code&access_type=offline&redirect_uri=https://app.rakubun.com/auth/zoho/callback`;
     console.log({authorizationUrl})  
 
     res.redirect('/');
