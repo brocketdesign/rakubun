@@ -1,0 +1,122 @@
+extends ../base
+
+block mainContent
+    .container.mt-5
+        h2.mb-4 #{title}
+        .table-responsive
+            table.table.table-striped
+                thead
+                    tr
+                    th 日付
+                    th メール
+                    th 名前
+                    th アクション
+                tbody
+                    each user in users
+                        tr(data-user-id=user._id)
+                            td.jp-d #{user.signup_date}
+                            td #{user.email}
+                            td #{user.username}
+                            td
+                                .dropdown
+                                    button.btn.btn-secondary.dropdown-toggle.shadow-0(type="button", id="dropdownMenuButton", data-bs-toggle="dropdown", aria-haspopup="true", aria-expanded="false")
+                                        i.bi.bi-three-dots-vertical
+                                    .dropdown-menu(aria-labelledby="dropdownMenuButton")
+                                        button.dropdown-item.delete-user(data-user-id=user._id)
+                                            i.bi.bi-trash.me-2 
+                                            | Delete User
+
+
+    script.
+        $(document).ready(function() {
+            
+            enableToggleDropdown() 
+            function enableToggleDropdown() {
+                $('.dropdown-toggle').each(function() {
+                    if (!$(this).hasClass('event-attached')) {
+                    $(this).addClass('event-attached');
+
+                    // Attach the event listener
+                    $(this).on('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+
+                    // Initialize the dropdown
+                    const dropdownElement = $(this)[0];
+                    const bootstrapDropdown = new bootstrap.Dropdown(dropdownElement);
+
+                    // Find the parent element that has the hover effect
+                    const parent = $(this).closest('.chat-list');
+
+                    // Add hover event listeners to the parent element
+                    parent.hover(
+                        function() {
+                        // When the parent element is hovered
+                        $(this).find('.dropdown-toggle').css({
+                            'opacity': 1,
+                            'pointer-events': ''
+                        });
+                        },
+                        function() {
+                        // When the parent element is no longer hovered
+                        $(this).find('.dropdown-toggle').css({
+                            'opacity': 0,
+                            'pointer-events': 'none'
+                        });
+                        // Close the dropdown
+                        bootstrapDropdown.hide();
+                        }
+                    );
+                    }
+                });
+                }
+
+            function convertToJapaneseDate(dateString) {
+                var options = { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    weekday: 'long',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false // Use 24-hour format
+                };
+                var date = new Date(dateString);
+                return date.toLocaleDateString('ja-JP', options);
+            }
+            $('.jp-d').each(function() {
+                var originalDate = $(this).text();
+                var japaneseDate = convertToJapaneseDate(originalDate);
+                $(this).text(japaneseDate);
+            });
+            $('.delete-user').on('click', function() {
+                var userId = $(this).data('user-id');
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'You are about to delete a user. This action is irreversible.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete user',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.value) {
+                    $.ajax({
+                        type: 'DELETE',
+                        url: '/admin/users/' + userId,
+                        success: function() {
+                        console.log('User deleted successfully!');
+                        $(`tr[data-user-id="${userId}"]`).hide()
+                        // You can also add code to remove the user from the table here
+                        //Swal.fire('Deleted!', 'User has been deleted.','success');
+                        },
+                        error: function(xhr, status, error) {
+                        console.log('Error deleting user:', error);
+                        Swal.fire('Error!', 'Failed to delete user.', 'error');
+                        }
+                    });
+                    }
+                });
+            });
+        });

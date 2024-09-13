@@ -82,6 +82,7 @@ function startServer() {
       const dashboard= require('./routers/dashboard/index');
       const generator = require('./routers/api/generator');
       const autoblog = require('./routers/api/autoblog');
+      const admin = require('./routers/admin.js');
       
       app.use('/', index); 
       app.use('/user', user); 
@@ -90,6 +91,7 @@ function startServer() {
       app.use('/dashboard', dashboard);
       app.use('/api/generator', generator);
       app.use('/api/autoblog', autoblog);
+      app.use('/admin', admin);
 
 
 
