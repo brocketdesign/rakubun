@@ -1,412 +1,390 @@
-const { getCategoryId, categoryExists, ensureCategory, getTermDetails, post } = require('./post.js')
-const { generatePrompt } = require('../services/prompt.js')
-const { moduleCompletion, moduleCompletionOllama } = require('./openai.js');
-const { getSearchResult, getImageSearchResult } = require('../services/tools.js')
-const { txt2img, txt2imgOpenAI } = require('../modules/sdapi.js')
+// init-bot.js
+const {
+  getCategoryId,
+  categoryExists,
+  ensureCategory,
+  getTermDetails,
+  post,
+} = require('./post.js');
+const { generatePrompt } = require('../services/prompt.js');
+const { moduleCompletion } = require('./openai.js');
+const { getTxt2ImgResult } = require('./sdapi.js')
+const {
+  getSearchResult,
+  getImageSearchResult,
+} = require('../services/tools.js');
+const { txt2img } = require('../modules/sdapi.js');
 const { ObjectId } = require('mongodb');
 const fetch = require('node-fetch');
 const marked = require('marked');
 const axios = require('axios');
-var wordpress = require("wordpress");
+var wordpress = require('wordpress');
 const fs = require('fs');
-const  {generateCompleteArticle} = require('./article.js')
-const { z } = require("zod");
+const { generateCompleteArticle } = require('./article.js');
+const { z } = require('zod');
 require('dotenv').config({ path: './.env' });
+// autoBlog.js
 
-async function autoBlog(blogInfo,db){
+async function autoBlog(blogInfo, db) {
+  blogInfo.username = blogInfo.blogUsername;
+  blogInfo.url = blogInfo.blogUrl;
+  blogInfo.password = blogInfo.blogPassword;
 
-  blogInfo.username = blogInfo.blogUsername
-  blogInfo.url = blogInfo.blogUrl
-  blogInfo.password = blogInfo.blogPassword
-
-  const language = blogInfo.postLanguage
+  const language = blogInfo.postLanguage;
   const client = wordpress.createClient(blogInfo);
-  let modelGPT='gpt-4o-mini'
+  let modelGPT = 'gpt-4o-mini';
 
-  console.log({modelGPT})
-  if(!isBlogInfoComplete(blogInfo)){
-    console.log('You need to provide the blog informations')
-    return
-  }   
-  
+  console.log({ modelGPT });
+  if (!isBlogInfoComplete(blogInfo)) {
+    console.log('You need to provide the blog information');
+    return;
+  }
+
   console.log(`Generating article for: ${blogInfo.botName}`);
 
   // Categories
-  
-  let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language)
-    .then(myCategories => {
+  let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language).then(
+    (myCategories) => {
       let newCategories = blogInfo.postCategory;
       return updateCategories(myCategories, newCategories, 'category', client);
-    });
-  /*
-  let promise_categories = Promise.resolve(blogInfo.postCategory)
-  .then(newCategories => {
-    return updateCategories([], newCategories, 'category', client);
-  });
-  */
-
+    }
+  );
 
   // Title
-  const promptDataTitle = titlePromptGen(blogInfo)
-  const promptDataTitle_messages = [        
-      { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
-      { role: "user", content:promptDataTitle}
-  ]
-  const untreatedTitle = await moduleCompletion({model:modelGPT,messages:promptDataTitle_messages,max_tokens:100});
-  const fetchTitle = untreatedTitle.trim().replace(/"/g, '')
-    
+  const promptDataTitle = titlePromptGen(blogInfo);
+  const promptDataTitle_messages = [
+    {
+      role: 'system',
+      content:
+        'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+    },
+    { role: 'user', content: promptDataTitle },
+  ];
+  const untreatedTitle = await moduleCompletion({
+    model: modelGPT,
+    messages: promptDataTitle_messages,
+    max_tokens: 100,
+  });
+  const fetchTitle = untreatedTitle.trim().replace(/"/g, '');
+
   // Tags
   const PossibleAnswersExtraction = z.object({
     answers: z.array(z.string()),
   });
-  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag',language)
-  const tagPrompt_messages = [        
-    { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
-    { role: "user", content:tagPrompt}
-  ]
-  let promise_tags = moduleCompletion({model:modelGPT, messages:tagPrompt_messages,max_tokens:600},PossibleAnswersExtraction)
-    .then(parsedTags =>{
-      if (parsedTags !== null) {
-        //parsedTags.push('RAKUBUN')
-        return addTaxonomy(parsedTags,'post_tag',client,language)
-      }else{
-        return []
-      }
-    })
+  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag', language);
+  const tagPrompt_messages = [
+    {
+      role: 'system',
+      content:
+        'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+    },
+    { role: 'user', content: tagPrompt },
+  ];
+  let promise_tags = moduleCompletion(
+    { model: modelGPT, messages: tagPrompt_messages, max_tokens: 600 },
+    PossibleAnswersExtraction
+  ).then((parsedTags) => {
+    if (parsedTags !== null) {
+      return addTaxonomy(parsedTags, 'post_tag', client, language);
+    } else {
+      return [];
+    }
+  });
 
-    // Image Generation
-    const promptDataImage = imagePromptGen(fetchTitle);
-    const promptDataImage_messages = [        
-      { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
-      { role: "user", content:promptDataImage}
-    ]
-    let promise_image = moduleCompletion({ model: modelGPT, messages: promptDataImage_messages, max_tokens: 400 })
-      .then(fetchPromptImage => {
-        return txt2img({ prompt: fetchPromptImage, negativePrompt: '', blogId: blogInfo.blogId });
-      })
-      .then(async imageData => {
-        if (imageData.imageBuffer) {
-          // Handle case with image buffer
-          return new Promise((resolve, reject) => {
-            client.uploadFile({
-              name: `${imageData.imageID}.png`,
+  // Initiate Image Generation
+  const imageTaskId = await initiateImageGeneration(fetchTitle, modelGPT, blogInfo);
+
+  // Generate Article Content
+  const promise_content = generateCompleteArticle(fetchTitle, blogInfo, 'gpt-4o');
+
+  // Post the article without the image
+  try {
+    const [content, categories, tags] = await Promise.all([
+      promise_content,
+      promise_categories,
+      promise_tags,
+    ]);
+
+    try {
+      saveArticleUpdateBlog(fetchTitle, content, categories, tags, null, blogInfo);
+    } catch (error) {
+      console.log(error);
+      console.log(`Error Saving Article`);
+    }
+    const content_HTML = markdownToHtml(content).replace(/<h1>.*?<\/h1>/, '');
+    const postId = await post(
+      fetchTitle,
+      content_HTML,
+      categories,
+      tags,
+      null, // No image for now
+      blogInfo.postStatus,
+      client
+    );
+
+    console.log('Article posted without image. Waiting for image generation to complete.');
+
+    // Start checking for the image and update the post when ready
+    checkImageAndUpdatePost(imageTaskId, postId, client);
+
+    console.log('All tasks completed successfully');
+  } catch (err) {
+    console.log(err);
+    return err;
+  }
+}
+
+// Function to initiate image generation
+async function initiateImageGeneration(fetchTitle, modelGPT, blogInfo) {
+  const promptDataImage = imagePromptGen(fetchTitle);
+  const promptDataImage_messages = [
+    {
+      role: 'system',
+      content:
+        'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+    },
+    { role: 'user', content: promptDataImage },
+  ];
+  const fetchPromptImage = await moduleCompletion({
+    model: modelGPT,
+    messages: promptDataImage_messages,
+    max_tokens: 400,
+  });
+
+  // Initiate image generation and get task ID
+  const { task_id } = await txt2img({
+    prompt: fetchPromptImage,
+    negativePrompt: '',
+    blogId: blogInfo.blogId,
+  });
+
+  console.log(`Image generation started with task ID: ${task_id}`);
+  return task_id;
+}
+
+// Function to check image status and update post
+async function checkImageAndUpdatePost(task_id, postId, client) {
+  const POLLING_INTERVAL = 10000; // 10 seconds
+  const MAX_ATTEMPTS = 30; // Up to 5 minutes
+  let attempts = 0;
+
+  const intervalId = setInterval(async () => {
+    attempts++;
+    try {
+      const result = await getTxt2ImgResult(task_id);
+
+      if (result.status === 'processing') {
+        console.log('Image is still being generated. Will check again later.');
+      } else if (result.imageBuffer) {
+        clearInterval(intervalId);
+        // Upload the image to WordPress
+        const imageData = await new Promise((resolve, reject) => {
+          client.uploadFile(
+            {
+              name: `${task_id}.png`,
               type: 'image/png',
-              bits: imageData.imageBuffer,
-            }, (error, file) => {
+              bits: result.imageBuffer,
+            },
+            (error, file) => {
               if (error) {
                 console.log('Error when adding the thumbnail');
-                reject(error); // Reject the promise on error
+                reject(error);
               } else {
-                resolve(file); // Resolve the promise with the file on success
+                resolve(file);
               }
-            });
-          });
-        } else if (imageData.imageUrl) {
-          // Handle case with image URL
-          try {
-            const response = await axios.get(imageData.imageUrl, { responseType: 'arraybuffer' });
-            const imageBuffer = Buffer.from(response.data, 'binary');
-            
-            return new Promise((resolve, reject) => {
-              client.uploadFile({
-                name: `${imageData.imageID}.png`,
-                type: 'image/png',
-                bits: imageBuffer,
-              }, (error, file) => {
-                if (error) {
-                  console.log('Error when adding the thumbnail');
-                  reject(error); // Reject the promise on error
-                } else {
-                  resolve(file); // Resolve the promise with the file on success
-                }
-              });
-            });
-          } catch (error) {
-            console.log('Error when downloading the image from URL');
-            throw error;
-          }
-        } else {
-          throw new Error('No image data available');
-        }
-      })
-      .catch(error => {
-        // Handle any errors in the promise chain
-        console.error("Error in image processing:", error);
-      });
-    
+            }
+          );
+        });
 
-    const promise_content = generateCompleteArticle(fetchTitle, blogInfo, modelGPT)
-  
-    // Post
-    try {
-      const [content, categories, tags, image] = await Promise.all([promise_content, promise_categories, promise_tags, promise_image]);
-  
-      try {
-        saveArticleUpdateBlog(fetchTitle, content, categories, tags, image, blogInfo);
-      } catch (error) {
-        console.log(error);
-        console.log(`Error Saving Article`);
+        // Update the post with the image
+        await updatePostWithImage(postId, imageData.attachment_id, client);
+        console.log('Post updated with the generated image.');
       }
-      const content_HTML = markdownToHtml(content).replace(/<h1>.*?<\/h1>/, '');
-      await post(fetchTitle, content_HTML, categories, tags, image, blogInfo.postStatus, client);
-  
-      console.log('All tasks completed successfully');
-    } catch (err) {
-      console.log(err);
-      return err
+
+      if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(intervalId);
+        console.log('Image generation timed out. Proceeding without image.');
+      }
+    } catch (error) {
+      clearInterval(intervalId);
+      console.error('Error checking image result:', error.message);
     }
-
+  }, POLLING_INTERVAL);
 }
-function imagePromptGen(fetchTitle){
-  return `
-  I will provide a title and you will respond with an image prompt\n
-  Here is an example of response : masterpiece, best quality, 1girl, yellow eyes, long hair, white hair, tree, stairs, standing, kimono, sky, cherry blossoms, temple, looking at viewer, upper body, from below, looking back,\n
-  Here is the title: ${fetchTitle}.`;
-}
-function contentPromptGenForSearch(search_results, blogInfo){
-  if(search_results){
-    return `Using the following JSON informations. ${JSON.stringify(search_results)} .\nProvide a well structued and SEO friendly blog post. You are a professional ${blogInfo.postLanguage} blog writer. Your blog post is entirely in ${blogInfo.postLanguage}`
-  }else{
-    return `Provide a well structued and SEO friendly blog post. You are a professional ${blogInfo.postLanguage} blog writer. Your blog post is entirely in ${blogInfo.postLanguage}`
 
+// Function to update the post with the image
+async function updatePostWithImage(postId, attachmentId, client) {
+  return new Promise((resolve, reject) => {
+    client.editPost(
+      postId,
+      { thumbnail: attachmentId },
+      (error, data) => {
+        if (error) {
+          console.log('Error updating post with image:', error);
+          reject(error);
+        } else {
+          resolve(data);
+        }
+      }
+    );
+  });
+}
+
+// Helper functions
+function imagePromptGen(fetchTitle) {
+  return `タイトルを元に、Stable Diffusion用の画像プロンプトを作成してください。\nタイトル: ${fetchTitle}。`;
+}
+
+function contentPromptGenForSearch(search_results, blogInfo) {
+  if (search_results) {
+    return `次のJSON情報を使用して、よく構成されたSEOに適したブログ記事を提供してください。${JSON.stringify(
+      search_results
+    )}。あなたはプロの${blogInfo.postLanguage}のブロガーです。記事は完全に${blogInfo.postLanguage}で記述してください。`;
+  } else {
+    return `よく構成されたSEOに適したブログ記事を提供してください。あなたはプロの${blogInfo.postLanguage}のブロガーです。記事は完全に${blogInfo.postLanguage}で記述してください。`;
   }
 }
 
 function titlePromptGen(blogInfo) {
-  return `Provide one specific subject relating to : ["${blogInfo.botDescription}"] tailored to a ${blogInfo.postLanguage}-speaking audience.Choose one subject that fit in those categories ${blogInfo.articleCategories}. Aim for originality. The tone should be ${blogInfo.writingTone}, aligning with the article's ${blogInfo.writingStyle} style. Please respond in ${blogInfo.postLanguage} and prioritize freshness and appeal in your suggestions. The title you provide must engage a broad audience by combining high-profile personnality and famous keywords in the audience country. Respond with the title string only.`;
-}  
-
-function extractArrayFromString(fetchTag) {
-  const arrayExtractor = /\[.*?\]/; // The spell to locate our array
-  const matched = fetchTag.match(arrayExtractor);
-
-  if (matched) {
-    try {
-      // Attempting to transform the string into a noble array
-      const arrayString = matched[0];
-      const actualArray = JSON.parse(arrayString);
-      return actualArray; // The quest is a success!
-    } catch (e) {
-      // The spell backfired, alas! The array was a mirage.
-      console.error("Oops! Something went wrong during the transformation:", e);
-      return null; // Returning a solemn null, as a sign of our failed quest.
-    }
-  } else {
-    // The array was but a legend, nowhere to be found.
-    console.log("No array detected in the string. Are you sure it's the right scroll?");
-    console.log({fetchTag})
-    return null; // A respectful null, acknowledging the absence of our quest's goal.
-  }
+  return `「${blogInfo.botDescription}」に関連する具体的なテーマを1つ提供してください。対象読者は${blogInfo.postLanguage}を話す人々です。これらのカテゴリーに適合するテーマを選択してください: ${blogInfo.articleCategories}。オリジナリティを目指してください。トーンは${blogInfo.writingTone}で、記事のスタイルは${blogInfo.writingStyle}に合わせてください。${blogInfo.postLanguage}で回答し、新鮮で魅力的な提案を優先してください。提供するタイトルは、有名な人物やキーワードを組み合わせて幅広い読者を惹きつけるものでなければなりません。タイトル文字列のみで回答してください。`;
 }
 
+function categoryPromptGen(title, type, language) {
+  return `ブログ記事のタイトル: '${title}' に対して、SEOを向上させるために5つの${type}を提供してください。名前や有名人の名前は含めないでください。${language}でJSON文字列の配列のみで回答してください。JSON文字列のみを含め、変数宣言はしないでください。`;
+}
 
-async function updateCategories(myCategories,newCategories,type,client) {
-  // Let's handle the case where we need to fetch details first
+function categoryDescriptionPromptGen(category, type, language) {
+  return `ブログの${type}: '${category}' の説明を提供してください。${language}で回答してください。`;
+}
+
+async function updateCategories(myCategories, newCategories, type, client) {
   if (Array.isArray(newCategories)) {
-    // It's an array, time for a group adventure
-    const promises = newCategories.map(cat => getTermDetails(cat, type, client));
+    const promises = newCategories.map((cat) => getTermDetails(cat, type, client));
     const details = await Promise.all(promises);
-    // Using map to transform the details into a list of names (or whatever property you need)
     myCategories.push(...details);
   } else {
-    if(!newCategories){
-      return myCategories
+    if (!newCategories) {
+      return myCategories;
     }
-    // It's a single string, a solo mission
     const detail = await getTermDetails(newCategories, type, client);
     myCategories.push(detail);
   }
-  return myCategories
+  return myCategories;
 }
 
-function isAutoBlogInfoComplete(blogInfo) {
-  // A list of ingredients we expect in our potion
-  const requiredIngredients = ['blogPassword', 'blogUrl', 'blogUsername'];
-
-  // Checking every ingredient for its presence and clarity
-  return requiredIngredients.every(key => blogInfo[key] !== undefined && blogInfo[key] !== '');
+function isBlogInfoComplete(blogInfo) {
+  const requiredFields = ['password', 'url', 'username'];
+  return requiredFields.every((key) => blogInfo[key] !== undefined && blogInfo[key] !== '');
 }
 
-// Tools
-
-async function saveArticleUpdateBlog(fetchTitle, finalContent, myCategories, myTags, myImages, blogInfo) {
-
+async function saveArticleUpdateBlog(
+  fetchTitle,
+  finalContent,
+  myCategories,
+  myTags,
+  myImages,
+  blogInfo
+) {
   try {
-    // Step 1: Save the article in the articles collection
     const article = {
       title: fetchTitle,
       content: finalContent,
       categories: myCategories,
       tags: myTags,
-      blogId: new ObjectId(blogInfo.blogId), // Assuming blogInfo contains blogId
-      botId: new ObjectId(blogInfo.botId), // Assuming blogInfo contains blogId
-      createdAt: new Date(), // Capture the creation date of the article
-      thumbnail:myImages?myImages.attachment_id:null
-
+      blogId: new ObjectId(blogInfo.blogId),
+      botId: new ObjectId(blogInfo.botId),
+      createdAt: new Date(),
+      thumbnail: myImages ? myImages.attachment_id : null,
     };
 
     const articleResult = await global.db.collection('articles').insertOne(article);
     const articleId = articleResult.insertedId;
 
-    // Step 2: Update the corresponding blog entry to include the new article ID in its articles array
-    // Ensure the blogInfos collection and the field that stores the article IDs (e.g., 'articleIds') are correctly named
     const blogUpdateResult = await global.db.collection('blogInfos').updateOne(
-      { _id: new ObjectId(blogInfo._id) }, // Use the blogId to find the correct blog
-      { $push: { articleIds: articleId } } // Push the new article ID to the articles array
+      { _id: new ObjectId(blogInfo._id) },
+      { $push: { articleIds: articleId } }
     );
 
-    // Check the result and handle accordingly
     if (blogUpdateResult.modifiedCount === 0) {
       throw new Error('Failed to update the blog with the new article ID.');
     }
 
     return {
       message: 'Article saved and blog updated successfully',
-      articleId: articleId
+      articleId: articleId,
     };
   } catch (error) {
     console.error('Error saving article and updating blog:', error);
-    throw error; // Rethrow or handle as needed
+    throw error;
   }
 }
 
-async function updateArticleStatus(articleId){
-  await global.db.collection('articles').updateOne({_id:new ObjectId(articleId)},{$set:{published:true}})
+function markdownToHtml(markdownString) {
+  const html = marked.parse(markdownString);
+  return html;
 }
-async function getBlogInfo(db,userId){
-  const user = await db.collection('users').findOne({_id:new ObjectId(userId)})
-  return {password:user.blogPassword,url:user.blogUrl,username:user.blogUsername,theme:user.blogTheme}
-}
-function isBlogInfoComplete(blogInfo) {
-  // A list of ingredients we expect in our potion
 
-  const requiredIngredients = ['password', 'url', 'username'];
+async function addTaxonomy(taxonomyArray, type, client, language) {
+  const result = [];
+  for (let tag of taxonomyArray) {
+    try {
+      const checkTag = await categoryExists(tag, type, client);
 
-  // Checking every ingredient for its presence and clarity
-  return requiredIngredients.every(key => blogInfo[key] !== undefined && blogInfo[key] !== '');
+      if (!checkTag) {
+        const catObj = await createTaxonomy(tag, type, language, client);
+        result.push(catObj);
+      } else {
+        let categoryDetails = await getTermDetails(checkTag, type, client);
+        const isComplete = isTaxonomyComplete(categoryDetails);
+        if (!isComplete) {
+          categoryDetails = await createTaxonomy(
+            categoryDetails.name,
+            type,
+            language,
+            client
+          );
+        }
+        result.push(categoryDetails);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  return result;
 }
 function isTaxonomyComplete(taxonomy) {
   const requiredFields = ['name', 'description'];
   return requiredFields.every(key => taxonomy[key] !== undefined && taxonomy[key] !== '');
 }
-async function getLanguage(db,userId){
-  const user = await db.collection('users').findOne({_id:new ObjectId(userId)})
-  return user.language || 'japanese'
-}
-async function findActiveFeeds(db){
-  return db.collection('feeds').find({'status':'active'}).toArray()
-}
-function markdownToHtml(markdownString) {
-  // Use marked to convert the markdown string to HTML
-  const html = marked.parse(markdownString);
-
-  return html;
-}
-function searchResultsToHtml(processedResults) {
-
-  // Then, transform these results into HTML list items
-  const listItemsHtml = processedResults.map(result => {
-    return `<li><a href="${result.link}" target="_blank">${result.title}</a></li>`;
-  }).join(''); // Join all list items into a single string
-
-  // Finally, wrap the list items in a <ul> element
-  return `<ul>${listItemsHtml}</ul>`;
-}
-function imageSearchToHTML(imageSearch,articleUrl) {
-  if (!imageSearch || !imageSearch.length) {
-    return '<div>No images found, the gallery is as empty as a cauldron after a potion class.</div>';
-  }
-
-  // Begin our HTML gallery with a touch of responsive style
-  let html = `<style>
-    .image-gallery {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    /* The spell of responsiveness: one column on screens narrower than 600 pixels */
-    @media (max-width: 600px) {
-      .image-gallery {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-  <div class="image-gallery">`;
-
-  // For each image, create a card-like element
-  imageSearch.forEach(image => {
-    html += `
-      <div style="border: 1px solid #ddd; box-shadow: 0px 0px 5px #aaa; margin-bottom: 20px;">
-        <a href="${articleUrl}" target="_blank">
-          <img src="${image.link}" alt="${image.title}" style="width: 100%; height: auto;">
-        </a>
-      </div>
-    `;
+async function createTaxonomy(taxonomyName, type, language, client) {
+  const tagDescriptionPrompt = categoryDescriptionPromptGen(
+    taxonomyName,
+    type,
+    language
+  );
+  const tagDescriptionPrompt_messages = [
+    {
+      role: 'system',
+      content:
+        'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+    },
+    { role: 'user', content: tagDescriptionPrompt },
+  ];
+  const fetchtagDescription = await moduleCompletion({
+    model: 'gpt-4o',
+    messages: tagDescriptionPrompt_messages,
+    max_tokens: 600,
   });
-
-  // Close our gallery div
-  html += '</div>';
-
-  return html;
-}
-function disclaimer(language) {
-  switch (language) {
-    case 'japanese':
-      return '<i>ご注意ください！このページの内容は、私たちのAI仲間によって自動的に生成されました。生成型AIは時に間違った情報を吐き出すこともありますので、この記事の内容を鵜呑みにせず、自分の目で確かめてくださいね。専門的な判断や重要な行動をする前には、信頼できる情報源をチェックすることを忘れずに。</i><br>';
-    case 'french':
-      return '<i>Attention, chers lecteurs ! Le contenu de cette page a été généré automatiquement par notre complice, l\'IA générative. Comme notre ami l\'IA peut parfois se tromper, ne prenez pas tout ce qui est écrit ici pour parole d\'évangile. Vérifiez par vous-même et consultez des sources fiables avant de prendre des décisions spécialisées ou d\'agir.</i><br>';
-    case 'english':
-    default:
-      return `<i>Heads up, folks! The content on this very page was whipped up automatically by our pal, the generative AI. Since our AI buddy can sometimes mix up its facts, please don't swallow everything you read here hook, line, and sinker. Do your own fact-checking and consult trustworthy sources before making any specialized decisions or taking action.</i><br>`;
-  }
+  const catObj = {
+    name: capitalizeFirstLetter(taxonomyName),
+    description: fetchtagDescription,
+  };
+  await ensureCategory(catObj, type, client);
+  return catObj;
 }
 
-function categoryPromptGen(title,type,language){
-  return  `For a blog post titled: '${title}', provide 5 ${type}. It should increase SEO. Do not provide names or celebrity names. 
-  Respond in ${language} only with a json string array only.
-  Only include the json string , with no variable declaration`
-}
-
-function categoryDescriptionPromptGen(category,type,language){
-  return  `For a blog ${type}: '${category}', provide a description. Respond in ${language} only.`
-}
-async function addTaxonomy(taxonomyArray,type,client,language){
-  const result = []
-  for(let tag of taxonomyArray){
-    try {
-      const checkTag = await categoryExists(tag,type,client);
-      
-      if(!checkTag){
-        const catObj = await createTaxonomy(tag,type,language,client)
-        result.push(catObj)
-      }else{
-        //console.log(`Already exist ${type}: ${tag} ${checkTag}`)
-        let categoryDetails = await getTermDetails(checkTag, type, client)
-        const isComplete = isTaxonomyComplete(categoryDetails)
-        if(!isComplete){
-          categoryDetails = await createTaxonomy(categoryDetails.name, type, language, client)
-        }
-        result.push(categoryDetails)
-      }
-    } catch (error) {
-      console.log(error)
-    }
-  }
-  return result
-}
-async function createTaxonomy(taxonomyName,type,language, client){
-  const tagDescriptionPrompt = categoryDescriptionPromptGen(taxonomyName,type,language)
-  const tagDescriptionPrompt_messages = [        
-      { role: "system", content: "You are a proficient blog writer. Provide concise, simply written content. Do not include chatpers or subchapter, do not include numbers for each title, and do not the names of celebrities. Do not invent false stories that involve real people."},
-      { role: "user", content:tagDescriptionPrompt}
-  ]
-  const fetchtagDescription = await moduleCompletion({model:"gpt-4o",messages:tagDescriptionPrompt_messages,max_tokens:600});
-  const catObj = {name:capitalizeFirstLetter(taxonomyName),description:fetchtagDescription}
-  await ensureCategory(catObj, type, client)
-  return catObj
-}
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-module.exports = {autoBlog}
+module.exports = { autoBlog };
