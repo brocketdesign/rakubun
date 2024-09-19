@@ -35,6 +35,37 @@ router.get('/templates', ensureAuthenticated, ensureMembership, async (req, res)
   }
 });
 
+// テンプレートの詳細を表示するルート
+router.get('/templates/view/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    const templateId = new ObjectId(req.params.templateId);
+    const userId = new ObjectId(req.user._id);
+
+    // テンプレートを取得
+    const template = await global.db.collection('templates').findOne({
+      _id: templateId,
+      $or: [
+        { isPublic: true },
+        { ownerId: userId } // 自分のプライベートテンプレートを表示可能
+      ]
+    });
+
+    if (!template) {
+      return res.status(404).send('テンプレートが見つかりません。');
+    }
+
+    res.render('dashboard/templates/view', {
+      user: req.user,
+      isowner: req.user?._id?.toString() === template?.ownerId?.toString(),
+      template,
+      title: `RAKUBUN - ${template.name} の詳細`,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('サーバーエラーが発生しました。');
+  }
+});
+
 // Route to display the form for adding a new template
 router.get('/templates/add', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {

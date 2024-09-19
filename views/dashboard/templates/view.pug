@@ -1,0 +1,25 @@
+//- dashboard/templates/view.pug
+extends ../base
+
+block content
+  .container
+    h1.mt-4.mb-4.text-center テンプレート詳細
+    .card
+      .card-header
+        h2.card-title= template.name
+      .card-body
+        p
+          strong 説明:
+          |  #{template.description}
+        p
+          strong システムメッセージ:
+          pre.bg-light.p-2 #{template.systemMessage}
+        p
+          strong プロンプト生成:
+          pre.bg-light.p-2 #{template.generatePrompt}
+        p
+          strong 公開ステータス:
+          |  #{template.isPublic ? '公開' : '非公開'}
+    a.btn.btn-secondary.mt-3(href='/dashboard/templates') 戻る
+    if isowner
+      a.btn.btn-primary.mt-3.ms-2(href=`/dashboard/templates/edit/${template._id}`) 編集

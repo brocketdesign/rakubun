@@ -1,0 +1,30 @@
+//- dashboard/templates/add.pug または dashboard/templates/edit.pug
+extends ../base
+
+block content
+  .container
+    if template
+      h1.mt-4.mb-4.text-center テンプレートを編集
+      form(method='POST', action=`/dashboard/templates/edit/${template._id}`)
+    else
+      h1.mt-4.mb-4.text-center 新しいテンプレートを追加
+      form(method='POST', action='/dashboard/templates/add')
+    .mb-3
+      label.form-label(for='name') 名前
+      input.form-control(type='text', name='name', id='name', value=template ? template.name : '', required)
+    .mb-3
+      label.form-label(for='description') 説明
+      textarea.form-control(name='description', id='description', rows='3', required)= template ? template.description : ''
+    .mb-3
+      label.form-label(for='systemMessage') システムメッセージ
+      textarea.form-control(name='systemMessage', id='systemMessage', rows='4', required)= template ? template.systemMessage : ''
+    .mb-3
+      label.form-label(for='generatePrompt') プロンプト生成
+      textarea.form-control(name='generatePrompt', id='generatePrompt', rows='5', required)= template ? template.generatePrompt : ''
+      small.text-muted
+        | プレースホルダーを使用できます: {message}, {fetchTitle}, {botDescription}, {targetAudience}, {articleCategories}, {postLanguage}, {writingStyle}, {writingTone}, {articleLength}
+    .form-check.form-switch.mb-3
+      input.form-check-input(type='checkbox', name='isPublic', id='isPublic', checked=template && template.isPublic ? 'checked' : '')
+      label.form-check-label(for='isPublic') 公開する
+    button.btn.btn-primary(type='submit') 送信
+    a.btn.btn-secondary.ms-2(href='/dashboard/templates') キャンセル
