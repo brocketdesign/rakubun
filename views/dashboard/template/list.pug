@@ -1,0 +1,38 @@
+extends ../layout
+
+block content
+  .container
+    h1 Templates
+
+    h2 Public Templates
+    table.table.table-striped
+      thead
+        tr
+          th Name
+          th Description
+          th Actions
+      tbody
+        each template in publicTemplates
+          tr
+            td= template.name
+            td= template.description
+            td
+              // Actions (e.g., View)
+
+    h2 Your Templates
+    a.btn.btn-primary(href='/dashboard/templates/add') Add New Template
+    table.table.table-striped
+      thead
+        tr
+          th Name
+          th Description
+          th Actions
+      tbody
+        each template in privateTemplates
+          tr
+            td= template.name
+            td= template.description
+            td
+              a.btn.btn-sm.btn-secondary(href=`/dashboard/templates/edit/${template._id}`) Edit
+              form(method='POST', action=`/dashboard/templates/delete/${template._id}`)
+                button.btn.btn-sm.btn-danger(type='submit') Delete

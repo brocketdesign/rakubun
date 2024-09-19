@@ -83,12 +83,15 @@ function startServer() {
       const generator = require('./routers/api/generator');
       const autoblog = require('./routers/api/autoblog');
       const admin = require('./routers/admin.js');
+      const templateRouter = require('./routers/dashboard/template');
       
+
       app.use('/', index); 
       app.use('/user', user); 
       app.use('/auth', auth); 
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
+      app.use('/dashboard', templateRouter);
       app.use('/api/generator', generator);
       app.use('/api/autoblog', autoblog);
       app.use('/admin', admin);
