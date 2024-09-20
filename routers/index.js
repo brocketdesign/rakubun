@@ -16,7 +16,7 @@ router.get('/',async(req, res, next) => {
   req.session.mode = '1';
   const faq = require('../services/faq')
 
-  res.render('index',{faq}); // Render the top page template
+  res.render('index',{faq,googleTag:process.env.GOOGLE_TAG}); // Render the top page template
 });
 
 // This route renders the contact form
