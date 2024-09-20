@@ -65,13 +65,30 @@ router.get('/templates/view/:templateId', ensureAuthenticated, ensureMembership,
     res.status(500).send('サーバーエラーが発生しました。');
   }
 });
-
-// Route to display the form for adding a new template
-router.get('/templates/add', ensureAuthenticated, ensureMembership, async (req, res) => {
+// Route to display the form for adding or editing a template
+router.get('/templates/form/:templateId?', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
-    res.render('dashboard/templates/add', {
+    const templateId = req.params.templateId ? new ObjectId(req.params.templateId) : null;
+    let template = null;
+
+    if (templateId) {
+      const userId = new ObjectId(req.user._id);
+
+      // Fetch the template to ensure it exists and the user has permission
+      template = await global.db.collection('templates').findOne({
+        _id: templateId,
+        ownerId: userId,
+      });
+
+      if (!template) {
+        return res.status(404).send('Template not found or you do not have permission to edit it.');
+      }
+    }
+
+    res.render('dashboard/templates/form', {
       user: req.user,
-      title: 'RAKUBUN - Add Template',
+      template,
+      title: template ? 'RAKUBUN - Edit Template' : 'RAKUBUN - Add Template',
     });
   } catch (error) {
     console.error(error);
@@ -79,93 +96,108 @@ router.get('/templates/add', ensureAuthenticated, ensureMembership, async (req, 
   }
 });
 
-// Route to handle the submission of a new template
-router.post('/templates/add', ensureAuthenticated, ensureMembership, async (req, res) => {
+// Handle submission for both adding and editing a template
+router.post('/templates/save', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
     const userId = new ObjectId(req.user._id);
-    const { name, description, systemMessage, generatePrompt, isPublic } = req.body;
-
-    // Create a new template object
-    const newTemplate = {
+    const {
+      templateId,
       name,
       description,
       systemMessage,
       generatePrompt,
-      isPublic: isPublic === 'on', // Checkbox returns 'on' if checked
+      isPublic,
+      sections,
+      tone,
+      style,
+      contentLength,
+      categoryName,
+      tags,
+    } = req.body;
+
+    // タグをカンマ区切りの文字列から配列に変換
+    const tagsArray = tags ? tags.split(',').map(tag => tag.trim()) : [];
+
+    const templateData = {
+      name,
+      description,
+      systemMessage,
+      generatePrompt,
+      isPublic: isPublic === 'on' || isPublic === true,
+      sections: parseInt(sections),
+      tone,
+      style,
+      contentLength: parseInt(contentLength),
+      categoryName,
+      tags: tagsArray,
       ownerId: userId,
-      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
-    await global.db.collection('templates').insertOne(newTemplate);
+    if (templateId) {
+      // 既存のテンプレートを更新
+      const result = await global.db.collection('templates').updateOne(
+        { _id: new ObjectId(templateId), ownerId: userId },
+        { $set: templateData }
+      );
 
-    res.redirect('/dashboard/templates');
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ success: false, message: 'テンプレートが見つからないか、編集権限がありません。' });
+      }
+    } else {
+      // 新しいテンプレートを作成
+      templateData.createdAt = new Date();
+      await global.db.collection('templates').insertOne(templateData);
+    }
+
+    res.json({ success: true, message: 'テンプレートが正常に保存されました。' });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ success: false, message: 'サーバーエラーが発生しました。' });
   }
 });
 
-// Route to display the form for editing an existing template
-router.get('/templates/edit/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {
+// テンプレートリストを取得するエンドポイント
+router.get('/api/templates/list', async (req, res) => {
+  try {
+      // テンプレートコレクションからテンプレートを取得
+      const templates = await global.db.collection('templates').find({}).toArray();
+
+      // テンプレートIDと名前のみを抽出
+      const templateList = templates.map(template => ({
+          _id: template._id,
+          name: template.name
+      }));
+
+      res.json({ success: true, templates: templateList });
+  } catch (error) {
+      console.error('テンプレートリスト取得中にエラーが発生しました:', error);
+      res.json({ success: false, message: 'テンプレートリストの取得に失敗しました。' });
+  }
+});
+// API route to get template details (for use with jQuery and SweetAlert2)
+router.get('/api/templates/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
     const templateId = new ObjectId(req.params.templateId);
     const userId = new ObjectId(req.user._id);
 
-    // Fetch the template to ensure it exists and the user has permission
+    // Fetch the template
     const template = await global.db.collection('templates').findOne({
       _id: templateId,
-      ownerId: userId,
+      $or: [
+        { isPublic: true },
+        { ownerId: userId }, // User's private template
+      ],
     });
 
     if (!template) {
-      return res.status(404).send('Template not found or you do not have permission to edit it.');
+      return res.status(404).json({ success: false, message: 'Template not found.' });
     }
 
-    res.render('dashboard/templates/edit', {
-      user: req.user,
-      template,
-      title: 'RAKUBUN - Edit Template',
-    });
+    res.json({ success: true, template });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
-  }
-});
-
-// Route to handle the submission of an edited template
-router.post('/templates/edit/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {
-  try {
-    const templateId = new ObjectId(req.params.templateId);
-    const userId = new ObjectId(req.user._id);
-
-    const { name, description, systemMessage, generatePrompt, isPublic } = req.body;
-
-    // Update the template
-    const result = await global.db.collection('templates').updateOne(
-      {
-        _id: templateId,
-        ownerId: userId, // Ensure the user owns the template
-      },
-      {
-        $set: {
-          name,
-          description,
-          systemMessage,
-          generatePrompt,
-          isPublic: isPublic === 'on',
-          updatedAt: new Date(),
-        },
-      }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).send('Template not found or you do not have permission to edit it.');
-    }
-
-    res.redirect('/dashboard/templates');
-  } catch (error) {
-    console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
 

@@ -91,7 +91,7 @@ function startServer() {
       app.use('/auth', auth); 
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
-      app.use('/dashboard', templateRouter);
+      app.use('', templateRouter);
       app.use('/api/generator', generator);
       app.use('/api/autoblog', autoblog);
       app.use('/admin', admin);

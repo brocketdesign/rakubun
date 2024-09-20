@@ -1,0 +1,45 @@
+//- dashboard/templates/form.pug
+extends ../base
+
+block content
+  .container
+    h1.mt-4.mb-4.text-center= template ? 'テンプレートを編集' : '新しいテンプレートを追加'
+    form(method='POST', action='/templates/save')
+      input(type='hidden', name='templateId', value=template ? template._id : '')
+      .mb-3
+        label.form-label(for='name') 名前
+        input.form-control(type='text', name='name', id='name', value=template ? template.name : '', required)
+      .mb-3
+        label.form-label(for='description') 説明
+        textarea.form-control(name='description', id='description', rows='3', required)= template ? template.description : ''
+      .mb-3
+        label.form-label(for='systemMessage') システムメッセージ
+        textarea.form-control(name='systemMessage', id='systemMessage', rows='4', required)= template ? template.systemMessage : ''
+      .mb-3
+        label.form-label(for='generatePrompt') プロンプト生成
+        textarea.form-control(name='generatePrompt', id='generatePrompt', rows='5', required)= template ? template.generatePrompt : ''
+        small.text-muted
+          | プレースホルダーを使用できます: {message}, {fetchTitle}, {botDescription}, {targetAudience}, {articleCategories}, {postLanguage}, {writingStyle}, {writingTone}, {articleLength}
+      .mb-3
+        label.form-label(for='sections') セクション数
+        input.form-control(type='number', name='sections', id='sections', value=template ? template.sections : 3, required)
+      .mb-3
+        label.form-label(for='tone') トーン
+        input.form-control(type='text', name='tone', id='tone', value=template ? template.tone : '', required)
+      .mb-3
+        label.form-label(for='style') スタイル
+        input.form-control(type='text', name='style', id='style', value=template ? template.style : '', required)
+      .mb-3
+        label.form-label(for='contentLength') コンテンツの長さ
+        input.form-control(type='number', name='contentLength', id='contentLength', value=template ? template.contentLength : 1000, required)
+      .mb-3
+        label.form-label(for='categoryName') カテゴリー名
+        input.form-control(type='text', name='categoryName', id='categoryName', value=template ? template.categoryName : '', required)
+      .mb-3
+        label.form-label(for='tags') タグ (カンマ区切り)
+        input.form-control(type='text', name='tags', id='tags', value=template && template.tags ? template.tags.join(', ') : '', required)
+      .form-check.form-switch.mb-3
+        input.form-check-input(type='checkbox', name='isPublic', id='isPublic', checked=template && template.isPublic ? 'checked' : '')
+        label.form-check-label(for='isPublic') 公開する
+      button.btn.btn-primary(type='submit') 保存
+      a.btn.btn-secondary.ms-2(href='/dashboard/templates') キャンセル

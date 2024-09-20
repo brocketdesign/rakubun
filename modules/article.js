@@ -2,36 +2,59 @@
 const { z } = require('zod');
 const { moduleCompletion } = require('./openai.js');
 
-const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT) => {
+const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template) => {
+  // テンプレートのプロパティまたはデフォルト値を使用
+  const sections = template?.sections || 3;
+  const tone = template?.tone || blogInfo.writingTone;
+  const style = template?.style || blogInfo.writingStyle;
+  const contentLength = template?.contentLength || blogInfo.articleLength;
+  const categoryName = template?.categoryName || blogInfo.articleCategories;
+  const tags = template?.tags?.length ? template.tags : blogInfo.postTags || [];
+
+  const systemMessage = template?.systemMessage || 'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。有名人の名前は含めないでください。';
+
+  const generatePromptTemplate = template?.generatePrompt || `{message} ...`;
+
   const generatePrompt = (message) => {
-    return `${message}\n記事タイトル: "${fetchTitle}"。\nメインテーマ: ${blogInfo.botDescription}。\n対象読者: ${blogInfo.targetAudience}。\nカテゴリー: ${blogInfo.articleCategories}。\n言語: ${blogInfo.postLanguage}。\nスタイル: ${blogInfo.writingStyle}。\nトーン: ${blogInfo.writingTone}。\n文字数: ${blogInfo.articleLength} 字。\n簡単な表現、シンプルな言葉を使用してください。ブロガーのトーンを保ってください。有名人の名前は、明示的に求められない限り避けてください。\nMarkdownでフォーマットを行ってください。`;
+    return generatePromptTemplate
+      .replace('{message}', message)
+      .replace('{fetchTitle}', fetchTitle)
+      .replace('{botDescription}', blogInfo.botDescription)
+      .replace('{targetAudience}', blogInfo.targetAudience)
+      .replace('{categoryName}', categoryName)
+      .replace('{postLanguage}', blogInfo.postLanguage)
+      .replace('{style}', style)
+      .replace('{tone}', tone)
+      .replace('{contentLength}', contentLength);
   };
 
+  const createMessages = (prompt) => [
+    {
+      role: 'system',
+      content: systemMessage,
+    },
+    {
+      role: 'user',
+      content: prompt,
+    },
+  ];
+
+  // 以下、関数内の各セクションで新しいプロパティを使用するように調整
+  // 例: getHeadlines関数
   const getHeadlines = async () => {
     const prompt = generatePrompt(
-      `以下のタイトルに基づいて、記事を構成する3つの短い見出しを提供してください。見出しは簡潔で魅力的なものにしてください。`
+      `以下のタイトルに基づいて、記事を構成する${sections}つの短い見出しを提供してください。見出しは簡潔で魅力的なものにしてください。`
     );
-    const messages = [
-      {
-        role: 'system',
-        content:
-          'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。チャプターやサブチャプター、各タイトルの番号付け、有名人の名前は含めないでください。実在する人物を含む虚偽の物語を作らないでください。',
-      },
-      { role: 'user', content: prompt },
-    ];
-    const response = await moduleCompletion(
-      { model: modelGPT, messages, max_tokens: 200 },
-      null
-    );
-    // Split the response into headlines
+    const messages = createMessages(prompt);
+    const response = await moduleCompletion({ model: modelGPT, messages, max_tokens: 200 });
     const headlines = response
       .trim()
       .split('\n')
       .filter((line) => line.trim() !== '')
-      .slice(0, 3);
+      .slice(0, sections);
     return headlines;
   };
-
+  
   const generateContentForSection = async (headline, previousContent) => {
     const contentPrompt = generatePrompt(
       `これまでの内容:\n${previousContent}\n\n次の見出しに基づいて、500文字以内で新しい段落を生成してください。\n見出し: "${headline}"。\n既に書かれている内容を繰り返さず、新しい情報を提供してください。見出しや結論、サブチャプターは含めないでください。`

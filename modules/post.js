@@ -25,6 +25,17 @@ async function checkLoginInfo(blogInfo) {
   }
 }
 
+async function getPostLink(postId, client) {
+  return new Promise((resolve, reject) => {
+    client.getPost(postId, ['link'], (err, post) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(post.link);
+      }
+    });
+  });
+}
 
 async function getCategoryId(type, client) {
 
@@ -100,13 +111,14 @@ async function getTermDetails(id, type, client) {
   });
 }
 
-async function post(title, content, categories, tags, image, postStatus, client) {
+async function post(title, slug, content, categories, tags, image, postStatus, client) {
   try {
     const categoryIds = await createCategories(categories,'category',client);
     const tagIds = await createCategories(tags, 'post_tag', client);
     // Create a new post with all the category IDs
     const postObject = {
       title: title,
+      name: slug,
       status: postStatus,
       type: 'post',
       terms: {
@@ -134,4 +146,4 @@ async function post(title, content, categories, tags, image, postStatus, client)
   }
 }
 
-module.exports = { getCategoryId, categoryExists,ensureCategory,getTermDetails,checkLoginInfo, post };
+module.exports = { getCategoryId, categoryExists, ensureCategory, getPostLink, getTermDetails,checkLoginInfo, post };

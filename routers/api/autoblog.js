@@ -192,7 +192,10 @@ router.get('/bots',async (req, res) => {
 
   try {
       if (blogId != null) {
-          botData = await global.db.collection('botInfos').find({ blogId: blogId }).toArray();
+          botData = await global.db.collection('botInfos')
+          .find({ blogId: blogId })
+          .sort({_id:-1})
+          .toArray();
           res.json({ success: true, botData });
       } else {
           res.json({ success: false, message: "Blog ID is required." });
@@ -204,24 +207,41 @@ router.get('/bots',async (req, res) => {
 });
 
 // BOT API
-
-
 const {autoBlog} = require('../../modules/init-bot.js')
-
 router.post('/bot-start', async (req, res) => {
   try {
     const userId = req.user._id;
-    const {botId}= req.body
-    const botInfo = await global.db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
-    const blogInfo = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(botInfo.blogId) });
+    const { botId } = req.body;
 
+    // Fetch botInfo
+    const botInfo = await global.db.collection('botInfos').findOne({ _id: new ObjectId(botId) });
+    if (!botInfo) {
+      return res.status(404).send('Bot not found');
+    }
+
+    // Fetch blogInfo
+    const blogInfo = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(botInfo.blogId) });
+    if (!blogInfo) {
+      return res.status(404).send('Blog not found');
+    }
+
+    // Ensure blogUrl exists
+    if (!blogInfo.blogUrl) {
+      return res.status(500).send('Blog URL is not configured');
+    }
+
+    // Prepare combinedPowers
     botInfo.botId = botInfo._id
     blogInfo.blogId = blogInfo._id
     const combinedPowers = { ...botInfo, ...blogInfo };
-    await autoBlog(combinedPowers,global.db)
-    res.send(`Job started for ${botId}`)
+
+    // Call autoBlog to post and save the article
+    const { postId, articleLink } = await autoBlog(combinedPowers, global.db);
+
+    // Respond with the article link
+    res.send({ postId, articleLink });
   } catch (error) {
-    console.log(error);
+    console.error('Error in /bot-start:', error);
     res.status(500).send('Internal server error');
   }
 });

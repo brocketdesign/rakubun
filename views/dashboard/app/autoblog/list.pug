@@ -73,36 +73,26 @@ block mainContent
                                     select#postgpt(name="postgpt" class="form-select")
                                         option(value="gpt4o-mini") GPT-4o-mini
                                         option(value="gpt4o") GPT-4o
-                                div.form-group.col-6
-                                    label.text-muted.text-start(for="postFrequency", class="form-label") 投稿頻度：
-                                    select#postFrequency(name="postFrequency" class="form-select")
-                                        option(value="0 0,12 * * *") 1日に2回
-                                        option(value="0 * * * *") 1時間ごと
-                                        option(value="*/30 * * * *") 30分ごと
-                                        option(value="*/10 * * * *") 10分ごと
-                                        option(value="0 0 * * *") 毎日
-                                        option(value="0 0 * * 0") 毎週
-                                div.form-group.col-6
-                                    label.text-muted.text-start(for="postStatus", class="form-label") 投稿頻度：
-                                    select#postStatus(name="postStatus" class="form-select")
-                                        option(value="publish") 公開
-                                        option(value="draft") 下書き
-                                div.form-group.col-6
-                                    label.text-muted.text-start(for="writingStyle", class="form-label") 好みの執筆スタイル：
-                                    select#writingStyle(name="writingStyle" class="form-select")
-                                        option(value="Descriptive") 記述的
-                                        option(value="Informative", selected) 情報的
-                                        option(value="Creative") 創造的
-                                        option(value="Analytical") 分析的
-                                        option(value="Technical") 技術的
-                                div.form-group.col-6
-                                    label.text-muted.text-start(for="writingTone", class="form-label") 好みの執筆トーン：
-                                    select#writingTone(name="writingTone" class="form-select")
-                                        option(value="Formal", selected) フォーマル
-                                        option(value="Assertive") 断定的
-                                        option(value="Humorous") ユーモラス
-                                        option(value="Professional") プロフェッショナル
-                                        option(value="Emotional") 感情的な
+                                .row
+                                    div.form-group.col-6
+                                        label.text-muted.text-start(for="postFrequency", class="form-label") 投稿頻度：
+                                        select#postFrequency(name="postFrequency" class="form-select")
+                                            option(value="0 0,12 * * *") 1日に2回
+                                            option(value="0 * * * *") 1時間ごと
+                                            option(value="*/30 * * * *") 30分ごと
+                                            option(value="*/10 * * * *") 10分ごと
+                                            option(value="0 0 * * *") 毎日
+                                            option(value="0 0 * * 0") 毎週
+                                    div.form-group.col-6
+                                        label.text-muted.text-start(for="postStatus", class="form-label") 投稿頻度：
+                                        select#postStatus(name="postStatus" class="form-select")
+                                            option(value="publish") 公開
+                                            option(value="draft") 下書き
+                                // テンプレートセレクターを追加
+                                div.form-group.col-12
+                                    label.text-muted.text-start(for="templateId", class="form-label") テンプレートの選択：
+                                    select#templateId(name="templateId" class="form-select")
+                                        option(value="") -- テンプレートを選択してください --
 
                 
                     input.blogId(type="hidden", name="blogId")
@@ -110,7 +100,7 @@ block mainContent
                     .card.border.shadow-0.rounded-0.my-2.bg-light.border-0
                         .card-body.px-1
                             .row
-                                div.form-group
+                                div.form-group.d-none
                                     label.text-muted.text-start(for="articleLength", class="form-label") 記事の長さ：
                                     select#articleLength(name="articleLength" class="form-select")
                                         option(value="1000") 〜500単語
@@ -204,7 +194,7 @@ block mainContent
                                     div.invalid-feedback ボット名が必要です。
                                 div.form-group
                                     label.text-muted.text-start(for="botDescription", class="form-label") ボットの説明：
-                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=7)
+                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=7, maxLength=1000)
                                     div.invalid-feedback ボットの説明が必要です。
     #hiddenImageGenFormContainer(style="display:none;")
         .container
@@ -457,10 +447,9 @@ block mainContent
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between mb-1">
                                                 <div>
-                                                    <span class="badge bg-secondary">
-                                                        <i class="fa fa-robot"></i>
-                                                        <span class="mx-1 small">${bot.botName}</span>
-                                                    </span>
+                                                    <h3 class="mb-0">
+                                                        <span class="mx-1 small" style="font-size: 16px;">${bot.botName}</span>
+                                                    </h3>
                                                 </div>
                                                 <div>
                                                     <span class="badge bg-secondary">
@@ -649,7 +638,35 @@ block mainContent
                                 $(`#${uniqueId}`).find('#postStatus').val(formData.postStatus || '');
                                 $(`#${uniqueId}`).find('#writingStyle').val(formData.writingStyle || '');
                                 $(`#${uniqueId}`).find('#writingTone').val(formData.writingTone || '');
+                                $(`#${uniqueId}`).find('#templateId').val(formData.templateId || '');
                             }
+                            $.ajax({
+                                url: '/api/templates/list',
+                                method: 'GET',
+                                success: function(response) {
+                                    if (response.success) {
+                                        const templates = response.templates;
+                                        const $templateSelect = $(`#${uniqueId}`).find('#templateId');
+                                        $templateSelect.empty();
+                                        $templateSelect.append('<option value="">-- テンプレートを選択してください --</option>');
+                                        templates.forEach(function(template) {
+                                            const option = $('<option>')
+                                                .val(template._id)
+                                                .text(template.name);
+                                            $templateSelect.append(option);
+                                        });
+                                        // 編集時に選択されたテンプレートを設定
+                                        if (formData && formData.templateId) {
+                                            $templateSelect.val(formData.templateId);
+                                        }
+                                    } else {
+                                        console.error('テンプレートの取得に失敗しました:', response.message);
+                                    }
+                                },
+                                error: function() {
+                                    console.error('テンプレートの取得中にエラーが発生しました');
+                                }
+                            });
                     },
                     preConfirm: () => {
                         const form = Swal.getPopup().querySelector('form');
@@ -709,11 +726,24 @@ block mainContent
                 const spinner = $('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
                 $btn.prop('disabled', true).append(spinner);
 
-                startBot(botId, function() {
-                    // Remove spinner and enable button
+                $.post('/api/autoblog/bot-start', { botId: botId }, function(response) {
                     $btn.prop('disabled', false);
                     spinner.remove();
-                    $btn.find('i').show()
+                    $btn.find('i').show();
+
+                    if (response.articleLink) {
+                        window.open(response.articleLink, '_blank');
+                        showNotification(`記事が正常に作成されました！ こちらで確認できます: <a href="${response.articleLink}" target="_blank">記事を見る</a>`, 'success');
+                        $('#article-link-container').html(`<a href="${response.articleLink}" target="_blank">記事を見る</a>`);
+                    } else {
+                        showNotification('記事が作成されましたが、リンクが提供されませんでした。', 'warning');
+                    }
+                    }).fail(function(error) {
+                    console.error('Error:', error);
+                    showNotification('ブログデータを取得できませんでした。', 'error');
+                    $btn.prop('disabled', false);
+                    spinner.remove();
+                    $btn.find('i').show();
                 });
             });
 
@@ -725,7 +755,7 @@ block mainContent
                     contentType: 'application/json',
                     success: function(response) {
                         if (typeof callback === 'function') {
-                            callback();
+                            callback(response);
                         }
                     },
                     error: function(xhr, status, error) {

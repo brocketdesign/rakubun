@@ -3,6 +3,7 @@ const {
   getCategoryId,
   categoryExists,
   ensureCategory,
+  getPostLink,
   getTermDetails,
   post,
 } = require('./post.js');
@@ -42,6 +43,19 @@ async function autoBlog(blogInfo, db) {
 
   console.log(`Generating article for: ${blogInfo.botName}`);
 
+  // Fetch the selected template
+  const templateId = blogInfo.templateId ? new ObjectId(blogInfo.templateId) : null;
+  let template = null;
+
+  if (templateId) {
+    template = await db.collection('templates').findOne({ _id: templateId });
+    if (!template) {
+      console.log('Template not found. Using default settings.');
+    }
+  } else {
+    console.log('No template selected. Using default settings.');
+  }
+
   // Categories
   let promise_categories = addTaxonomy(['RAKUBUN'], 'category', client, language).then(
     (myCategories) => {
@@ -51,27 +65,44 @@ async function autoBlog(blogInfo, db) {
   );
 
   // Title
-  const promptDataTitle = titlePromptGen(blogInfo);
-  const promptDataTitle_messages = [
-    {
-      role: 'system',
-      content:
-        'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
-    },
-    { role: 'user', content: promptDataTitle },
-  ];
-  const untreatedTitle = await moduleCompletion({
-    model: modelGPT,
-    messages: promptDataTitle_messages,
-    max_tokens: 100,
-  });
-  const fetchTitle = untreatedTitle.trim().replace(/"/g, '');
-
+  const { japaneseTitle, slug } = await generateTitles(blogInfo, template)
+  function generateTitles(blogInfo, template) {
+    return new Promise((resolve, reject) => {
+      // Generate the Japanese title as usual
+      const japaneseTitlePrompt = titlePromptGen(blogInfo, template);
+      const japaneseTitle_messages = [
+        {
+          role: 'system',
+          content: 'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+        },
+        { role: 'user', content: japaneseTitlePrompt },
+      ];
+  
+      moduleCompletion({
+        model: 'gpt-4o-mini',
+        messages: japaneseTitle_messages,
+        max_tokens: 100,
+      })
+      .then(japaneseTitle => {
+        japaneseTitle = japaneseTitle.trim().replace(/"/g, '');
+  
+        // Translate the Japanese title to English
+        return translateTitle(japaneseTitle, 'gpt-4o-mini').then(englishTitle => {
+          // Slugify the English title
+          const slug = slugifyTitle(englishTitle);
+  
+          resolve({ japaneseTitle, slug });
+        });
+      })
+      .catch(reject);
+    });
+  }  
+  
   // Tags
   const PossibleAnswersExtraction = z.object({
     answers: z.array(z.string()),
   });
-  const tagPrompt = categoryPromptGen(fetchTitle, 'post_tag', language);
+  const tagPrompt = categoryPromptGen(japaneseTitle, 'post_tag', language);
   const tagPrompt_messages = [
     {
       role: 'system',
@@ -92,10 +123,10 @@ async function autoBlog(blogInfo, db) {
   });
 
   // Initiate Image Generation
-  const imageTaskId = await initiateImageGeneration(fetchTitle, modelGPT, blogInfo);
+  const imageTaskId = await initiateImageGeneration(slug, modelGPT, blogInfo);
 
   // Generate Article Content
-  const promise_content = generateCompleteArticle(fetchTitle, blogInfo, 'gpt-4o');
+  const promise_content = generateCompleteArticle(japaneseTitle, blogInfo, 'gpt-4o', template);
 
   // Post the article without the image
   try {
@@ -105,15 +136,11 @@ async function autoBlog(blogInfo, db) {
       promise_tags,
     ]);
 
-    try {
-      saveArticleUpdateBlog(fetchTitle, content, categories, tags, null, blogInfo);
-    } catch (error) {
-      console.log(error);
-      console.log(`Error Saving Article`);
-    }
     const content_HTML = markdownToHtml(content).replace(/<h1>.*?<\/h1>/, '');
+
     const postId = await post(
-      fetchTitle,
+      japaneseTitle,
+      slug,
       content_HTML,
       categories,
       tags,
@@ -128,6 +155,33 @@ async function autoBlog(blogInfo, db) {
     checkImageAndUpdatePost(imageTaskId, postId, client);
 
     console.log('All tasks completed successfully');
+
+    try {
+      const articleLink = await getPostLink(postId, client)
+
+      const saveResult = await saveArticleUpdateBlog(
+        japaneseTitle,
+        content,
+        categories,
+        tags,
+        null,
+        blogInfo,
+        postId,
+        articleLink
+      );
+
+      return {
+        postId: saveResult.postId,
+        articleLink: articleLink,
+        articleId: saveResult.articleId,
+        message: saveResult.message,
+      };
+    } catch (error) {
+      console.log(error);
+      console.log(`Error Saving Article`);
+    }
+
+    return { postId } 
   } catch (err) {
     console.log(err);
     return err;
@@ -245,8 +299,8 @@ function contentPromptGenForSearch(search_results, blogInfo) {
   }
 }
 
-function titlePromptGen(blogInfo) {
-  return `「${blogInfo.botDescription}」に関連する具体的なテーマを1つ提供してください。対象読者は${blogInfo.postLanguage}を話す人々です。これらのカテゴリーに適合するテーマを選択してください: ${blogInfo.articleCategories}。オリジナリティを目指してください。トーンは${blogInfo.writingTone}で、記事のスタイルは${blogInfo.writingStyle}に合わせてください。${blogInfo.postLanguage}で回答し、新鮮で魅力的な提案を優先してください。提供するタイトルは、有名な人物やキーワードを組み合わせて幅広い読者を惹きつけるものでなければなりません。タイトル文字列のみで回答してください。`;
+function titlePromptGen(blogInfo, template) {
+  return `「${blogInfo.botDescription}」に関連する具体的なテーマを1つ提供してください。対象読者は${blogInfo.postLanguage}を話す人々です。これらのカテゴリーに適合するテーマを選択してください: ${template?.categoryName || blogInfo.articleCategories}。オリジナリティを目指してください。トーンは${template?.tone || blogInfo.writingTone}で、記事のスタイルは${template?.style || blogInfo.writingStyle}に合わせてください。${blogInfo.postLanguage}で回答し、新鮮で魅力的な提案を優先してください。提供するタイトルは、有名な人物やキーワードを組み合わせて幅広い読者を惹きつけるものでなければなりません。タイトル文字列のみで回答してください。`;
 }
 
 function categoryPromptGen(title, type, language) {
@@ -283,7 +337,9 @@ async function saveArticleUpdateBlog(
   myCategories,
   myTags,
   myImages,
-  blogInfo
+  blogInfo,
+  postId,
+  articleLink
 ) {
   try {
     const article = {
@@ -295,11 +351,15 @@ async function saveArticleUpdateBlog(
       botId: new ObjectId(blogInfo.botId),
       createdAt: new Date(),
       thumbnail: myImages ? myImages.attachment_id : null,
+      postId: postId, 
+      articleLink
     };
 
+    // Insert the article into the 'articles' collection
     const articleResult = await global.db.collection('articles').insertOne(article);
     const articleId = articleResult.insertedId;
 
+    // Update the 'blogInfos' collection with the new articleId
     const blogUpdateResult = await global.db.collection('blogInfos').updateOne(
       { _id: new ObjectId(blogInfo._id) },
       { $push: { articleIds: articleId } }
@@ -312,6 +372,7 @@ async function saveArticleUpdateBlog(
     return {
       message: 'Article saved and blog updated successfully',
       articleId: articleId,
+      postId: postId,
     };
   } catch (error) {
     console.error('Error saving article and updating blog:', error);
@@ -385,6 +446,28 @@ async function createTaxonomy(taxonomyName, type, language, client) {
 
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
+}
+async function translateTitle(japaneseTitle, model) {
+  const translationPrompt = `Translate this title to English: "${japaneseTitle}".`;
+  const translationPrompt_messages = [
+    { role: 'system', content: 'You are a proficient language translator.' },
+    { role: 'user', content: translationPrompt },
+  ];
+  
+  const translationResult = await moduleCompletion({
+    model: model,
+    messages: translationPrompt_messages,
+    max_tokens: 60,
+  });
+
+  return translationResult.trim();
+}
+function slugifyTitle(englishTitle) {
+  return englishTitle
+    .toLowerCase()               // Convert to lowercase
+    .replace(/[^\w\s-]/g, '')    // Remove special characters
+    .replace(/\s+/g, '-')        // Replace spaces with hyphens
+    .replace(/-+/g, '-');        // Replace multiple hyphens with a single one
 }
 
 module.exports = { autoBlog };
