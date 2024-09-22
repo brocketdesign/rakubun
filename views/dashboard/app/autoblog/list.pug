@@ -731,7 +731,8 @@ block mainContent
                     spinner.remove();
                     $btn.find('i').show();
 
-                    if (response.articleLink) {
+                    const postStatus = $('#postStatus').val() == 'publish'
+                    if (response.articleLink && postStatus) {
                         window.open(response.articleLink, '_blank');
                         showNotification(`記事が正常に作成されました！ こちらで確認できます: <a href="${response.articleLink}" target="_blank">記事を見る</a>`, 'success');
                         $('#article-link-container').html(`<a href="${response.articleLink}" target="_blank">記事を見る</a>`);
