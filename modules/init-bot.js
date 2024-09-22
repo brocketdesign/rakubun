@@ -35,7 +35,6 @@ async function autoBlog(blogInfo, db) {
   const client = wordpress.createClient(blogInfo);
   let modelGPT = 'gpt-4o-mini';
 
-  console.log({ modelGPT });
   if (!isBlogInfoComplete(blogInfo)) {
     console.log('You need to provide the blog information');
     return;
@@ -53,6 +52,7 @@ async function autoBlog(blogInfo, db) {
       console.log('Template not found. Using default settings.');
     }
   } else {
+    template = await db.collection('templates').findOne({});
     console.log('No template selected. Using default settings.');
   }
 
@@ -156,8 +156,9 @@ async function autoBlog(blogInfo, db) {
 
     console.log('All tasks completed successfully');
 
+    const articleLink = await getPostLink(postId, client)
+
     try {
-      const articleLink = await getPostLink(postId, client)
 
       const saveResult = await saveArticleUpdateBlog(
         japaneseTitle,
@@ -181,7 +182,7 @@ async function autoBlog(blogInfo, db) {
       console.log(`Error Saving Article`);
     }
 
-    return { postId } 
+    return { postId, articleLink } 
   } catch (err) {
     console.log(err);
     return err;
