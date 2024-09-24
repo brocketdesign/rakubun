@@ -3,13 +3,25 @@ extends ../base
 block content
   .container
     h1.mt-4.mb-4.text-center テンプレート一覧
+    //- Add this block where you want to display the tags
+    .section-tags
+      h2.mb-3 タグ
+      .card.mb-4
+        .card-body
+          .row
+            each tag in tags.slice(0, 10)
+              .col-auto
+                a.btn.btn-outline-primary.mb-2(href=`/templates/tag/${tag}`) #{tag}
+          a.btn.btn-link(href='/tags') もっと見る
+
 
     // Bootstrap 5 Nav Tabs
     ul.nav.nav-tabs.mb-4
       li.nav-item
         a.nav-link.active(href='#public-templates', data-bs-toggle='tab') 公開テンプレート
-      li.nav-item
-        a.nav-link(href='#private-templates', data-bs-toggle='tab') あなたのテンプレート
+      if user
+        li.nav-item
+          a.nav-link(href='#private-templates', data-bs-toggle='tab') あなたのテンプレート
 
     .tab-content
       // Public Templates Tab
@@ -27,25 +39,27 @@ block content
                 td= template.name
                 td= template.description
                 td.text-center
-                  button.btn.btn-sm.btn-primary.view-template-btn(data-id=template._id) 表示
+                  button.btn.btn-sm.btn-primary.view-template-btn.shadow-0(data-id=template._id) <i class="bi bi-eye"></i>
+                  a.btn.btn-sm.btn-secondary.mx-2.shadow-0(href=`/templates/view/${template._id}`) <i class="bi bi-box-arrow-up-right"></i>
 
       // Private Templates Tab
-      .tab-pane.fade#private-templates
-        h2.mt-5.mb-3 あなたのテンプレート
-        a.btn.btn-success.mb-3#addTemplateBtn 新しいテンプレートを追加
-        table.table.table-hover.table-responsive(class='w-100 d-block d-md-table')
-          thead
-            tr
-              th 名前
-              th 説明
-              th.text-center 操作
-          tbody
-            each template in privateTemplates
+      if user
+        .tab-pane.fade#private-templates
+          h2.mt-5.mb-3 あなたのテンプレート
+          a.btn.btn-success.mb-3#addTemplateBtn 新しいテンプレートを追加
+          table.table.table-hover.table-responsive(class='w-100 d-block d-md-table')
+            thead
               tr
-                td= template.name
-                td= template.description
-                td.text-center
-                  button.btn.btn-sm.btn-primary.view-template-btn(data-id=template._id) 表示
-                  button.btn.btn-sm.btn-secondary.ms-2.edit-template-btn(data-id=template._id) 編集
-                  button.btn.btn-sm.btn-danger.ms-2.delete-template-btn(data-id=template._id) 削除
+                th 名前
+                th 説明
+                th.text-center 操作
+            tbody
+              each template in privateTemplates
+                tr
+                  td= template.name
+                  td= template.description
+                  td.text-center
+                    button.btn.btn-sm.btn-primary.view-template-btn(data-id=template._id) 表示
+                    button.btn.btn-sm.btn-secondary.ms-2.edit-template-btn(data-id=template._id) 編集
+                    button.btn.btn-sm.btn-danger.ms-2.delete-template-btn(data-id=template._id) 削除
   script(src='/js/templates.js')

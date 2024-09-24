@@ -1,0 +1,60 @@
+extends ../base
+
+block content
+  .container
+    h1.mt-4.mb-4.text-center タグ: #{tagName}
+
+    // Bootstrap 5 Nav Tabs
+    ul.nav.nav-tabs.mb-4
+      li.nav-item
+        a.nav-link.active(href=`/templates/tag/${tagName}`, data-bs-toggle='tab') 公開テンプレート
+      li.nav-item
+        a.nav-link(href=`/templates/tag/${tagName}`, data-bs-toggle='tab') あなたのテンプレート
+
+    .tab-content
+      // Public Templates Tab
+      .tab-pane.fade.show.active#public-templates
+        h2.mb-3 公開テンプレート
+        if publicTemplates.length > 0
+          table.table.table-hover.table-responsive(class='w-100 d-block d-md-table')
+            thead
+              tr
+                th 名前
+                th 説明
+                th.text-center 操作
+            tbody
+              each template in publicTemplates
+                tr
+                  td= template.name
+                  td= template.description
+                  td.text-center
+                    button.btn.btn-sm.btn-primary.view-template-btn.shadow-0(data-id=template._id) <i class="bi bi-eye"></i>
+                    a.btn.btn-sm.btn-secondary.mx-2.shadow-0(href=`/templates/view/${template._id}`) <i class="bi bi-box-arrow-up-right"></i>
+        else
+          p  このタグに公開テンプレートはありません。
+
+      // Private Templates Tab
+      .tab-pane.fade#private-templates
+        h2.mt-5.mb-3 あなたのテンプレート
+        if privateTemplates.length > 0
+          table.table.table-hover.table-responsive(class='w-100 d-block d-md-table')
+            thead
+              tr
+                th 名前
+                th 説明
+                th.text-center 操作
+            tbody
+              each template in privateTemplates
+                tr
+                  td= template.name
+                  td= template.description
+                  td.text-center
+                    button.btn.btn-sm.btn-primary.view-template-btn(data-id=template._id) 表示
+                    button.btn.btn-sm.btn-secondary.ms-2.edit-template-btn(data-id=template._id) 編集
+                    button.btn.btn-sm.btn-danger.ms-2.delete-template-btn(data-id=template._id) 削除
+        else
+          p  このタグにあなたのテンプレートはありません。
+
+    a.btn.btn-secondary.mt-4(href='/templates') 戻る
+
+  script(src='/js/templates.js')

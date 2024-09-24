@@ -3,6 +3,36 @@ html
   head
     meta(charset='UTF-8')
     meta(name='viewport', content='width=device-width, initial-scale=1.0')
+
+    // タイトルを seo オブジェクトから動的に設定
+    if seo && seo.title
+      title= seo.title
+    else
+      title RAKUBUN | 高性能AIライティングツール
+
+    // メタディスクリプションを seo オブジェクトから動的に設定
+    if seo && seo.description
+      meta(name='description', content=seo.description)
+    else
+      meta(name='description', content='RAKUBUNは、コンテンツ制作者、ブロガー、ビジネス向けの高性能AIライティングツールです。')
+
+    // メタキーワードを seo オブジェクトから動的に設定
+    if seo && seo.keywords
+      meta(name='keywords', content=seo.keywords)
+    else
+      meta(name='keywords', content='RAKUBUN, AIライティング, コンテンツ作成, テンプレート, 高性能AI')
+
+    // カノニカルURLを seo オブジェクトから動的に設定
+    if seo && seo.canonical
+      link(rel='canonical', href=seo.canonical)
+
+    // OpenGraphやTwitter用の追加メタタグ
+    if seo && seo.title
+      meta(property='og:title', content=seo.title)
+    if seo && seo.description
+      meta(property='og:description', content=seo.description)
+      meta(name='twitter:description', content=seo.description)
+
     if googleTag
       <!-- Google tag (gtag.js) -->
       script(async src=`https://www.googletagmanager.com/gtag/js?id=${googleTag}`)
@@ -12,7 +42,6 @@ html
         gtag('js', new Date());
         gtag('config', '#{googleTag}');
     link(rel='icon', type='image/png', href='/img/logo.png')
-    title #{title?title:'RAKUBUN | High-Performance AI Writing Tool'} 
     link(href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous")
     link(rel='stylesheet', href='/css/style.css')
     link(rel='stylesheet', href='/css/mdb.min.css')
@@ -78,7 +107,10 @@ html
       .container
         footer.d-flex.flex-wrap.justify-content-between.align-items-center.py-3.my-4.border-top
           .col-12.d-flex.align-items-center.justify-content-center.text-center
-            span.mb-3.mb-md-0.text-muted © 2023 Hato, Ltd
+            span.mb-3.mb-md-0.text-muted  
+              a(href="https://app.rakubun.com", target="_blank") RAKUBUN 
+              | © 2024 
+              a(href="https://hatoltd.com", target="_blank") Hato, Ltd
 
       script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous")
 

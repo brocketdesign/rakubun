@@ -1,6 +1,23 @@
 main#dashboard {
   display:none;
 }
+.cta-button{
+    font-size:1.3em;
+}
+.hidden {
+    opacity: 0;
+}
+.b-custom-gradient-text {
+    background: linear-gradient(90.9deg, #4facfe 2.74%, #00f2fe 102.92%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.b-custom-gradient {
+    background: linear-gradient(90.9deg, #4facfe 2.74%, #00f2fe 102.92%);
+}
+h4 {
+    color: #4ab1fe;
+}
 #sidebarMenu.open{
   width: auto !important;
 }

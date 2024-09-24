@@ -6,65 +6,160 @@ const ensureAuthenticated = require('../../middleware/authMiddleware');
 const ensureMembership = require('../../middleware/ensureMembership');
 const { ObjectId } = require('mongodb');
 
-// Route to list all templates (public and user's private templates)
-router.get('/templates', ensureAuthenticated, ensureMembership, async (req, res) => {
+// Modify the existing /templates route
+router.get('/templates', async (req, res) => {
   try {
-    const userId = new ObjectId(req.user._id);
+    const userId = req.user ? new ObjectId(req.user._id) : null;
 
     // Fetch public templates
-    const publicTemplates = await global.db
-      .collection('templates')
-      .find({ isPublic: true })
-      .toArray();
+    const publicTemplates = await global.db.collection('templates').find({ isPublic: true }).toArray();
 
-    // Fetch user's private templates
-    const privateTemplates = await global.db
-      .collection('templates')
-      .find({ ownerId: userId })
-      .toArray();
+    let privateTemplates = [];
+    if (userId) {
+      // Fetch user's private templates
+      privateTemplates = await global.db.collection('templates').find({ ownerId: userId }).toArray();
+    }
 
+    // Fetch unique tags from public templates
+    const tags = await global.db.collection('templates').aggregate([
+      { $match: { isPublic: true } },
+      { $unwind: '$tags' },
+      { $group: { _id: '$tags', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 20 },
+    ]).toArray();
+
+    const tagNames = tags.map(tag => tag._id);
+
+    const seo = {
+      title: 'RAKUBUN - テンプレートを探索',
+      description: 'RAKUBUNで公開されているテンプレートを閲覧できます。さまざまな用途やカテゴリーに対応したテンプレートを探しましょう。',
+      keywords: 'テンプレート, 公開テンプレート, RAKUBUN, テンプレート探索, コンテンツ作成',
+      canonical: '/templates'
+    };
+    
     res.render('dashboard/templates/list', {
       user: req.user,
       publicTemplates,
       privateTemplates,
-      title: 'RAKUBUN - Templates',
+      tags: tagNames,
+      seo
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send('内部サーバーエラー');
   }
 });
 
-// テンプレートの詳細を表示するルート
-router.get('/templates/view/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {
+// Route to display template details
+router.get('/templates/view/:templateId', async (req, res) => {
   try {
     const templateId = new ObjectId(req.params.templateId);
-    const userId = new ObjectId(req.user._id);
+    const userId = req.user ? new ObjectId(req.user._id) : null;
 
-    // テンプレートを取得
+    // Fetch the template
     const template = await global.db.collection('templates').findOne({
       _id: templateId,
       $or: [
         { isPublic: true },
-        { ownerId: userId } // 自分のプライベートテンプレートを表示可能
-      ]
+        { ownerId: userId },
+      ],
     });
 
     if (!template) {
       return res.status(404).send('テンプレートが見つかりません。');
     }
 
+    const isowner = req.user && req.user._id.toString() === template.ownerId?.toString();
+
+    const seo = {
+      title: `RAKUBUN - ${template.name} の詳細`,
+      description: `${template.name} の詳細情報を表示しています。テンプレートの説明、プロンプト生成、関連するタグなどを確認できます。`,
+      keywords: `テンプレート, ${template.name}, RAKUBUN, テンプレート詳細, ${template.tags.join(', ')}`,
+      canonical: `/templates/view/${template._id}`
+    }
+    
     res.render('dashboard/templates/view', {
       user: req.user,
-      isowner: req.user?._id?.toString() === template?.ownerId?.toString(),
+      isowner,
       template,
-      title: `RAKUBUN - ${template.name} の詳細`,
+      seo
     });
   } catch (error) {
     console.error(error);
     res.status(500).send('サーバーエラーが発生しました。');
   }
 });
+
+// Route to display templates by a specific tag
+router.get('/templates/tag/:tagName', async (req, res) => {
+  try {
+    const tagName = req.params.tagName;
+    const userId = req.user ? new ObjectId(req.user._id) : null;
+
+    // Fetch public templates with the specified tag
+    const publicTemplates = await global.db.collection('templates').find({
+      isPublic: true,
+      tags: tagName,
+    }).toArray();
+
+    let privateTemplates = [];
+    if (userId) {
+      // Fetch user's private templates with the specified tag
+      privateTemplates = await global.db.collection('templates').find({
+        ownerId: userId,
+        tags: tagName,
+      }).toArray();
+    }
+
+    const seo = {
+      title: `RAKUBUN - タグ: ${tagName} のテンプレート`,
+      description: `タグ「${tagName}」に関連するテンプレートを表示しています。さまざまなテンプレートをタグで絞り込んで探せます。`,
+      keywords: `テンプレート, ${tagName}, RAKUBUN, タグ別テンプレート, コンテンツ作成`,
+      canonical: `/templates/tag/${tagName}`
+    };
+
+    res.render('dashboard/templates/byTag', {
+      user: req.user,
+      publicTemplates,
+      privateTemplates,
+      tagName,
+      seo
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('内部サーバーエラー');
+  }
+});
+// Route to display all tags
+router.get('/tags', async (req, res) => {
+  try {
+    // Aggregate unique tags from public templates
+    const tags = await global.db.collection('templates').aggregate([
+      { $match: { isPublic: true } },
+      { $unwind: '$tags' },
+      { $group: { _id: '$tags', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]).toArray();
+
+    const seo = {
+      title: 'RAKUBUN - タグ一覧',
+      description: 'RAKUBUNで使用されているすべてのタグを表示しています。タグを使って関連するテンプレートを見つけましょう。',
+      keywords: 'テンプレート, RAKUBUN, タグ, タグ一覧, テンプレートタグ',
+      canonical: '/tags'
+    };
+    
+    res.render('dashboard/templates/tags', {
+      user: req.user,
+      tags,
+      seo
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('内部サーバーエラー');
+  }
+});
+
 // Route to display the form for adding or editing a template
 router.get('/templates/form/:templateId?', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
@@ -175,18 +270,18 @@ router.get('/api/templates/list', async (req, res) => {
       res.json({ success: false, message: 'テンプレートリストの取得に失敗しました。' });
   }
 });
-// API route to get template details (for use with jQuery and SweetAlert2)
-router.get('/api/templates/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {
+// API route to get template details
+router.get('/api/templates/:templateId', async (req, res) => {
   try {
     const templateId = new ObjectId(req.params.templateId);
-    const userId = new ObjectId(req.user._id);
+    const userId = req.user ? new ObjectId(req.user._id) : null;
 
     // Fetch the template
     const template = await global.db.collection('templates').findOne({
       _id: templateId,
       $or: [
         { isPublic: true },
-        { ownerId: userId }, // User's private template
+        { ownerId: userId },
       ],
     });
 
@@ -200,6 +295,7 @@ router.get('/api/templates/:templateId', ensureAuthenticated, ensureMembership, 
     res.status(500).json({ success: false, message: 'Server error.' });
   }
 });
+
 
 // Route to handle the deletion of a template
 router.post('/templates/delete/:templateId', ensureAuthenticated, ensureMembership, async (req, res) => {

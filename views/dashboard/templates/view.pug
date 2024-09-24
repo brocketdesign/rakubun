@@ -20,6 +20,18 @@ block content
         p
           strong 公開ステータス:
           |  #{template.isPublic ? '公開' : '非公開'}
-    a.btn.btn-secondary.mt-3(href='/dashboard/templates') 戻る
+
+        //- Tags Section
+        if template.tags && template.tags.length > 0
+          p
+            strong タグ:
+            each tag in template.tags
+              a.btn.btn-sm.btn-outline-primary.mx-1(href=`/templates/tag/${encodeURIComponent(tag)}`) #{tag}
+        else
+          p
+            | このテンプレートにはタグが設定されていません。
+
+    //- Buttons
+    a.btn.btn-secondary.mt-3(href='/templates') 戻る
     if isowner
-      a.btn.btn-primary.mt-3.ms-2(href=`/dashboard/templates/edit/${template._id}`) 編集
+      a.btn.btn-primary.mt-3.ms-2(href=`/templates/edit/${template._id}`) 編集
