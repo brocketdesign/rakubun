@@ -74,8 +74,8 @@ router.get('/templates/view/:templateId', async (req, res) => {
     const isowner = req.user && req.user._id.toString() === template.ownerId?.toString();
 
     const seo = {
-      title: `RAKUBUN - ${template.name} の詳細`,
-      description: `${template.name} の詳細情報を表示しています。テンプレートの説明、プロンプト生成、関連するタグなどを確認できます。`,
+      title: `RAKUBUN - ${template.name}の詳細`,
+      description: `${template.name} の詳細情報を表示しています。テンプレートの説明、プロンプト生成、関連するタグなどを確認できます。AIによるコンテンツ生成の際にテンプレートを使用しています。`,
       keywords: `テンプレート, ${template.name}, RAKUBUN, テンプレート詳細, ${template.tags.join(', ')}`,
       canonical: `/templates/view/${template._id}`
     }

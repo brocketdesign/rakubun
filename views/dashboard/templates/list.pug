@@ -3,6 +3,16 @@ extends ../base
 block content
   .container
     h1.mt-4.mb-4.text-center テンプレート一覧
+    //- SEO-friendly Paragraph
+    .seo-paragraph
+      h2.mt-5.mb-4.text-start RAKUBUNでAI生成コンテンツを効率化
+      p
+        | RAKUBUNは、AIを活用して高品質なブログ投稿やコンテンツを短時間で作成することができる強力なツールです。特に
+        strong WordPress記事テンプレート
+        | を活用することで、AI生成のコンテンツがブログ管理を簡素化し、SEO対策を強化できます。効率的な
+        strong AIコンテンツ作成
+        | によって、短時間で質の高い記事を作成し、検索エンジンのランクを向上させましょう。
+
     //- Add this block where you want to display the tags
     .section-tags
       h2.mb-3 タグ
@@ -26,7 +36,13 @@ block content
     .tab-content
       // Public Templates Tab
       .tab-pane.fade.show.active#public-templates
-        h2.mb-3 公開テンプレート
+
+        //- SEO-friendly Paragraph
+        .seo-paragraph
+          h3.mt-4.mb-3 公開テンプレートを活用してSEOを強化
+          p
+            | 公開テンプレートを利用することで、初心者でも簡単にブログ投稿を開始できます。RAKUBUNのテンプレートは、事前にSEOに配慮した構成になっているため、あなたのブログがより多くの読者に見つかりやすくなります。AI生成のブログ記事を利用し、WordPress記事を最適化して検索順位を上げましょう。
+
         table.table.table-hover.table-responsive(class='w-100 d-block d-md-table')
           thead
             tr
