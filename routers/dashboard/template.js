@@ -43,7 +43,8 @@ router.get('/templates', async (req, res) => {
       publicTemplates,
       privateTemplates,
       tags: tagNames,
-      seo
+      seo,
+      googleTag:process.env.GOOGLE_TAG
     });
   } catch (error) {
     console.error(error);
@@ -83,7 +84,8 @@ router.get('/templates/view/:templateId', async (req, res) => {
       user: req.user,
       isowner,
       template,
-      seo
+      seo,
+      googleTag:process.env.GOOGLE_TAG
     });
   } catch (error) {
     console.error(error);
@@ -124,7 +126,8 @@ router.get('/templates/tag/:tagName', async (req, res) => {
       publicTemplates,
       privateTemplates,
       tagName,
-      seo
+      seo,
+      googleTag:process.env.GOOGLE_TAG
     });
   } catch (error) {
     console.error(error);
@@ -152,7 +155,8 @@ router.get('/tags', async (req, res) => {
     res.render('dashboard/templates/tags', {
       user: req.user,
       tags,
-      seo
+      seo,
+      googleTag:process.env.GOOGLE_TAG
     });
   } catch (error) {
     console.error(error);
