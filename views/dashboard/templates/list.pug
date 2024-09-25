@@ -53,7 +53,7 @@ block content
             each template in publicTemplates
               tr
                 td= template.name
-                td= template.description
+                td.truncate= template.description
                 td.text-center
                   button.btn.btn-sm.btn-primary.view-template-btn.shadow-0(data-id=template._id) <i class="bi bi-eye"></i>
                   a.btn.btn-sm.btn-secondary.mx-2.shadow-0(href=`/templates/view/${template._id}`) <i class="bi bi-box-arrow-up-right"></i>
@@ -73,9 +73,16 @@ block content
               each template in privateTemplates
                 tr
                   td= template.name
-                  td= template.description
+                  td.truncate= template.description
                   td.text-center
                     button.btn.btn-sm.btn-primary.view-template-btn(data-id=template._id) 表示
                     button.btn.btn-sm.btn-secondary.ms-2.edit-template-btn(data-id=template._id) 編集
                     button.btn.btn-sm.btn-danger.ms-2.delete-template-btn(data-id=template._id) 削除
   script(src='/js/templates.js')
+  style.
+    .truncate {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 200px;
+    }

@@ -1,251 +1,101 @@
 const defaultTemplates = [
   {
-    templateId: 'tech-news-template',
-    name: 'テックニュース記事',
-    description: '最新のテクノロジー関連ニュースを報道するためのテンプレートです。',
+    templateId: 'event-invitation-template',
+    name: 'イベント招待状',
+    description: '特別なイベントのための招待状を作成するテンプレートです。出席者を引きつける内容を重視しています。',
     systemMessage:
-      'あなたは信頼できるテックジャーナリストです。最新のテクノロジー関連ニュースを正確かつ中立的に報道してください。重要なポイントを明確にし、読者が迅速に理解できるように簡潔にまとめてください。',
+      'あなたはイベントプランナーです。招待状にはイベントのテーマ、日時、場所、特別ゲストを明確に記載し、参加意欲を高める文言を使用してください。',
     generatePrompt: `
     {message}
     タイトル: "{fetchTitle}"。
     テーマ: {botDescription}。
     読者: {targetAudience}。
-    スタイル: 中立的で事実重視。
-    トーン: 公式で客観的。
+    スタイル: 明確でインパクトのある文体。
+    トーン: 楽しさと期待感を持たせる表現。
     文字数: {contentLength} 字。
-    最新のテクノロジーニュースを正確に報道し、重要なポイントを明確に伝えてください。Markdown形式で書いてください。`,
+    招待状に必要な情報を魅力的にまとめ、参加者がイベントに参加したくなるようにしてください。Markdown形式で書いてください。`,
     isPublic: true,
     sections: 4,
-    tone: '中立',
-    style: '事実重視',
-    contentLength: 1000,
-    categoryName: 'テクノロジー',
-    tags: ['テクノロジー', 'ニュース', 'ガジェット'],
+    tone: '楽しさ',
+    style: 'インパクト',
+    contentLength: 600,
+    categoryName: 'イベント',
+    tags: ['イベント', '招待状', 'プランニング'],
     ownerId: null,
     createdAt: new Date(),
   },
   {
-    templateId: 'health-tips-template',
-    name: '健康アドバイス',
-    description: '読者の健康をサポートするためのアドバイス記事のテンプレートです。',
+    templateId: 'product-review-template',
+    name: '製品レビュー',
+    description: '製品の特徴と実績を詳しく紹介するためのテンプレートです。客観的な視点からの評価を重視しています。',
     systemMessage:
-      'あなたは健康専門家です。読者が日常生活で実践できる健康維持のためのアドバイスを提供してください。具体的な方法やメリットを明確に説明し、読者が実行しやすいようにしてください。',
+      'あなたは製品レビュアーです。特徴、利点、欠点を明確に説明し、読者が購入判断をしやすい情報を提供してください。',
     generatePrompt: `
     {message}
     タイトル: "{fetchTitle}"。
     テーマ: {botDescription}。
     読者: {targetAudience}。
-    スタイル: 実用的で励みになる。
-    トーン: 親しみやすく、信頼性がある。
+    スタイル: 詳細で客観的な評価。
+    トーン: 正直で信頼性のある表現。
     文字数: {contentLength} 字。
-    日常生活で実践できる健康維持のための具体的なアドバイスを提供し、それぞれの方法やメリットを明確に説明してください。Markdown形式で書いてください。`,
+    製品の特徴と実績を詳細に述べ、読者が信頼できる情報を得られるようにしてください。Markdown形式で書いてください。`,
     isPublic: true,
     sections: 5,
-    tone: '丁寧',
-    style: '実用的',
+    tone: '正直',
+    style: '客観的',
     contentLength: 1200,
-    categoryName: '健康',
-    tags: ['健康', 'アドバイス', 'ライフスタイル'],
+    categoryName: 'レビュー',
+    tags: ['レビュー', '製品', '評価'],
     ownerId: null,
     createdAt: new Date(),
   },
   {
-    templateId: 'travel-guide-template',
-    name: '旅行ガイド',
-    description: '特定の旅行先について詳細なガイドを作成するためのテンプレートです。',
+    templateId: 'case-study-template',
+    name: 'ケーススタディ',
+    description: 'ビジネスの成功事例を詳細に分析するためのテンプレートです。実績に基づいたデータを強調します。',
     systemMessage:
-      'あなたは経験豊富な旅行ガイドです。旅行先の魅力、観光スポット、食事、宿泊施設、交通手段などを詳細に紹介してください。読者が計画を立てやすいように、実用的な情報を提供してください。',
+      'あなたはビジネスアナリストです。特定のプロジェクトの背景、課題、解決策、成果を具体的に記述してください。',
     generatePrompt: `
     {message}
     タイトル: "{fetchTitle}"。
     テーマ: {botDescription}。
     読者: {targetAudience}。
-    スタイル: 詳細で情報豊富。
-    トーン: 親しみやすく、役立つ。
+    スタイル: 分析的でデータ重視。
+    トーン: 専門的で信頼性の高い表現。
     文字数: {contentLength} 字。
-    旅行先の魅力、観光スポット、食事、宿泊施設、交通手段などを詳細に紹介し、読者が計画を立てやすいように実用的な情報を提供してください。Markdown形式で書いてください。`,
+    プロジェクトの背景や成果を詳しく分析し、具体的なデータを交えて読者にインサイトを提供してください。Markdown形式で書いてください。`,
     isPublic: true,
     sections: 6,
-    tone: '親しみやすい',
-    style: '詳細',
-    contentLength: 1500,
-    categoryName: '旅行',
-    tags: ['旅行', 'ガイド', '観光'],
-    ownerId: null,
-    createdAt: new Date(),
-  },
-  {
-    templateId: 'recipe-template',
-    name: 'レシピ記事',
-    description: '料理のレシピを紹介するためのテンプレートです。',
-    systemMessage:
-      'あなたは料理専門家です。美味しい料理のレシピを分かりやすく紹介してください。材料、手順、コツを具体的に説明し、読者が簡単に再現できるようにしてください。',
-    generatePrompt: `
-    {message}
-    タイトル: "{fetchTitle}"。
-    テーマ: {botDescription}。
-    読者: {targetAudience}。
-    スタイル: 分かりやすく具体的。
-    トーン: 親切で励みになる。
-    文字数: {contentLength} 字。
-    料理のレシピを分かりやすく紹介し、材料、手順、コツを具体的に説明してください。読者が簡単に再現できるようにしてください。Markdown形式で書いてください。`,
-    isPublic: true,
-    sections: 5,
-    tone: '親切',
-    style: '具体的',
-    contentLength: 1000,
-    categoryName: '料理',
-    tags: ['レシピ', '料理', 'グルメ'],
-    ownerId: null,
-    createdAt: new Date(),
-  },
-  {
-    templateId: 'business-plan-template',
-    name: 'ビジネスプラン',
-    description: '新規事業のビジネスプランを作成するためのテンプレートです。',
-    systemMessage:
-      'あなたはビジネスアナリストです。新規事業のビジネスプランを詳細に作成してください。市場分析、競合分析、マーケティング戦略、財務計画などを具体的に記述し、実現可能性を高めるための提案を含めてください。',
-    generatePrompt: `
-    {message}
-    タイトル: "{fetchTitle}"。
-    テーマ: {botDescription}。
-    読者: {targetAudience}。
-    スタイル: 詳細で分析的。
-    トーン: 専門的で信頼性がある。
-    文字数: {contentLength} 字。
-    新規事業のビジネスプランを詳細に作成し、市場分析、競合分析、マーケティング戦略、財務計画などを具体的に記述してください。実現可能性を高めるための提案も含めてください。Markdown形式で書いてください。`,
-    isPublic: true,
-    sections: 7,
     tone: '専門的',
-    style: '分析的',
-    contentLength: 2000,
+    style: 'データ重視',
+    contentLength: 1500,
     categoryName: 'ビジネス',
-    tags: ['ビジネス', 'プランニング', '起業'],
+    tags: ['ケーススタディ', 'ビジネス', '成功事例'],
     ownerId: null,
     createdAt: new Date(),
   },
   {
-    templateId: 'social-media-post-template',
-    name: 'ソーシャルメディア投稿',
-    description: '効果的なソーシャルメディア投稿を作成するためのテンプレートです。',
+    templateId: 'email-newsletter-template',
+    name: 'メールニュースレター',
+    description: '読者に価値ある情報を提供するためのメールニュースレター作成テンプレートです。エンゲージメントを重視します。',
     systemMessage:
-      'あなたはソーシャルメディアマーケターです。ターゲットオーディエンスに響く効果的な投稿を作成してください。キャッチーなキャプション、適切なハッシュタグ、視覚的な要素を組み合わせて、エンゲージメントを高める内容にしてください。',
+      'あなたはコンテンツクリエイターです。最新情報や特典を魅力的にまとめて、読者の関心を引きつけてください。',
     generatePrompt: `
     {message}
     タイトル: "{fetchTitle}"。
     テーマ: {botDescription}。
     読者: {targetAudience}。
-    スタイル: 簡潔で魅力的。
-    トーン: フレンドリーで活気がある。
+    スタイル: 明瞭で実用的。
+    トーン: 情報提供に特化した表現。
     文字数: {contentLength} 字。
-    ターゲットオーディエンスに響く効果的なソーシャルメディア投稿を作成し、キャッチーなキャプション、適切なハッシュタグ、視覚的な要素を組み合わせてください。エンゲージメントを高める内容にしてください。Markdown形式で書いてください。`,
-    isPublic: true,
-    sections: 3,
-    tone: 'フレンドリー',
-    style: '簡潔',
-    contentLength: 300,
-    categoryName: 'ソーシャルメディア',
-    tags: ['ソーシャルメディア', 'マーケティング', 'SNS'],
-    ownerId: null,
-    createdAt: new Date(),
-  },
-  {
-    templateId: 'ebook-template',
-    name: '電子書籍',
-    description: '電子書籍を作成するための包括的なテンプレートです。',
-    systemMessage:
-      'あなたは経験豊富な作家です。電子書籍の構成を詳細に計画し、各章の内容を明確にしてください。読者に価値を提供し、魅力的なストーリーや情報を提供するためのガイドラインを設定してください。',
-    generatePrompt: `
-    {message}
-    タイトル: "{fetchTitle}"。
-    テーマ: {botDescription}。
-    読者: {targetAudience}。
-    スタイル: 組織的で詳細。
-    トーン: 教育的で魅力的。
-    文字数: {contentLength} 字。
-    電子書籍の構成を詳細に計画し、各章の内容を明確にしてください。読者に価値を提供し、魅力的なストーリーや情報を提供するためのガイドラインを設定してください。Markdown形式で書いてください。`,
-    isPublic: true,
-    sections: 10,
-    tone: '教育的',
-    style: '組織的',
-    contentLength: 5000,
-    categoryName: '電子書籍',
-    tags: ['電子書籍', '執筆', '出版'],
-    ownerId: null,
-    createdAt: new Date(),
-  },
-  {
-    templateId: 'resume-template',
-    name: '履歴書テンプレート',
-    description: 'プロフェッショナルな履歴書を作成するためのテンプレートです。',
-    systemMessage:
-      'あなたはキャリアコーチです。求職者が強みをアピールできるようなプロフェッショナルな履歴書を作成してください。経験、スキル、教育背景を明確かつ簡潔に記述し、採用担当者の目を引くレイアウトにしてください。',
-    generatePrompt: `
-    {message}
-    タイトル: "{fetchTitle}"。
-    テーマ: {botDescription}。
-    読者: {targetAudience}。
-    スタイル: プロフェッショナルで整理された。
-    トーン: 自信に満ちた、明確。
-    文字数: {contentLength} 字。
-    プロフェッショナルな履歴書を作成し、経験、スキル、教育背景を明確かつ簡潔に記述してください。採用担当者の目を引くレイアウトにしてください。Markdown形式で書いてください。`,
-    isPublic: true,
-    sections: 5,
-    tone: '自信',
-    style: '整理された',
-    contentLength: 800,
-    categoryName: 'キャリア',
-    tags: ['履歴書', 'キャリア', '職務経歴'],
-    ownerId: null,
-    createdAt: new Date(),
-  },
-  {
-    templateId: 'newsletter-template',
-    name: 'ニュースレター',
-    description: '定期的なニュースレターを作成するためのテンプレートです。',
-    systemMessage:
-      'あなたはマーケティング専門家です。読者に価値のある情報を提供し、エンゲージメントを高めるニュースレターを作成してください。最新の情報、特典、イベントなどを効果的に組み合わせて、読者の関心を引きつけてください。',
-    generatePrompt: `
-    {message}
-    タイトル: "{fetchTitle}"。
-    テーマ: {botDescription}。
-    読者: {targetAudience}。
-    スタイル: 親しみやすく、情報豊富。
-    トーン: フレンドリーで励みになる。
-    文字数: {contentLength} 字。
-    読者に価値のある情報を提供し、エンゲージメントを高めるニュースレターを作成してください。最新の情報、特典、イベントなどを効果的に組み合わせて、読者の関心を引きつけてください。Markdown形式で書いてください。`,
+    読者に価値のある情報を明瞭に伝え、エンゲージメントを高める内容にしてください。Markdown形式で書いてください。`,
     isPublic: true,
     sections: 6,
-    tone: 'フレンドリー',
-    style: '情報豊富',
+    tone: '情報提供',
+    style: '実用的',
     contentLength: 1200,
     categoryName: 'マーケティング',
     tags: ['ニュースレター', 'マーケティング', 'コミュニケーション'],
-    ownerId: null,
-    createdAt: new Date(),
-  },
-  {
-    templateId: 'product-launch-template',
-    name: '新製品ローンチ',
-    description: '新製品のローンチを効果的に宣伝するためのテンプレートです。',
-    systemMessage:
-      'あなたはプロダクトマネージャーです。新製品の特徴、利点、利用方法を明確に伝え、ターゲットオーディエンスの興味を引く宣伝資料を作成してください。マーケティング戦略や発売日などの重要な情報も含めてください。',
-    generatePrompt: `
-    {message}
-    タイトル: "{fetchTitle}"。
-    テーマ: {botDescription}。
-    読者: {targetAudience}。
-    スタイル: 宣伝的で魅力的。
-    トーン: 興奮を誘う、信頼性がある。
-    文字数: {contentLength} 字。
-    新製品の特徴、利点、利用方法を明確に伝え、ターゲットオーディエンスの興味を引く宣伝資料を作成してください。マーケティング戦略や発売日などの重要な情報も含めてください。Markdown形式で書いてください。`,
-    isPublic: true,
-    sections: 5,
-    tone: '興奮',
-    style: '宣伝的',
-    contentLength: 1000,
-    categoryName: 'マーケティング',
-    tags: ['新製品', 'ローンチ', 'プロモーション'],
     ownerId: null,
     createdAt: new Date(),
   },
