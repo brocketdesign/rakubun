@@ -205,6 +205,8 @@ router.post('/templates/save', ensureAuthenticated, ensureMembership, async (req
       description,
       systemMessage,
       generatePrompt,
+      titleGenerationPrompt, // New field
+      articleStructure,       // New field
       isPublic,
       sections,
       tone,
@@ -222,6 +224,8 @@ router.post('/templates/save', ensureAuthenticated, ensureMembership, async (req
       description,
       systemMessage,
       generatePrompt,
+      titleGenerationPrompt, // Include new field
+      articleStructure,      // Include new field
       isPublic: isPublic === 'on' || isPublic === true,
       sections: parseInt(sections),
       tone,
@@ -255,6 +259,7 @@ router.post('/templates/save', ensureAuthenticated, ensureMembership, async (req
     res.status(500).json({ success: false, message: 'サーバーエラーが発生しました。' });
   }
 });
+
 
 // テンプレートリストを取得するエンドポイント
 router.get('/api/templates/list', async (req, res) => {

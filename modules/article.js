@@ -3,17 +3,23 @@ const { z } = require('zod');
 const { moduleCompletion } = require('./openai.js');
 
 const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template) => {
-  // テンプレートのプロパティまたはデフォルト値を使用
+  // Use template properties or default values
   const sections = template?.sections || 3;
   const tone = template?.tone || blogInfo.writingTone;
   const style = template?.style || blogInfo.writingStyle;
   const contentLength = template?.contentLength || blogInfo.articleLength;
   const categoryName = template?.categoryName || blogInfo.articleCategories;
   const tags = template?.tags?.length ? template.tags : blogInfo.postTags || [];
+  const articleStructure = template?.articleStructure
+    ? JSON.parse(template.articleStructure)
+    : { sections: sections };
 
-  const systemMessage = template?.systemMessage || 'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。有名人の名前は含めないでください。';
+  const systemMessage =
+    template?.systemMessage ||
+    'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。有名人の名前は含めないでください。';
 
-  const generatePromptTemplate = template?.generatePrompt || `{message} ...`;
+  const generatePromptTemplate =
+    template?.generatePrompt || `{message} ...`;
 
   const generatePrompt = (message) => {
     return generatePromptTemplate
@@ -25,7 +31,8 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
       .replace('{postLanguage}', blogInfo.postLanguage)
       .replace('{style}', style)
       .replace('{tone}', tone)
-      .replace('{contentLength}', contentLength);
+      .replace('{contentLength}', contentLength)
+      .replace('{articleStructure}', template?.articleStructure || '');
   };
 
   const createMessages = (prompt) => [
@@ -39,11 +46,12 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
     },
   ];
 
-  // 以下、関数内の各セクションで新しいプロパティを使用するように調整
-  // 例: getHeadlines関数
+  // Adjusted functions to use new properties
   const getHeadlines = async () => {
     const prompt = generatePrompt(
-      `以下のタイトルに基づいて、記事を構成する${sections}つの短い見出しを提供してください。見出しは簡潔で魅力的なものにしてください。`
+      `以下のタイトルに基づいて、記事を構成する${articleStructure.sections}つの短い見出しを提供してください。見出しは次の構成に従ってください: ${articleStructure.headings?.join(
+        ', '
+      ) || ''}.`
     );
     const messages = createMessages(prompt);
     const response = await moduleCompletion({ model: modelGPT, messages, max_tokens: 200 });
@@ -51,22 +59,17 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
       .trim()
       .split('\n')
       .filter((line) => line.trim() !== '')
-      .slice(0, sections);
+      .slice(0, articleStructure.sections);
     return headlines;
   };
-  
+
   const generateContentForSection = async (headline, previousContent) => {
     const contentPrompt = generatePrompt(
-      `これまでの内容:\n${previousContent}\n\n次の見出しに基づいて、500文字以内で新しい段落を生成してください。\n見出し: "${headline}"。\n既に書かれている内容を繰り返さず、新しい情報を提供してください。見出しや結論、サブチャプターは含めないでください。`
+      `これまでの内容:\n${previousContent}\n\n次の見出しに基づいて、${
+        contentLength / sections
+      }文字以内で新しい段落を生成してください。\n見出し: "${headline}"。\nトーン: ${tone}。\nスタイル: ${style}。\n既に書かれている内容を繰り返さず、新しい情報を提供してください。見出しや結論、サブチャプターは含めないでください。`
     );
-    const contentPrompt_messages = [
-      {
-        role: 'system',
-        content:
-          'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。チャプターやサブチャプター、各タイトルの番号付け、有名人の名前は含めないでください。実在する人物を含む虚偽の物語を作らないでください。',
-      },
-      { role: 'user', content: contentPrompt },
-    ];
+    const contentPrompt_messages = createMessages(contentPrompt);
     const content = await moduleCompletion({
       model: modelGPT,
       messages: contentPrompt_messages,
@@ -79,16 +82,9 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
     const introPrompt = generatePrompt(
       `次の見出しに基づいて、1段落で短いブログ記事のイントロダクションを作成してください。\n見出し: ${headlines.join(
         ', '
-      )}`
+      )}\nトーン: ${tone}。\nスタイル: ${style}。`
     );
-    const introPrompt_messages = [
-      {
-        role: 'system',
-        content:
-          'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。チャプターやサブチャプター、各タイトルの番号付け、有名人の名前は含めないでください。実在する人物を含む虚偽の物語を作らないでください。',
-      },
-      { role: 'user', content: introPrompt },
-    ];
+    const introPrompt_messages = createMessages(introPrompt);
     const introduction = await moduleCompletion({
       model: modelGPT,
       messages: introPrompt_messages,
@@ -99,16 +95,9 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
 
   const generateConclusion = async (articleContent) => {
     const conclusionPrompt = generatePrompt(
-      `これまでの内容に基づいて、ブログ記事の結論を作成してください。`
+      `これまでの内容に基づいて、ブログ記事の結論を作成してください。トーン: ${tone}。\nスタイル: ${style}。`
     );
-    const conclusionPrompt_messages = [
-      {
-        role: 'system',
-        content:
-          'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。有名人の名前は含めないでください。実在する人物を含む虚偽の物語を作らないでください。',
-      },
-      { role: 'user', content: conclusionPrompt },
-    ];
+    const conclusionPrompt_messages = createMessages(conclusionPrompt);
     const conclusion = await moduleCompletion({
       model: modelGPT,
       messages: conclusionPrompt_messages,
@@ -121,16 +110,9 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
     const rewritePrompt = generatePrompt(
       `以下の内容と構造に基づいて、記事全体を見直し、見出しも含めて書き直してください。\n記事の内容:\n${articleContent}\n記事の構造:\n${headlines.join(
         ', '
-      )}\n繰り返しを避け、新しい視点で書き直してください。`
+      )}\nトーン: ${tone}。\nスタイル: ${style}。\n繰り返しを避け、新しい視点で書き直してください。`
     );
-    const rewritePrompt_messages = [
-      {
-        role: 'system',
-        content:
-          'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。有名人の名前は含めないでください。実在する人物を含む虚偽の物語を作らないでください。',
-      },
-      { role: 'user', content: rewritePrompt },
-    ];
+    const rewritePrompt_messages = createMessages(rewritePrompt);
     const rewrittenArticle = await moduleCompletion({
       model: modelGPT,
       messages: rewritePrompt_messages,

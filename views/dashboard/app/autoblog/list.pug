@@ -94,6 +94,7 @@ block mainContent
                                     select#templateId(name="templateId" class="form-select")
                                         option(value="") -- テンプレートを選択してください --
 
+                                    a(type="button" class="badge badge-light mt-1 addTemplateBtn w-100 fw-light border") 新しいテンプレートを追加
                 
                     input.blogId(type="hidden", name="blogId")
                     input#botId(type="hidden", name="botId")
@@ -242,6 +243,13 @@ block mainContent
                         img.imagePlaceholder(src="/img/placeholder-image.png" alt="生成された画像がここに表示されます" style="max-width: 100%; height: auto;")
 
     style.
+        small.form-text {
+            font-size: 12px;
+        }
+        label.form-label, label.form-check-label {
+            margin-bottom: 0px;
+            font-weight: 600;
+        }
         .b-custom-gradient {
             background: linear-gradient(90.9deg, #4facfe 2.74%, #00f2fe 102.92%);
         }
