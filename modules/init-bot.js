@@ -139,7 +139,7 @@ async function autoBlog(blogInfo, db) {
   }
 
   // Initiate Image Generation
-  const imageTaskId = await initiateImageGeneration(slug, modelGPT, blogInfo);
+  const imageTaskId = await initiateImageGeneration(slug, modelGPT, blogInfo, template);
 
   // Generate Article Content
   const promise_content = generateCompleteArticle(
@@ -210,7 +210,7 @@ async function autoBlog(blogInfo, db) {
 }
 
 // Function to initiate image generation
-async function initiateImageGeneration(fetchTitle, modelGPT, blogInfo) {
+async function initiateImageGeneration(fetchTitle, modelGPT, blogInfo, template) {
   const promptDataImage = imagePromptGen(fetchTitle);
   const promptDataImage_messages = [
     {
