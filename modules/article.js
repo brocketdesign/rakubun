@@ -5,10 +5,10 @@ const { moduleCompletion } = require('./openai.js');
 const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template) => {
   // Use template properties or default values
   const sections = template?.sections || 3;
-  const tone = template?.tone || blogInfo.writingTone;
-  const style = template?.style || blogInfo.writingStyle;
-  const contentLength = template?.contentLength || blogInfo.articleLength;
-  const categoryName = template?.categoryName || blogInfo.articleCategories;
+  const tone = template?.tone || blogInfo.writingTone || 'Neutral';
+  const style = template?.style || blogInfo.writingStyle || 'Informative';
+  const contentLength = template?.contentLength || blogInfo.articleLength || 1500;
+  const categoryName = template?.categoryName || blogInfo.articleCategories || '';
   const tags = template?.tags?.length ? template.tags : blogInfo.postTags || [];
   const articleStructure = template?.articleStructure
     ? JSON.parse(template.articleStructure)
@@ -16,19 +16,19 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
 
   const systemMessage =
     template?.systemMessage ||
-    'あなたは熟練したブロガーです。簡潔でシンプルな文章を提供してください。有名人の名前は含めないでください。';
+    'あなたはプロのライターです。明確で簡潔、そして論理的な記事を書いてください。挨拶や締めの言葉、個人的な意見、AIモデルであることの言及は含めないでください。';
 
   const generatePromptTemplate =
-    template?.generatePrompt || `{message} ...`;
+    template?.generatePrompt || `{message}`;
 
   const generatePrompt = (message) => {
     return generatePromptTemplate
       .replace('{message}', message)
       .replace('{fetchTitle}', fetchTitle)
-      .replace('{botDescription}', blogInfo.botDescription)
-      .replace('{targetAudience}', blogInfo.targetAudience)
+      .replace('{botDescription}', blogInfo.botDescription || '')
+      .replace('{targetAudience}', blogInfo.targetAudience || '')
       .replace('{categoryName}', categoryName)
-      .replace('{postLanguage}', blogInfo.postLanguage)
+      .replace('{postLanguage}', blogInfo.postLanguage || '日本語')
       .replace('{style}', style)
       .replace('{tone}', tone)
       .replace('{contentLength}', contentLength)
@@ -49,76 +49,60 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
   // Adjusted functions to use new properties
   const getHeadlines = async () => {
     const prompt = generatePrompt(
-      `以下のタイトルに基づいて、記事を構成する${articleStructure.sections}つの短い見出しを提供してください。見出しは次の構成に従ってください: ${articleStructure.headings?.join(
-        ', '
-      ) || ''}.`
+      `タイトル「${fetchTitle}」に基づいて、記事の${sections}つの見出しを提供してください。見出しは簡潔で情報豊かにし、番号や箇条書きは使用しないでください。各見出しは異なる側面をカバーしてください。`
     );
     const messages = createMessages(prompt);
-    const response = await moduleCompletion({ model: modelGPT, messages, max_tokens: 200 });
+    const response = await moduleCompletion({ model: modelGPT, messages, max_tokens: 150 });
     const headlines = response
       .trim()
       .split('\n')
-      .filter((line) => line.trim() !== '')
-      .slice(0, articleStructure.sections);
+      .map(line => line.trim().replace(/^#+\s*/, ''))
+      .filter(line => line !== '');
+    if (headlines.length < sections) {
+      throw new Error('十分な見出しを生成できませんでした。');
+    } else if (headlines.length > sections) {
+      return headlines.slice(0, sections);
+    }
     return headlines;
   };
 
-  const generateContentForSection = async (headline, previousContent) => {
-    const contentPrompt = generatePrompt(
-      `これまでの内容:\n${previousContent}\n\n次の見出しに基づいて、${
-        contentLength / sections
-      }文字以内で新しい段落を生成してください。\n見出し: "${headline}"。\nトーン: ${tone}。\nスタイル: ${style}。\n既に書かれている内容を繰り返さず、新しい情報を提供してください。見出しや結論、サブチャプターは含めないでください。`
+  const generateContentForSection = async (headline) => {
+    const prompt = generatePrompt(
+      `見出し「${headline}」に対して、詳細で情報豊富なセクションを書いてください。セクションは約${Math.floor(contentLength / sections)}文字にしてください。トーンは${tone}、スタイルは${style}でお願いします。挨拶や結論、他のセクションへの言及は含めないでください。`
     );
-    const contentPrompt_messages = createMessages(contentPrompt);
+    const messages = createMessages(prompt);
     const content = await moduleCompletion({
       model: modelGPT,
-      messages: contentPrompt_messages,
+      messages,
       max_tokens: 500,
     });
     return content.trim();
   };
 
   const generateIntroduction = async (headlines) => {
-    const introPrompt = generatePrompt(
-      `次の見出しに基づいて、1段落で短いブログ記事のイントロダクションを作成してください。\n見出し: ${headlines.join(
-        ', '
-      )}\nトーン: ${tone}。\nスタイル: ${style}。`
+    const prompt = generatePrompt(
+      `記事「${fetchTitle}」の魅力的なイントロダクションを書いてください。イントロではトピックの概要を説明し、以下の見出しでカバーする主なポイントに軽く触れてください。\n見出し: ${headlines.join('、')}\nトーンは${tone}、スタイルは${style}でお願いします。挨拶や謝罪は含めないでください。`
     );
-    const introPrompt_messages = createMessages(introPrompt);
+    const messages = createMessages(prompt);
     const introduction = await moduleCompletion({
       model: modelGPT,
-      messages: introPrompt_messages,
-      max_tokens: 300,
+      messages,
+      max_tokens: 200,
     });
     return introduction.trim();
   };
 
-  const generateConclusion = async (articleContent) => {
-    const conclusionPrompt = generatePrompt(
-      `これまでの内容に基づいて、ブログ記事の結論を作成してください。トーン: ${tone}。\nスタイル: ${style}。`
+  const generateConclusion = async () => {
+    const prompt = generatePrompt(
+      `記事「${fetchTitle}」の簡潔な結論を書いてください。結論では主なポイントを要約し、最後の考察を提供してください。トーンは${tone}、スタイルは${style}でお願いします。新しい情報や締めの挨拶は含めないでください。`
     );
-    const conclusionPrompt_messages = createMessages(conclusionPrompt);
+    const messages = createMessages(prompt);
     const conclusion = await moduleCompletion({
       model: modelGPT,
-      messages: conclusionPrompt_messages,
-      max_tokens: 300,
+      messages,
+      max_tokens: 200,
     });
     return conclusion.trim();
-  };
-
-  const rewriteArticle = async (articleContent, headlines) => {
-    const rewritePrompt = generatePrompt(
-      `以下の内容と構造に基づいて、記事全体を見直し、見出しも含めて書き直してください。\n記事の内容:\n${articleContent}\n記事の構造:\n${headlines.join(
-        ', '
-      )}\nトーン: ${tone}。\nスタイル: ${style}。\n繰り返しを避け、新しい視点で書き直してください。`
-    );
-    const rewritePrompt_messages = createMessages(rewritePrompt);
-    const rewrittenArticle = await moduleCompletion({
-      model: modelGPT,
-      messages: rewritePrompt_messages,
-      max_tokens: 2000,
-    });
-    return rewrittenArticle.trim();
   };
 
   // Generate the article step by step
@@ -132,18 +116,16 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
 
   console.log(`Generating Content for Each Section`);
   for (const headline of headlines) {
-    const sectionContent = await generateContentForSection(headline, articleContent);
+    const sectionContent = await generateContentForSection(headline);
     articleContent += `\n\n## ${headline}\n\n${sectionContent}`;
   }
 
   console.log(`Generating Conclusion`);
-  const conclusion = await generateConclusion(articleContent);
+  const conclusion = await generateConclusion();
   articleContent += `\n\n${conclusion}`;
 
-  console.log(`Rewriting the Entire Article`);
-  const finalArticle = await rewriteArticle(articleContent, headlines);
-
-  return finalArticle;
+  console.log(`Article Generation Complete`);
+  return articleContent;
 };
 
 module.exports = { generateCompleteArticle };
