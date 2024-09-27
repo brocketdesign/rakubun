@@ -239,7 +239,73 @@ async function initiateImageGeneration(fetchTitle, modelGPT, blogInfo, template)
   return task_id;
 }
 
-// The rest of the helper functions remain mostly the same, but ensure they use the template where applicable
+// Function to check image status and update post
+async function checkImageAndUpdatePost(task_id, postId, client) {
+  const POLLING_INTERVAL = 10000; // 10 seconds
+  const MAX_ATTEMPTS = 30; // Up to 5 minutes
+  let attempts = 0;
+
+  const intervalId = setInterval(async () => {
+    attempts++;
+    try {
+      const result = await getTxt2ImgResult(task_id);
+
+      if (result.status === 'processing') {
+        console.log('Image is still being generated. Will check again later.');
+      } else if (result.imageBuffer) {
+        clearInterval(intervalId);
+        // Upload the image to WordPress
+        const imageData = await new Promise((resolve, reject) => {
+          client.uploadFile(
+            {
+              name: `${task_id}.png`,
+              type: 'image/png',
+              bits: result.imageBuffer,
+            },
+            (error, file) => {
+              if (error) {
+                console.log('Error when adding the thumbnail');
+                reject(error);
+              } else {
+                resolve(file);
+              }
+            }
+          );
+        });
+
+        // Update the post with the image
+        await updatePostWithImage(postId, imageData.attachment_id, client);
+        console.log('Post updated with the generated image.');
+      }
+
+      if (attempts >= MAX_ATTEMPTS) {
+        clearInterval(intervalId);
+        console.log('Image generation timed out. Proceeding without image.');
+      }
+    } catch (error) {
+      clearInterval(intervalId);
+      console.error('Error checking image result:', error.message);
+    }
+  }, POLLING_INTERVAL);
+}
+
+// Function to update the post with the image
+async function updatePostWithImage(postId, attachmentId, client) {
+  return new Promise((resolve, reject) => {
+    client.editPost(
+      postId,
+      { thumbnail: attachmentId },
+      (error, data) => {
+        if (error) {
+          console.log('Error updating post with image:', error);
+          reject(error);
+        } else {
+          resolve(data);
+        }
+      }
+    );
+  });
+}
 
 // Helper functions
 function imagePromptGen(fetchTitle) {
