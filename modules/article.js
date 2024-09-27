@@ -16,7 +16,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
 
   const systemMessage =
     template?.systemMessage ||
-    'あなたはプロのライターです。明確で簡潔、そして論理的な記事を書いてください。挨拶や締めの言葉、個人的な意見、AIモデルであることの言及は含めないでください。';
+    'あなたはプロのライターです。明確で簡潔、そして論理的な記事を書いてください。重複や繰り返しを避け、一貫性のある内容を提供してください。挨拶や締めの言葉、個人的な意見、AIモデルであることの言及は含めないでください。';
 
   const generatePromptTemplate =
     template?.generatePrompt || `{message}`;
@@ -35,28 +35,32 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
       .replace('{articleStructure}', template?.articleStructure || '');
   };
 
-  const createMessages = (prompt) => [
-    {
-      role: 'system',
-      content: systemMessage,
-    },
-    {
-      role: 'user',
-      content: prompt,
-    },
-  ];
+  const createMessages = (prompt, previousMessages = []) => {
+    const messages = [
+      {
+        role: 'system',
+        content: systemMessage,
+      },
+      ...previousMessages,
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ];
+    return messages;
+  };
 
   // Adjusted functions to use new properties
   const getHeadlines = async () => {
     const prompt = generatePrompt(
-      `タイトル「${fetchTitle}」に基づいて、記事の${sections}つの見出しを提供してください。見出しは簡潔で情報豊かにし、番号や箇条書きは使用しないでください。各見出しは異なる側面をカバーしてください。`
+      `タイトル「${fetchTitle}」に基づいて、記事の${sections}つのユニークで関連性の高い見出しを提供してください。見出しは簡潔で情報豊かにし、番号や箇条書きは使用しないでください。各見出しは記事の異なる側面をカバーし、重複を避けてください。`
     );
     const messages = createMessages(prompt);
     const response = await moduleCompletion({ model: modelGPT, messages, max_tokens: 150 });
     const headlines = response
       .trim()
       .split('\n')
-      .map(line => line.trim().replace(/^#+\s*/, ''))
+      .map(line => line.trim().replace(/^#+\s*/, '').replace(/^\d+\.\s*/, ''))
       .filter(line => line !== '');
     if (headlines.length < sections) {
       throw new Error('十分な見出しを生成できませんでした。');
@@ -66,11 +70,19 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
     return headlines;
   };
 
-  const generateContentForSection = async (headline) => {
+  const generateContentForSection = async (headline, previousContent) => {
     const prompt = generatePrompt(
-      `見出し「${headline}」に対して、詳細で情報豊富なセクションを書いてください。セクションは約${Math.floor(contentLength / sections)}文字にしてください。トーンは${tone}、スタイルは${style}でお願いします。挨拶や結論、他のセクションへの言及は含めないでください。`
+      `見出し「${headline}」に対して、詳細で情報豊富なセクションを書いてください。セクションは約${Math.floor(contentLength / sections)}文字にしてください。トーンは${tone}、スタイルは${style}でお願いします。これまでの内容と重複しないようにしてください。挨拶や結論、他のセクションへの言及は含めないでください。`
     );
-    const messages = createMessages(prompt);
+    const previousMessages = previousContent
+      ? [
+          {
+            role: 'assistant',
+            content: previousContent,
+          },
+        ]
+      : [];
+    const messages = createMessages(prompt, previousMessages);
     const content = await moduleCompletion({
       model: modelGPT,
       messages,
@@ -87,20 +99,26 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
     const introduction = await moduleCompletion({
       model: modelGPT,
       messages,
-      max_tokens: 200,
+      max_tokens: 300,
     });
     return introduction.trim();
   };
 
-  const generateConclusion = async () => {
+  const generateConclusion = async (articleContent) => {
     const prompt = generatePrompt(
-      `記事「${fetchTitle}」の簡潔な結論を書いてください。結論では主なポイントを要約し、最後の考察を提供してください。トーンは${tone}、スタイルは${style}でお願いします。新しい情報や締めの挨拶は含めないでください。`
+      `これまでの記事内容を考慮して、記事「${fetchTitle}」の簡潔な結論を書いてください。結論では主なポイントを要約し、最後の考察を提供してください。トーンは${tone}、スタイルは${style}でお願いします。新しい情報や締めの挨拶は含めないでください。`
     );
-    const messages = createMessages(prompt);
+    const previousMessages = [
+      {
+        role: 'assistant',
+        content: articleContent,
+      },
+    ];
+    const messages = createMessages(prompt, previousMessages);
     const conclusion = await moduleCompletion({
       model: modelGPT,
       messages,
-      max_tokens: 200,
+      max_tokens: 300,
     });
     return conclusion.trim();
   };
@@ -113,15 +131,17 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
   const introduction = await generateIntroduction(headlines);
 
   let articleContent = `# ${fetchTitle}\n\n${introduction}`;
+  let accumulatedContent = introduction;
 
   console.log(`Generating Content for Each Section`);
   for (const headline of headlines) {
-    const sectionContent = await generateContentForSection(headline);
+    const sectionContent = await generateContentForSection(headline, accumulatedContent);
     articleContent += `\n\n## ${headline}\n\n${sectionContent}`;
+    accumulatedContent += `\n\n${sectionContent}`;
   }
 
   console.log(`Generating Conclusion`);
-  const conclusion = await generateConclusion();
+  const conclusion = await generateConclusion(accumulatedContent);
   articleContent += `\n\n${conclusion}`;
 
   console.log(`Article Generation Complete`);
