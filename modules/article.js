@@ -116,7 +116,7 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
     const rewrittenArticle = await moduleCompletion({
       model: modelGPT,
       messages: rewritePrompt_messages,
-      max_tokens: 1500,
+      max_tokens: 2000,
     });
     return rewrittenArticle.trim();
   };
