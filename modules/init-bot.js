@@ -110,7 +110,7 @@ async function autoBlog(blogInfo, db) {
 
   let promise_tags;
   if (template?.tags && template.tags.length > 0) {
-    promise_tags = Promise.resolve(template.tags);
+    promise_tags = addTaxonomy(template.tags, 'post_tag', client, language);
   } else {
     const tagPrompt = template?.tagGenerationPrompt
       ? template.tagGenerationPrompt.replace('{fetchTitle}', japaneseTitle)
@@ -137,6 +137,7 @@ async function autoBlog(blogInfo, db) {
       }
     });
   }
+
 
   // Initiate Image Generation
   const imageTaskId = await initiateImageGeneration(slug, modelGPT, blogInfo, template);
