@@ -183,6 +183,7 @@ async function autoBlog(blogInfo, db) {
     try {
       const saveResult = await saveArticleUpdateBlog(
         japaneseTitle,
+        slug,
         content,
         categories,
         tags,
@@ -365,6 +366,7 @@ function isBlogInfoComplete(blogInfo) {
 
 async function saveArticleUpdateBlog(
   fetchTitle,
+  slug,
   finalContent,
   myCategories,
   myTags,
@@ -376,6 +378,7 @@ async function saveArticleUpdateBlog(
   try {
     const article = {
       title: fetchTitle,
+      slug,
       content: finalContent,
       categories: myCategories,
       tags: myTags,

@@ -325,6 +325,25 @@ router.post('/duplicate-bot/:botId', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+router.get('/articles/:botId', async (req, res) => {
+  const botId = new ObjectId(req.params.botId);
+  const articles = await global.db.collection('articles').find({ botId }).toArray();
+  res.json({ success: true, articles });
+});
+router.get('/article/:articleId', async (req, res) => {
+  const articleId = new ObjectId(req.params.articleId);
+  const article = await global.db.collection('articles').findOne({ _id: articleId });
+  res.json({ success: true, article });
+});
+router.post('/article/:articleId', async (req, res) => {
+  const articleId = new ObjectId(req.params.articleId);
+  const { title, slug, content } = req.body;
+  await global.db.collection('articles').updateOne(
+    { _id: articleId },
+    { $set: { title, slug, content } }
+  );
+  res.json({ success: true });
+});
 
 //TOOLS
 async function saveBlogInfo(userId, blogData) {

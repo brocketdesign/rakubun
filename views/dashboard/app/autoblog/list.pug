@@ -241,6 +241,22 @@ block mainContent
                     #imagePlaceholderContainer
                         p.text-muted.alert-info.text-center.py-2.rounded.d-none(style="font-size:12px;font-weight: 600;") 生成された画像がここに表示されます
                         img.imagePlaceholder(src="/img/placeholder-image.png" alt="生成された画像がここに表示されます" style="max-width: 100%; height: auto;")
+    #articlesListContainer(style="display:none;")
+        .container
+            h3 記事
+            ul#articlesList.list-group
+    #articleEditContainer(style="display:none;")
+        form#articleEditForm
+            input#articleId(type="hidden")
+            .mb-3
+                label(for="articleTitle") タイトル
+                input#articleTitle.form-control(type="text", name="title")
+            .mb-3
+                label(for="articleSlug") スラグ
+                input#articleSlug.form-control(type="text", name="slug")
+            .mb-3
+                label(for="articleContent") コンテンツ
+                textarea#articleContent(name="content")
 
     style.
         small.form-text {
@@ -297,6 +313,134 @@ block mainContent
             .custom-editor {
                 width: 100%;
             }
+        }
+    <script src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    script.
+        
+        function initEditor() {
+            tinymce.init({
+                selector: 'textarea#articleContent',
+                height: 500,
+                menubar: false
+            });
+        }
+        $(document).on('click', '.showArticlesBtn', function(e) {
+            e.stopPropagation();
+            const botId = $(this).data('id');
+            $.ajax({
+                url: '/api/autoblog/articles/' + botId,
+                method: 'GET',
+                success: function(response) {
+                if (response.success) {
+                    const articles = response.articles;
+                    let articlesHtml = '';
+                    articles.forEach(function(article) {
+                    articlesHtml += `
+                        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="${article._id}">
+                        <span>${article.title}</span>
+                        <div>
+                            <button class="btn btn-primary btn-sm previewEditArticleBtn" data-id="${article._id}">
+                            Edit
+                            </button>
+                        </div>
+                        </li>
+                    `;
+                    });
+                    $('#articlesList').html(articlesHtml);
+                    Swal.fire({
+                    html: $('#articlesListContainer').html(),
+                    width: '80%',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'custom-articles-popup'
+                    }
+                    });
+                }
+                }
+            });
+        });
+        $(document).on('click', '.previewEditArticleBtn', function() {
+            const articleId = $(this).data('id');
+            $.ajax({
+                url: '/api/autoblog/article/' + articleId,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        const article = response.article;
+                        Swal.fire({
+                            title: 'Edit Article',
+                            html: $('#articleEditContainer').html(),
+                            width: '90%',
+                            showCloseButton: true,
+                            showConfirmButton: true,
+                            confirmButtonText: 'Save',
+                            showDenyButton: true,
+                            denyButtonText: 'Post Article',
+                            customClass: {
+                                popup: 'custom-article-edit-popup'
+                            },
+                            didOpen: () => {
+                                $('#articleEditForm #articleId').val(article._id);
+                                $('#articleEditForm #articleTitle').val(article.title);
+                                $('#articleEditForm #articleSlug').val(article.slug || '');
+                                const htmlContent = marked.parse(article.content);
+
+                                if (tinymce.get('articleContent')) {
+                                    tinymce.get('articleContent').remove();
+                                }
+
+                                $('#articleEditForm #articleContent').val(htmlContent);
+                                initEditor();
+                                tinymce.get('articleContent').setContent(htmlContent);
+                            },
+                            preConfirm: () => {
+                                return {
+                                    articleId: $('#articleId').val(),
+                                    title: $('#articleTitle').val(),
+                                    slug: $('#articleSlug').val(),
+                                    content: tinymce.get('articleContent').getContent()
+                                };
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                saveArticle(result.value);
+                            } else if (result.isDenied) {
+                                postArticle(result.value);
+                            }
+                        });
+                    }
+                }
+            });
+        });
+
+        function saveArticle(data) {
+            $.ajax({
+                url: '/api/autoblog/article/' + data.articleId,
+                method: 'POST',
+                data: data,
+                success: function(response) {
+                if (response.success) {
+                    Swal.fire('Success', 'Article saved successfully', 'success');
+                } else {
+                    Swal.fire('Error', 'Failed to save article', 'error');
+                }
+                }
+            });
+        }
+        function postArticle(data) {
+        $.ajax({
+            url: '/api/autoblog/article/post/' + data.articleId,
+            method: 'POST',
+            success: function(response) {
+            if (response.success) {
+                Swal.fire('Success', 'Article posted successfully', 'success');
+            } else {
+                Swal.fire('Error', 'Failed to post article', 'error');
+            }
+            }
+        });
         }
 
     script.
@@ -469,8 +613,11 @@ block mainContent
                                             <p class="card-text" style="font-size: 12px;">${bot.botDescription ? bot.botDescription.substring(0, 50) : ''}...</p>
                                             <a href="#" type="button" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
-                                            </a>              
-                                            <button class="btn btn-secondary btn-sm shadow-0 mx-2 imageGenButton" data-id="${bot._id}">
+                                            </a>           
+                                            <button class="d-none btn btn-secondary btn-sm shadow-0 mx-2 showArticlesBtn" data-id="${bot._id}">
+                                                <i class="fas fa-file-alt"></i>
+                                            </button>
+                                            <button class="d-none btn btn-secondary btn-sm shadow-0 mx-2 imageGenButton" data-id="${bot._id}">
                                                 <i class="fas fa-image"></i>
                                             </button>                              
                                             <button class="toggle-bot-btn btn btn-primary btn-sm shadow-0 mx-2 toggleBotStatusBtn ${bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', false)"><i class="fas fa-toggle-on me-2"></i>ON</button>

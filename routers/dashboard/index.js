@@ -29,6 +29,8 @@ router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, asyn
   const appname = req.params.appname
   res.render('dashboard/app/generator/'+appname,{user:req.user,title:"RAKUBUN - Dashboard"});
 });
+const adminMail = 'japanclassicstore@gmail.com'
+
 router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
   const blogId = req.query.blogId ? new ObjectId(req.query.blogId) : null;
   const botId = req.query.botId && req.query.botId != 'undefined'
@@ -67,7 +69,7 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       subscriptionStatus: user.subscriptionStatus,
       profileImage: user.profileImage
     };
-    const isAdmin = user?.email === 'japanclassicstore@gmail.com';
+    const isAdmin = user?.email === adminMail;
 
     res.render('dashboard/app/autoblog/list', {
       user: sanitizedUser,
