@@ -19,10 +19,10 @@ const generateCompleteArticle = async (fetchTitle, blogInfo, modelGPT, template)
 
   // Destructure template properties with fallbacks
   const {
-    tone = blogInfo.writingTone || 'Neutral',
-    style = blogInfo.writingStyle || 'Informative',
-    contentLength = blogInfo.articleLength || 1500,
-    categoryName = blogInfo.articleCategories || '',
+    tone = template.tone || 'Neutral',
+    style = template.style || 'Informative',
+    contentLength = template.contentLength || 1500,
+    categoryName = template.categoryName || '',
     tags = template.tags?.length ? template.tags : blogInfo.postTags || [],
     articleStructure: {
       sections = template.sections || 3,
