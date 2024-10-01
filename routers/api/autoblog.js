@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { ObjectId } = require('mongodb');
-const { getCategoryId, checkLoginInfo } = require('../../modules/post')
+const { getCategoryId, checkLoginInfo, post } = require('../../modules/post')
 const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
 var wordpress = require("wordpress");
 const { txt2img,txt2imgOpenAI } = require('../../modules/sdapi.js')
@@ -343,6 +343,41 @@ router.post('/article/:articleId', async (req, res) => {
     { $set: { title, slug, content } }
   );
   res.json({ success: true });
+});
+router.post('/article/post/:articleId', async (req, res) => {
+  try {
+    const articleId = new ObjectId(req.params.articleId);
+    const article = await global.db.collection('articles').findOne({ _id: articleId });
+    const blogInfo = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(article.blogId) });
+
+    blogInfo.username = blogInfo.blogUsername;
+    blogInfo.url = blogInfo.blogUrl;
+    blogInfo.password = blogInfo.blogPassword;
+
+    const client = wordpress.createClient(blogInfo);
+
+    const japaneseTitle = article.title;
+    const slug = article.slug;
+    const content_HTML = article.content;
+    const categories = article.categories || [];
+    const tags = article.tags || [];
+
+    const postId = await post(
+      japaneseTitle,
+      slug,
+      content_HTML,
+      categories,
+      tags,
+      null,
+      blogInfo.postStatus,
+      client
+    );
+
+    res.json({ success: true, postId });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, error: error.message });
+  }
 });
 
 //TOOLS

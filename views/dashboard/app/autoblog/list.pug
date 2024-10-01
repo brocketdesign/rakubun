@@ -245,18 +245,6 @@ block mainContent
         .container
             h3 記事
             ul#articlesList.list-group
-    #articleEditContainer(style="display:none;")
-        form#articleEditForm
-            input#articleId(type="hidden")
-            .mb-3
-                label(for="articleTitle") タイトル
-                input#articleTitle.form-control(type="text", name="title")
-            .mb-3
-                label(for="articleSlug") スラグ
-                input#articleSlug.form-control(type="text", name="slug")
-            .mb-3
-                label(for="articleContent") コンテンツ
-                textarea#articleContent(name="content")
 
     style.
         small.form-text {
@@ -314,17 +302,7 @@ block mainContent
                 width: 100%;
             }
         }
-    <script src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     script.
-        
-        function initEditor() {
-            tinymce.init({
-                selector: 'textarea#articleContent',
-                height: 500,
-                menubar: false
-            });
-        }
         $(document).on('click', '.showArticlesBtn', function(e) {
             e.stopPropagation();
             const botId = $(this).data('id');
@@ -363,85 +341,8 @@ block mainContent
         });
         $(document).on('click', '.previewEditArticleBtn', function() {
             const articleId = $(this).data('id');
-            $.ajax({
-                url: '/api/autoblog/article/' + articleId,
-                method: 'GET',
-                success: function(response) {
-                    if (response.success) {
-                        const article = response.article;
-                        Swal.fire({
-                            title: 'Edit Article',
-                            html: $('#articleEditContainer').html(),
-                            width: '90%',
-                            showCloseButton: true,
-                            showConfirmButton: true,
-                            confirmButtonText: 'Save',
-                            showDenyButton: true,
-                            denyButtonText: 'Post Article',
-                            customClass: {
-                                popup: 'custom-article-edit-popup'
-                            },
-                            didOpen: () => {
-                                $('#articleEditForm #articleId').val(article._id);
-                                $('#articleEditForm #articleTitle').val(article.title);
-                                $('#articleEditForm #articleSlug').val(article.slug || '');
-                                const htmlContent = marked.parse(article.content);
-
-                                if (tinymce.get('articleContent')) {
-                                    tinymce.get('articleContent').remove();
-                                }
-
-                                $('#articleEditForm #articleContent').val(htmlContent);
-                                initEditor();
-                                tinymce.get('articleContent').setContent(htmlContent);
-                            },
-                            preConfirm: () => {
-                                return {
-                                    articleId: $('#articleId').val(),
-                                    title: $('#articleTitle').val(),
-                                    slug: $('#articleSlug').val(),
-                                    content: tinymce.get('articleContent').getContent()
-                                };
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                saveArticle(result.value);
-                            } else if (result.isDenied) {
-                                postArticle(result.value);
-                            }
-                        });
-                    }
-                }
-            });
+            window.location = '/dashboard/app/autoblog/article/edit/'+articleId
         });
-
-        function saveArticle(data) {
-            $.ajax({
-                url: '/api/autoblog/article/' + data.articleId,
-                method: 'POST',
-                data: data,
-                success: function(response) {
-                if (response.success) {
-                    Swal.fire('Success', 'Article saved successfully', 'success');
-                } else {
-                    Swal.fire('Error', 'Failed to save article', 'error');
-                }
-                }
-            });
-        }
-        function postArticle(data) {
-        $.ajax({
-            url: '/api/autoblog/article/post/' + data.articleId,
-            method: 'POST',
-            success: function(response) {
-            if (response.success) {
-                Swal.fire('Success', 'Article posted successfully', 'success');
-            } else {
-                Swal.fire('Error', 'Failed to post article', 'error');
-            }
-            }
-        });
-        }
 
     script.
         const user = !{JSON.stringify(user)};
@@ -614,7 +515,7 @@ block mainContent
                                             <a href="#" type="button" class="btn btn-light border btn-sm shadow-0 me-2 editBotBtn" data-id="${bot._id}" data-blogId="${blogId}" title="編集">
                                                 <i class="fas fa-edit"></i>
                                             </a>           
-                                            <button class="d-none btn btn-secondary btn-sm shadow-0 mx-2 showArticlesBtn" data-id="${bot._id}">
+                                            <button class="btn btn-secondary btn-sm shadow-0 mx-2 showArticlesBtn" data-id="${bot._id}">
                                                 <i class="fas fa-file-alt"></i>
                                             </button>
                                             <button class="d-none btn btn-secondary btn-sm shadow-0 mx-2 imageGenButton" data-id="${bot._id}">
@@ -1099,26 +1000,6 @@ block mainContent
                     popup: 'animate__animated animate__slideOutDown'
                 },
                 footer: '<a href="/payment/subscription" class="btn b-custom-gradient text-white">プレミアムプランにアップグレード</a>'
-            });
-        }
-        function showNotification(message, icon) {
-            Swal.fire({
-                position: 'top-end',
-                icon: icon,
-                title: message,
-                showConfirmButton: false,
-                timer: 3000,
-                toast: true,
-                customClass: {
-                    title: 'swal2-custom-title',
-                    popup: 'swal2-custom-popup'
-                },
-                showClass: {
-                    popup: 'animate__animated animate__slideInRight'
-                },
-                hideClass: {
-                    popup: 'animate__animated animate__slideOutRight'
-                }
             });
         }
         function translateFrequency(frequency) {

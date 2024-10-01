@@ -126,5 +126,14 @@ router.get('/app/autoblog/blog-info/:blogId?', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
-
+router.get('/app/autoblog/article/edit/:articleId', async (req, res) => {
+  try {
+    const articleId = new ObjectId(req.params.articleId);
+    const article = await global.db.collection('articles').findOne({ _id: articleId });
+    res.render('dashboard/app/autoblog/edit',{ success: true, article });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send('Internal server error');
+  }
+});
 module.exports = router;

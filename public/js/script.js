@@ -1387,3 +1387,24 @@ function displayLogin(){
 function hideLogin(){
     $('#login-container').addClass('d-none')
 }
+
+function showNotification(message, icon) {
+    Swal.fire({
+        position: 'top-end',
+        icon: icon,
+        title: message,
+        showConfirmButton: false,
+        timer: 3000,
+        toast: true,
+        customClass: {
+            title: 'swal2-custom-title',
+            popup: 'swal2-custom-popup'
+        },
+        showClass: {
+            popup: 'animate__animated animate__slideInRight'
+        },
+        hideClass: {
+            popup: 'animate__animated animate__slideOutRight'
+        }
+    });
+}
