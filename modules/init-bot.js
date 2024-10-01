@@ -33,6 +33,7 @@ async function autoBlog(blogInfo, db) {
   blogInfo.password = blogInfo.blogPassword;
 
   const language = blogInfo.postLanguage;
+  const description = blogInfo.botDescription
   const client = wordpress.createClient(blogInfo);
   let modelGPT = 'gpt-4o-mini';
 
@@ -68,37 +69,62 @@ async function autoBlog(blogInfo, db) {
     return updateCategories(myCategories, newCategories, 'category', client);
   });
 
+  // Define the schema for parsing the completion result
+  const TitleAndSlugSchema = z.object({
+    japaneseTitle: z.string(),
+    slug: z.string(),
+  });
+
   // Title
   const { japaneseTitle, slug } = await generateTitles(blogInfo, template);
 
+  // Update the generateTitles function
   async function generateTitles(blogInfo, template) {
     // Use the custom title generation prompt from the template
-    const japaneseTitlePrompt = template?.titleGenerationPrompt
+    let japaneseTitlePrompt = template?.titleGenerationPrompt
       ? template.titleGenerationPrompt.replace('{botDescription}', blogInfo.botDescription)
       : titlePromptGen(blogInfo, template);
+      
+    // Create a prompt that asks for both the Japanese title and the slug
+    const titleAndSlugPrompt = `
+      以下の情報に基づいて、記事の日本語のタイトルと英語のスラグを生成してください。
 
-    const japaneseTitle_messages = [
+      情報:
+      - ${japaneseTitlePrompt}
+
+      結果を次のJSON形式で提供してください:
+      {
+        "japaneseTitle": "ここに日本語のタイトル. The user must want to open and read the article. Provide something that catch the attention.",
+        "slug": "ここに英語のスラグ"
+      }
+
+      スラグは、日本語のタイトルを英語に翻訳し、スペースをハイフンに置き換え、小文字にしてください。特殊文字や記号は除外し、URLに適した形式にしてください。
+
+      JSONオブジェクトのみを提供し、それ以外は含めないでください。
+    `;
+
+    const messages = [
       {
         role: 'system',
         content:
           template?.systemMessage ||
-          'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+          'あなたは熟練したブロガーです。提供された情報に基づいて、日本語のタイトルと英語のスラグを生成してください。',
       },
-      { role: 'user', content: japaneseTitlePrompt },
+      { role: 'user', content: titleAndSlugPrompt },
     ];
 
-    const japaneseTitleResponse = await moduleCompletion({
+    // Use moduleCompletion with the zod schema to parse the result
+    const completionResult = await moduleCompletion({
       model: 'gpt-4o-mini',
-      messages: japaneseTitle_messages,
-      max_tokens: 100,
-    });
+      messages: messages,
+      max_tokens: 1000,
+    }, TitleAndSlugSchema);
 
-    let japaneseTitle = japaneseTitleResponse.trim().replace(/"/g, '');
+    if (!completionResult) {
+      throw new Error('タイトルとスラグの生成に失敗しました。');
+    }
 
-    // Translate the Japanese title to English
-    const englishTitle = await translateTitle(japaneseTitle, 'gpt-4o-mini');
-    // Slugify the English title
-    const slug = slugifyTitle(englishTitle);
+    const { japaneseTitle, slug } = completionResult;
 
     return { japaneseTitle, slug };
   }
@@ -482,24 +508,12 @@ async function createTaxonomy(taxonomyName, type, language, client) {
 }
 
 function capitalizeFirstLetter(string) {
+  // Ensure the input is a string
+  string = String(string);
+
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
-async function translateTitle(japaneseTitle, model) {
-  const translationPrompt = `Translate this title to English: "${japaneseTitle}".`;
-  const translationPrompt_messages = [
-    { role: 'system', content: 'You are a proficient language translator.' },
-    { role: 'user', content: translationPrompt },
-  ];
-
-  const translationResult = await moduleCompletion({
-    model: model,
-    messages: translationPrompt_messages,
-    max_tokens: 60,
-  });
-
-  return translationResult.trim();
-}
 
 function slugifyTitle(englishTitle) {
   return englishTitle

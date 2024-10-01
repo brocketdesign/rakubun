@@ -236,10 +236,10 @@ router.post('/bot-start', async (req, res) => {
     const combinedPowers = { ...botInfo, ...blogInfo };
 
     // Call autoBlog to post and save the article
-    const { postId, articleLink } = await autoBlog(combinedPowers, global.db);
+    const { postId, articleLink, articleId } = await autoBlog(combinedPowers, global.db);
 
     // Respond with the article link
-    res.send({ postId, articleLink });
+    res.send({ postId, articleLink, articleId });
   } catch (error) {
     console.error('Error in /bot-start:', error);
     res.status(500).send('Internal server error');

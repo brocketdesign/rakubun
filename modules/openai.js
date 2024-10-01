@@ -80,7 +80,12 @@ const moduleCompletion = async (promptData, PossibleAnswersExtraction = null) =>
   const response = await getChatResponse(promptData, promptData.max_tokens, PossibleAnswersExtraction);
   
   if (PossibleAnswersExtraction) {
-    return response.choices[0].message.parsed.answers;
+    const parsed = response.choices[0].message?.parsed;
+
+    return parsed?.answers && parsed.answers.length > 0
+          ? parsed.answers 
+          : parsed;
+
   } else {
     return response.choices[0].message.content;
   }

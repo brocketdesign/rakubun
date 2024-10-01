@@ -66,8 +66,6 @@ block mainContent
                                     label.text-muted.text-start(for="postLanguage", class="form-label") テキストの言語：
                                     select#postLanguage(name="postLanguage" class="form-select")
                                         option(value="japanese") 日本語
-                                        option(value="english") 英語
-                                        option(value="french") フランス語
                                 div.form-group.col-6.d-none
                                     label.text-muted.text-start(for="postgpt", class="form-label") GPT
                                     select#postgpt(name="postgpt" class="form-select")
@@ -195,7 +193,7 @@ block mainContent
                                     div.invalid-feedback ボット名が必要です。
                                 div.form-group
                                     label.text-muted.text-start(for="botDescription", class="form-label") ボットの説明：
-                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=7, maxLength=1000)
+                                    textarea#botDescription(name="botDescription", required=true class="form-control", rows=7, maxLength=3000)
                                     div.invalid-feedback ボットの説明が必要です。
     #hiddenImageGenFormContainer(style="display:none;")
         .container
@@ -791,8 +789,8 @@ block mainContent
                     $btn.find('i').show();
 
                     const postStatus = $('#postStatus').val() == 'publish'
-                    if (response.articleLink && postStatus) {
-                        window.open(response.articleLink, '_blank');
+                    if (response.articleId && postStatus) {
+                        window.open('/dashboard/app/autoblog/article/edit/'+response.articleId, '_blank');
                         showNotification(`記事が正常に作成されました！ こちらで確認できます: <a href="${response.articleLink}" target="_blank">記事を見る</a>`, 'success');
                         $('#article-link-container').html(`<a href="${response.articleLink}" target="_blank">記事を見る</a>`);
                     } else {

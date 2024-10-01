@@ -1,46 +1,145 @@
 // public/js/templates.js
 $(document).ready(function () {
-  // Handle view template button click
-  $('.view-template-btn').on('click', function () {
-    const templateId = $(this).data('id');
+ // Handle view template button click
+$('.view-template-btn').on('click', function () {
+  const templateId = $(this).data('id');
 
-    $.ajax({
-      url: `/api/templates/${templateId}`,
-      method: 'GET',
-      success: function (response) {
-        if (response.success) {
-          const template = response.template;
+  $.ajax({
+    url: `/api/templates/${templateId}`,
+    method: 'GET',
+    success: function (response) {
+      if (response.success) {
+        const template = response.template;
 
-          Swal.fire({
-            title: template.name,
-            html: `
+        // Parse articleStructure if it's a string
+        let articleStructure;
+        try {
+          articleStructure = typeof template.articleStructure === 'string'
+            ? JSON.parse(template.articleStructure)
+            : template.articleStructure;
+        } catch (error) {
+          Swal.fire('エラー', '記事の構成が無効な形式です。', 'error');
+          return;
+        }
+
+        // Generate HTML for Bootstrap 5 Nav Tabs
+        const htmlContent = `
+          <!-- Nav Tabs -->
+          <ul class="nav nav-tabs" id="templateTab" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab" aria-controls="general" aria-selected="true">基本情報</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="sections-tab" data-bs-toggle="tab" data-bs-target="#sections" type="button" role="tab" aria-controls="sections" aria-selected="false">セクション詳細</button>
+            </li>
+          </ul>
+
+          <!-- Tab Content -->
+          <div class="tab-content" id="templateTabContent" style="margin-top: 20px;">
+            <!-- General Information Tab -->
+            <div class="tab-pane fade show active text-start" id="general" role="tabpanel" aria-labelledby="general-tab">
               <p><strong>説明:</strong> ${template.description}</p>
-              <p><strong>システムメッセージ:</strong><pre>${template.systemMessage}</pre></p>
-              <p><strong>タイトル生成プロンプト:</strong><pre>${template.titleGenerationPrompt}</pre></p>
-              <p><strong>プロンプト生成:</strong><pre>${template.generatePrompt}</pre></p>
-              <p><strong>記事の構成:</strong><pre>${template.articleStructure}</pre></p>
+              <p><strong>システムメッセージ:</strong> <pre>${escapeHtml(template.systemMessage)}</pre></p>
+              <p><strong>タイトル生成プロンプト:</strong> <pre>${escapeHtml(template.titleGenerationPrompt)}</pre></p>
+              <p><strong>プロンプト生成:</strong> <pre>${escapeHtml(template.generatePrompt)}</pre></p>
               <p><strong>カテゴリー名:</strong> ${template.categoryName}</p>
               <p><strong>タグ:</strong> ${template.tags.join(', ')}</p>
               <p><strong>セクション数:</strong> ${template.sections}</p>
               <p><strong>トーン:</strong> ${template.tone}</p>
               <p><strong>スタイル:</strong> ${template.style}</p>
               <p><strong>コンテンツの長さ:</strong> ${template.contentLength}</p>
-            `,
-            showCloseButton: true,
-            showConfirmButton: false,
-            customClass: {
-              popup: 'custom-editor bg-light',
-            },
-          });
-        } else {
-          Swal.fire('エラー', response.message, 'error');
-        }
-      },
-      error: function () {
-        Swal.fire('エラー', 'テンプレートの取得に失敗しました。', 'error');
-      },
-    });
+              <p><strong>公開設定:</strong> ${template.isPublic ? '公開' : '非公開'}</p>
+            </div>
+
+            <!-- Sections Details Tab -->
+            <div class="tab-pane fade" id="sections" role="tabpanel" aria-labelledby="sections-tab">
+              ${generateSectionsHTML(articleStructure)}
+            </div>
+          </div>
+        `;
+
+        Swal.fire({
+          title: template.name,
+          html: htmlContent,
+          width: '800px',
+          showCloseButton: true,
+          showConfirmButton: false,
+          customClass: {
+            popup: 'custom-editor bg-light',
+          },
+        });
+
+        // Initialize Bootstrap Tabs (necessary if not already initialized)
+        const templateTab = new bootstrap.Tab(document.querySelector('#general-tab'));
+      } else {
+        Swal.fire('エラー', response.message, 'error');
+      }
+    },
+    error: function () {
+      Swal.fire('エラー', 'テンプレートの取得に失敗しました。', 'error');
+    },
   });
+});
+
+/**
+ * Generates HTML for the sections details.
+ *
+ * @param {object} articleStructure - The structure of the article containing sections and headings.
+ * @returns {string} - HTML string representing the sections details.
+ */
+function generateSectionsHTML(articleStructure) {
+  if (!articleStructure.headings || !Array.isArray(articleStructure.headings)) {
+    return '<p>セクションの詳細がありません。</p>';
+  }
+
+  // Create a table to display sections
+  let sectionsHTML = `
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th scope="col">セクション番号</th>
+          <th scope="col">見出し</th>
+          <th scope="col">コンテンツの長さ</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  articleStructure.headings.forEach((section, index) => {
+    const heading = section.heading || `セクション ${index + 1}`;
+    const length = section.contentLength || '未設定';
+    sectionsHTML += `
+      <tr>
+        <th scope="row">${index + 1}</th>
+        <td>${escapeHtml(heading)}</td>
+        <td>${length}文字</td>
+      </tr>
+    `;
+  });
+
+  sectionsHTML += `
+      </tbody>
+    </table>
+  `;
+
+  return sectionsHTML;
+}
+
+/**
+ * Escapes HTML special characters to prevent XSS attacks.
+ *
+ * @param {string} unsafe - The string to escape.
+ * @returns {string} - Escaped string.
+ */
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 
   // Handle add template button click
   $(document).on('click','#addTemplateBtn', function () {
