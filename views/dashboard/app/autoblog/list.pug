@@ -794,7 +794,7 @@ block mainContent
                         showNotification(`記事が正常に作成されました！ こちらで確認できます: <a href="${response.articleLink}" target="_blank">記事を見る</a>`, 'success');
                         $('#article-link-container').html(`<a href="${response.articleLink}" target="_blank">記事を見る</a>`);
                     } else {
-                        showNotification('記事が作成されましたが、リンクが提供されませんでした。', 'warning');
+                        showNotification('記事が作成されました。', 'success');
                     }
                     }).fail(function(error) {
                     console.error('Error:', error);

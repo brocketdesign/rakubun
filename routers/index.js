@@ -18,7 +18,9 @@ router.get('/',async(req, res, next) => {
 
   res.render('index',{faq,googleTag:process.env.GOOGLE_TAG}); // Render the top page template
 });
-
+router.get('/lp1',async(req, res, next) => {
+  res.render('lp/index1',{googleTag:process.env.GOOGLE_TAG}); // Render the top page template
+});
 // This route renders the contact form
 router.get('/login', async (req, res, next) => {
   res.redirect('/');
