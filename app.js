@@ -84,6 +84,7 @@ function startServer() {
       const autoblog = require('./routers/api/autoblog');
       const admin = require('./routers/admin.js');
       const templateRouter = require('./routers/dashboard/template');
+      const transcription = require('./routers/api/transcription');
       
 
       app.use('/', index); 
@@ -94,6 +95,7 @@ function startServer() {
       app.use('', templateRouter);
       app.use('/api/generator', generator);
       app.use('/api/autoblog', autoblog);
+      app.use('/api/transcription', transcription);
       app.use('/admin', admin);
 
 

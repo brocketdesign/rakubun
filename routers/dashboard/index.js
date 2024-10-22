@@ -13,15 +13,21 @@ const { ObjectId } = require('mongodb');
 // Route for handling '/dashboard/'
 router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
-    return res.redirect('/dashboard/app/autoblog')
+    //return res.redirect('/dashboard/app/autoblog')
 
-    res.render('dashboard/top', {
+    return res.render('dashboard/top', {
       user: req.user,
       title: "RAKUBUN - Dashboard",
     });
   } catch (error) {
     res.status(500).send('Server Error');
   }
+});
+
+router.get('/app/transcription', async (req, res) => {
+  const userId = req.user._id;
+  const files = await db.collection('files').find({ userId: new ObjectId(userId) }).toArray();
+  res.render('dashboard/app/transcription', { files });
 });
 
 // Route for handling '/generator/'
