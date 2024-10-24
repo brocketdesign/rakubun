@@ -38,6 +38,15 @@ router.get('/app/mailgen', async (req, res) => {
     user:req.user,
    });
 });
+router.get('/app/pdfsummary', async (req, res) => {
+  const File = require('../../models/File');
+  const userId = req.user._id;
+  const files = await File.find({ userId });
+  res.render('dashboard/app/pdfsummary', {
+    user: req.user,
+    files
+  });
+});
 
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  

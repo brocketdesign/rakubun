@@ -57,6 +57,8 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-local": "^1.0.0",
     "pdf-parse": "^1.1.1",
+    "pdfjs": "^2.5.3",
+    "pdfjs-dist": "^4.7.76",
     "puppeteer": "^22.12.1",
     "puppeteer-core": "^10.4.0",
     "rss-parser": "^3.13.0",

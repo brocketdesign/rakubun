@@ -16,12 +16,26 @@ const passportConfig = require('./middleware/passport')(passport);
 const path = require('path'); // Add path module
 const ip = require('ip');
 const app = express();
+const mongoose = require('mongoose');
 const server = http.createServer(app);
 const cors = require('cors');
 const port = process.env.PORT || 3000;
 
 const url = process.env.MONGODB_URL; // Use MONGODB_URL from .env file
 const dbName = process.env.MONGODB_DATABASE; // Use MONGODB_DATABASE from .env file
+
+mongoose.connect(process.env.MONGODB_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+mongoose.connection.on('connected', () => {
+  console.log('Mongoose connected');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.log('Mongoose connection error:', err);
+});
 
 function startServer() {
   MongoClient.connect(url, { useUnifiedTopology: true })
@@ -86,6 +100,7 @@ function startServer() {
       const templateRouter = require('./routers/dashboard/template');
       const transcription = require('./routers/api/transcription');
       const mailgen = require('./routers/api/mailgen');
+      const pdfsummary = require('./routers/api/pdfsummary');
       
 
       app.use('/', index); 
@@ -98,6 +113,7 @@ function startServer() {
       app.use('/api/autoblog', autoblog);
       app.use('/api/transcription', transcription);
       app.use('/api/mailgen', mailgen);
+      app.use('/api/pdfsummary', pdfsummary);
       app.use('/admin', admin);
 
 
