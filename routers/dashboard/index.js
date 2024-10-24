@@ -27,7 +27,10 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
 router.get('/app/transcription', async (req, res) => {
   const userId = req.user._id;
   const files = await db.collection('files').find({ userId: new ObjectId(userId) }).toArray();
-  res.render('dashboard/app/transcription', { files });
+  res.render('dashboard/app/transcription', { 
+    files,
+    user:req.user,
+   });
 });
 
 // Route for handling '/generator/'

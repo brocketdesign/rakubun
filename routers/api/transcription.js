@@ -7,6 +7,7 @@ const OpenAI = require('openai');
 const ObjectId = require('mongodb').ObjectId;
 const { pipeline } = require('stream/promises');
 const fs = require('fs');
+const tmp = require('tmp');
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION,
@@ -43,44 +44,80 @@ router.post('/upload', upload.single('audio'), async (req, res) => {
 });
 
 router.post('/transcribe/:id', async (req, res) => {
+  console.log('POST /transcribe/:id called with id:', req.params.id);
+
   const fileId = req.params.id;
-  const fileRecord = await db.collection('files').findOne({ _id: new ObjectId(fileId) });
-  if (!fileRecord) return res.status(404).json({ error: 'File not found' });
-
-  res.json({ message: 'Transcription started' });
-
-  process.nextTick(async () => {
-    try {
-      const params = {
-        Bucket: fileRecord.bucket,
-        Key: fileRecord.filename,
-      };
-
-      const command = new GetObjectCommand(params);
-      const data = await s3.send(command);
-      const audioStream = data.Body;
-
-      const chunks = [];
-      for await (const chunk of audioStream) {
-        chunks.push(chunk);
-      }
-      const audioBuffer = Buffer.concat(chunks);
-
-      const response = await client.audio.transcriptions.create({
-        file: audioBuffer,
-        model: 'whisper-1',
-      });
-      const transcription = response.text;
-
-      await db.collection('files').updateOne(
-        { _id: new ObjectId(fileId) },
-        { $set: { transcription } }
-      );
-    } catch (error) {
-      console.error('Transcription error:', error);
+  try {
+    const fileRecord = await db.collection('files').findOne({ _id: new ObjectId(fileId) });
+    if (!fileRecord) {
+      console.error('File not found for id:', fileId);
+      return res.status(404).json({ error: 'File not found' });
     }
-  });
+
+    console.log('File record found:', fileRecord);
+    res.json({ message: 'Transcription started' });
+
+    process.nextTick(async () => {
+      try {
+        console.log('Starting transcription process for file:', fileRecord.filename);
+    
+        const params = {
+          Bucket: fileRecord.bucket,
+          Key: fileRecord.filename,
+        };
+        console.log('S3 params:', params);
+    
+        const command = new GetObjectCommand(params);
+        const data = await s3.send(command);
+        console.log('S3 response received');
+    
+        const audioStream = data.Body;
+        const chunks = [];
+    
+        for await (const chunk of audioStream) {
+          chunks.push(chunk);
+        }
+    
+        const audioBuffer = Buffer.concat(chunks);
+        console.log('Audio buffer created');
+    
+        // Write the buffer to a temporary file
+        const tempFilePath = tmp.tmpNameSync({ postfix: '.m4a' });
+        fs.writeFileSync(tempFilePath, audioBuffer);
+        console.log('Temporary file written at:', tempFilePath);
+    
+        // Create a read stream from the temporary file
+        const audioReadStream = fs.createReadStream(tempFilePath);
+    
+        const response = await client.audio.transcriptions.create({
+          file: audioReadStream,
+          model: 'whisper-1',
+        });
+        console.log('Transcription response received');
+    
+        const transcription = response.text;
+        console.log('Transcription text:', transcription);
+    
+        await db.collection('files').updateOne(
+          { _id: new ObjectId(fileId) },
+          { $set: { transcription } }
+        );
+        console.log('Database updated with transcription');
+    
+        // Clean up the temporary file
+        fs.unlinkSync(tempFilePath);
+      } catch (error) {
+        console.error('Transcription process error:', error);
+      }
+    });
+    
+    
+  } catch (error) {
+    console.error('Error during initial file lookup:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
+
 
 router.get('/status/:id', async (req, res) => {
   const fileId = req.params.id;
