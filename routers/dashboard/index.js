@@ -47,6 +47,12 @@ router.get('/app/pdfsummary', async (req, res) => {
     files
   });
 });
+router.get('/app/imageGenerator', async (req, res) => {
+  const userId = req.user._id;
+  res.render('dashboard/app/imageGenerator', {
+    user: req.user,
+  });
+});
 
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  

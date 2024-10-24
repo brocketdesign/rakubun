@@ -1,0 +1,167 @@
+extends ../base
+
+block mainContent
+  .container-fluid
+    .row
+      // Sidebar with parameters
+      .col-md-3.bg-light
+        .sidebar.py-3
+          form#generateForm
+            .mb-3
+              label.form-label(for="prompt") プロンプト
+              textarea.form-control#prompt(name="prompt", rows="3", placeholder="画像生成のためのテキストを入力してください")
+            .mb-3
+              label.form-label(for="enhancedPrompt") 強化されたプロンプト
+              textarea.form-control#enhancedPrompt(name="enhancedPrompt", rows="3", readonly=true, placeholder="強化されたプロンプトがここに表示されます")
+            .mb-3
+              label.form-label スタイル
+              select.form-select#imageStyle(name="imageStyle")
+                option(value="realistic"　selected) リアル
+                option(value="anime") アニメ
+            .mb-3
+              label.form-label アスペクト比
+              .aspect-ratio-options
+                label.aspect-option
+                  input(type="radio", name="aspectRatio", value="1:1", checked)
+                  .aspect-preview(style="width:50px; height:50px;")
+                    | 1:1
+                label.aspect-option
+                  input(type="radio", name="aspectRatio", value="3:4")
+                  .aspect-preview(style="width:37.5px; height:50px;")
+                    | 3:4
+                label.aspect-option
+                  input(type="radio", name="aspectRatio", value="9:16")
+                  .aspect-preview(style="width:28.125px; height:50px;")
+                    | 9:16
+                label.aspect-option
+                  input(type="radio", name="aspectRatio", value="16:9")
+                  .aspect-preview(style="width:50px; height:28.125px;")
+                    | 16:9
+            .mb-3
+              label.form-label(for="imageCount") 枚数
+              input.form-control#imageCount(type="number", name="imageCount", value="1", min="1", max="4")
+            button.btn.btn-primary#generateButton(type="button") 画像生成
+      // Result area
+      .col-md-9
+        .row#resultArea
+          // Generated images will appear here
+
+  script(src="https://code.jquery.com/jquery-3.6.0.min.js")
+  script(src="https://cdn.jsdelivr.net/npm/sweetalert2@11")
+  style.
+    .aspect-ratio-options label {
+      display: inline-block;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+    .aspect-preview{
+        display: flex !important;
+        justify-content: center;
+        align-items: center;
+        font-size: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+    }
+    .aspect-ratio-options input[type="radio"] {
+      display: none;
+    }
+    .aspect-ratio-options .aspect-preview {
+      margin-bottom: 5px;
+    }
+    .aspect-ratio-options input[type="radio"]:checked + .aspect-preview {
+      border: 2px solid #007bff;
+    }
+  script.
+    $(document).ready(function() {
+      $('#generateButton').click(function() {
+        var prompt = $('#prompt').val();
+        var imageStyle = $('#imageStyle').val();
+        var imageCount = $('#imageCount').val();
+        var aspectRatio = $('input[name="aspectRatio"]:checked').val();
+
+        if (!prompt) {
+          Swal.fire('エラー', 'プロンプトを入力してください', 'error');
+          return;
+        }
+
+        // Disable the button to prevent multiple clicks
+        $('#generateButton').prop('disabled', true).text('プロンプト強化中...');
+
+        // Enhance the prompt first
+        $.ajax({
+          url: '/api/imageGenerator/enhance-prompt',
+          type: 'POST',
+          data: { prompt: prompt },
+          success: function(data) {
+            $('#enhancedPrompt').val(data.enhancedPrompt);
+
+            // Now generate the image
+            $('#generateButton').text('画像生成中...');
+
+            $.ajax({
+              url: '/api/imageGenerator/generate-image',
+              type: 'POST',
+              data: {
+                prompt: data.enhancedPrompt,
+                imageStyle: imageStyle,
+                imageCount: imageCount,
+                aspectRatio: aspectRatio
+              },
+              success: function(data) {
+                var taskId = data.taskId;
+                checkTaskStatus(taskId);
+              },
+              error: function() {
+                Swal.fire('エラー', '画像生成の開始に失敗しました', 'error');
+                $('#generateButton').prop('disabled', false).text('画像生成');
+              }
+            });
+          },
+          error: function() {
+            Swal.fire('エラー', 'プロンプトの強化に失敗しました', 'error');
+            $('#generateButton').prop('disabled', false).text('画像生成');
+          }
+        });
+      });
+
+      function checkTaskStatus(taskId) {
+        const POLLING_INTERVAL = 3000; // 3 seconds
+        const MAX_ATTEMPTS = 30; // Up to 90 seconds
+        let attempts = 0;
+
+        const intervalId = setInterval(function() {
+          attempts++;
+          $.ajax({
+            url: '/api/imageGenerator/task-status/' + taskId,
+            type: 'GET',
+            success: function(statusData) {
+              if (statusData.status === 'completed') {
+                clearInterval(intervalId);
+                $('#resultArea').empty();
+                statusData.imageUrls.forEach(function(url) {
+                  var img = $('<img>').attr('src', url).addClass('img-fluid m-2').css('max-width', '45%');
+                  $('#resultArea').append(img);
+                });
+                $('#generateButton').prop('disabled', false).text('画像生成');
+              } else if (statusData.status === 'failed') {
+                clearInterval(intervalId);
+                Swal.fire('エラー', '画像生成に失敗しました: ' + statusData.error, 'error');
+                $('#generateButton').prop('disabled', false).text('画像生成');
+              } else {
+                console.log('タスクはまだ処理中です...');
+              }
+              if (attempts >= MAX_ATTEMPTS) {
+                clearInterval(intervalId);
+                Swal.fire('エラー', '画像の生成がタイムアウトしました。再試行してください。', 'error');
+                $('#generateButton').prop('disabled', false).text('画像生成');
+              }
+            },
+            error: function() {
+              clearInterval(intervalId);
+              Swal.fire('エラー', 'タスクステータスの確認に失敗しました', 'error');
+              $('#generateButton').prop('disabled', false).text('画像生成');
+            }
+          });
+        }, POLLING_INTERVAL);
+      }
+    });

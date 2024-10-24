@@ -101,7 +101,7 @@ function startServer() {
       const transcription = require('./routers/api/transcription');
       const mailgen = require('./routers/api/mailgen');
       const pdfsummary = require('./routers/api/pdfsummary');
-      
+      const imageGenerator = require('./routers/api/imageGenerator');
 
       app.use('/', index); 
       app.use('/user', user); 
@@ -114,6 +114,7 @@ function startServer() {
       app.use('/api/transcription', transcription);
       app.use('/api/mailgen', mailgen);
       app.use('/api/pdfsummary', pdfsummary);
+      app.use('/api/imageGenerator', imageGenerator);
       app.use('/admin', admin);
 
 
