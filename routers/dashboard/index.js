@@ -32,6 +32,12 @@ router.get('/app/transcription', async (req, res) => {
     user:req.user,
    });
 });
+router.get('/app/mailgen', async (req, res) => {
+  const userId = req.user._id;
+  res.render('dashboard/app/mailgen', { 
+    user:req.user,
+   });
+});
 
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  

@@ -85,6 +85,7 @@ function startServer() {
       const admin = require('./routers/admin.js');
       const templateRouter = require('./routers/dashboard/template');
       const transcription = require('./routers/api/transcription');
+      const mailgen = require('./routers/api/mailgen');
       
 
       app.use('/', index); 
@@ -96,6 +97,7 @@ function startServer() {
       app.use('/api/generator', generator);
       app.use('/api/autoblog', autoblog);
       app.use('/api/transcription', transcription);
+      app.use('/api/mailgen', mailgen);
       app.use('/admin', admin);
 
 
