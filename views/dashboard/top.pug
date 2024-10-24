@@ -1,8 +1,8 @@
 extends base
 
 block mainContent
-    section.my-3
-        .row.row-cols-1.row-cols-md-3.my-5
+    section.my-2
+        .row.row-cols-1.row-cols-md-3
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/autoblog`)
                     .card-body.row.justify-start.items-start.px-2
@@ -10,9 +10,12 @@ block mainContent
                             i.fa.fa-robot.mx-3.display-6
                             i.fa.fa-arrow-right
                             i.fab.fa-wordpress.mx-3.display-6
-                        div.col-12.d-flex.align-items-center
-                            p.card-text.text-muted.text-center.w-100
-                                | Auto - Wordpress
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-muted.text-center.fw-bold.w-100
+                                | 記事作成
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | ブログ記事を自動で作成します。
+
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/transcription`)
                     .card-body.row.justify-start.items-start.px-2
@@ -20,40 +23,46 @@ block mainContent
                             i.fa.fa-microphone.mx-3.display-6
                             i.fa.fa-arrow-right
                             i.fa.fa-file-alt.mx-3.display-6
-                        div.col-12.d-flex.align-items-center
-                            p.card-text.text-muted.text-center.w-100
-                                | Audio - Transcription
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-muted.text-center.fw-bold.w-100
+                                | 議事録
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | 音声をテキストに変換します。
 
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/generator/4`)
+                a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/mailgen`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fab.fa-twitter-square.mx-3.display-6
-                        div.col-12.d-flex.align-items-center
-                            p.card-text.text-muted.text-center.w-100
-                                | SNS
-                                
-        .row.row-cols-1.row-cols-md-2.my-5.d-none
-            .col.d-none
-                h5.fw-bold
-                    i.fas.fa-bell.me-2
-                if latestNews
-                    .news-item.mt-3
-                        .news-date.text-muted
-                            | #{latestNews.date}
-                        .news-content
-                            | #{latestNews.content}
-                else
-                    p.text-muted.mt-3.px-3 今は何もありません。
-            .col 
-                h5.fw-bold
-                    i.fas.fa-cogs.me-2
-                .row.row-cols-1.row-cols-md-2.my-3
-                    .col.my-1
-                        a.btn.btn-primary.shadow-0.w-100(href="/user/setting") アカウント設定
-                    .col.my-1
-                        a.btn.btn-primary.shadow-0.w-100(href="/about-us") 会社概要
-                    .col.my-1
-                        a.btn.btn-outline-primary.shadow-0.w-100(href="#") 使い方ガイド
-                    .col.my-1
-                        a.btn.btn-outline-primary.shadow-0.w-100(href="/contact") お問い合わせ
+                            i.fa.fa-envelope.mx-3.display-6
+                            i.fa.fa-arrow-right
+                            i.fa.fa-paper-plane.mx-3.display-6
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-muted.text-center.fw-bold.w-100
+                                | メール作成
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | メールを自動で作成します。
+
+            .col.mb-3
+                a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/pdfsummary`)
+                    .card-body.row.justify-start.items-start.px-2
+                        div.col.d-flex.align-items-center.justify-content-center.mb-3
+                            i.fa.fa-file-pdf.mx-3.display-6
+                            i.fa.fa-arrow-right
+                            i.fa.fa-file-alt.mx-3.display-6
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-muted.text-center.fw-bold.w-100
+                                | PDF要約
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | PDF文書を簡単に要約します。
+            .col.mb-3
+                a.card.btn-outline-light.text-primary.shadow-0.border.px-2(href=`/dashboard/app/imageGenerator`)
+                    .card-body.row.justify-start.items-start.px-2
+                        div.col.d-flex.align-items-center.justify-content-center.mb-3
+                            i.fa.fa-font.mx-3.display-6
+                            i.fa.fa-arrow-right
+                            i.fa.fa-image.mx-3.display-6
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-muted.text-center.fw-bold.w-100
+                                | AI画像生成
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | テキストを画像に変換します。

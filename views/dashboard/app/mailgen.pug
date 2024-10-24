@@ -1,0 +1,97 @@
+extends ../base
+
+block mainContent
+  .container-fluid
+    .row
+      .col-12.col-md-6.mt-3
+        form#mailForm
+          .mb-3
+            label.form-label(for="emailContent") メールの文章をペーストしてください
+            textarea.form-control#emailContent(name="emailContent", rows="10")
+          .mb-3
+            label.form-label(for="replyContent") 返信内容を入力してください
+            textarea.form-control#replyContent(name="replyContent", rows="6")
+          button.btn.btn-primary(type="submit") メール作成
+
+      .col-12.col-md-6.mt-3
+        textarea#generatedEmail(name="generatedEmail", rows="16").form-control
+
+    script(src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin")
+    script(src="https://cdn.jsdelivr.net/npm/marked/marked.min.js")
+    script(src="https://cdn.jsdelivr.net/npm/event-source-polyfill/src/eventsource.min.js")
+    script.
+        tinymce.init({
+        selector: '#generatedEmail',
+        menubar: false,
+        plugins: 'lists link image preview',
+        toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | removeformat',
+        readonly: false // Allow editing
+        });
+
+        $(document).on('submit', '#mailForm', function(e) {
+        e.preventDefault();
+        var emailContent = $('#emailContent').val();
+        var replyContent = $('#replyContent').val();
+
+        fetch('/api/mailgen/generate', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ emailContent: emailContent, replyContent: replyContent })
+        }).then(async response => {
+            if (!response.ok) {
+            throw new Error('Network response was not ok');
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let content = '';
+
+            while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                showNotification('メールが生成されました', 'success');
+                break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n\n');
+
+            lines.forEach(line => {
+                if (line.startsWith('data: ')) {
+                const dataStr = line.substring(6).trim();
+                if (dataStr === '[DONE]') {
+                    // Stream finished
+                    return;
+                }
+
+                try {
+                    const data = JSON.parse(dataStr);
+                    content += data.content;
+
+                    // Convert Markdown to HTML and update the editor
+                    const htmlContent = marked.parse(content);
+                    tinymce.get('generatedEmail').setContent(htmlContent, { format: 'html' });
+                } catch (err) {
+                    console.error('Error parsing JSON:', err);
+                }
+                }
+            });
+            }
+        }).catch(error => {
+            console.error('Fetch error:', error);
+            showNotification('メールの生成に失敗しました', 'error');
+        });
+        });
+
+        function showNotification(message, icon) {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: message,
+            showConfirmButton: false,
+            timer: 1500
+        });
+        }
