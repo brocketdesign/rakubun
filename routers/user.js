@@ -13,10 +13,124 @@ const { email, sendEmail } = require('../services/email')
 
 const { ObjectId } = require('mongodb');
 
+
 router.get('/setting', async (req, res) => {
   res.render('user/setting', { user: req.user });
 });
 
+router.post('/deleteAccount', async (req, res) => {
+  const userId = req.user._id;
+  try {
+    if (req.user.enterpriseId) {
+      await global.db.collection('enterprises').updateOne(
+        { _id: new ObjectId(req.user.enterpriseId) },
+        { $pull: { employees: new ObjectId(userId) } }
+      );
+    }
+    await global.db.collection('users').deleteOne({ _id: new ObjectId(userId) });
+    req.logout(function (err) {
+      req.session.destroy((err) => {
+        req.user = null;
+        res.redirect('/');
+      });
+    });
+  } catch (err) {
+    res.status(500).send('An error occurred while deleting your account.');
+  }
+});
+
+router.post('/login', async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const existingUser = await global.db.collection('users').findOne({ email: email });
+    if (existingUser) return await login(req, res);
+    else return await signup(req, res);
+  } catch (error) {
+    res.status(500).send('An error occurred');
+  }
+});
+
+async function signup(req, res) {
+  const { email } = req.body;
+  if (!email || !/^[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,4}$/.test(email)) {
+    return res.send({ prelog: false, status: false, message: 'Please provide a valid email address.' });
+  }
+  try {
+    const existingUser = await global.db.collection('users').findOne({ email: email });
+    if (existingUser) {
+      return res.send({ prelog: false, status: false, message: 'A user with this email already exists.' });
+    }
+    const generatedUsername = `${Math.random().toString(36).substring(7)}`;
+    const password = Math.random().toString(36).slice(-8);
+    const hash = await bcrypt.hash(password, 10);
+    const randomkey = Math.random().toString(36).slice(-8);
+    const hash_randomkey = await bcrypt.hash(randomkey, 10);
+
+    const emailDomain = email.split('@')[1];
+    const enterprise = await global.db.collection('enterprises').findOne({ domain: emailDomain });
+
+    let role = 'user';
+    let enterpriseId = null;
+
+    if (enterprise) {
+      const employeeCount = enterprise.employees.length;
+      const planLimit = parseInt(enterprise.plan);
+      if (employeeCount < planLimit) {
+        role = 'employee';
+        enterpriseId = enterprise._id;
+        await global.db.collection('enterprises').updateOne(
+          { _id: enterprise._id },
+          { $push: { employees: email } }
+        );
+      } else {
+        return res.send({
+          prelog: false,
+          status: false,
+          message: 'Enterprise plan limit reached. Cannot add more employees.',
+        });
+      }
+    }else{
+      return res.send({
+        prelog: false,
+        status: false,
+        message: 'Enterprise domain is unavailable',
+      });
+    }
+
+    await global.db.collection('users').insertOne({
+      signup_date: new Date(),
+      email: email,
+      username: generatedUsername,
+      password: hash,
+      randomkey: hash_randomkey,
+      isKeyActive: false,
+      randomkey_date: new Date(),
+      role: role,
+      enterpriseId: enterpriseId,
+    });
+
+    const hostname = req.hostname;
+    const welcomeEmailData = {
+      FIRSTNAME: generatedUsername,
+      PASSWORD: password,
+      HOSTNAME: hostname,
+      RANDOMKEY: hash_randomkey,
+    };
+
+    sendEmail(email, 'welcome', welcomeEmailData);
+    return res.send({
+      presign: true,
+      status: true,
+      message: 'Verify your email to login',
+    });
+  } catch (err) {
+    return res.send({
+      prelog: false,
+      status: false,
+      message: 'An error occurred during signup. Please try again.',
+    });
+  }
+}
 router.post('/updateProfile', upload.single('profileImage'), async (req, res) => {
   const user = req.user;
   const { email } = req.body;
@@ -80,33 +194,6 @@ router.post('/updatePassword', async (req, res) => {
   }
 });
 
-// POST /login
-router.post('/login', async (req, res, next) => {
-  try {
-    // Destructure email from request body
-    const { email } = req.body;
-
-    // Log received email
-    console.log(`Received email: ${email}`);
-
-    // Check if the email exists in the 'users' collection
-    const existingUser = await global.db.collection('users').findOne({ email: email });
-
-    // Log existing user
-    console.log(`Existing user: ${JSON.stringify(existingUser)}`);
-
-    if (existingUser) {
-      // If the email exists, execute the login function
-      return await login(req,res);
-    } else {
-      // If the email doesn't exist, execute the signup function
-      return await signup(req,res);
-    }
-  } catch (error) {
-    console.log(`Error occurred: ${error}`);
-    res.status(500).send('An error occurred');
-  }
-});
 
   async function login(req,res){
     const { email } = req.body;

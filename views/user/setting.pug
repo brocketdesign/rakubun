@@ -9,6 +9,10 @@ block mainContent
                         a.nav-link.active#personalInfoTab(data-bs-toggle='pill', href='#personalInfo') アカウント設定
                     li.nav-item
                         a.nav-link#passwordUpdateTab(data-bs-toggle='pill', href='#passwordUpdate') パスワードの更新
+                    if user.role === 'employee'
+                        li.nav-item
+                            a.nav-link#deleteAccountTab(data-bs-toggle='pill', href='#deleteAccount') アカウントを削除する
+                
             .col-md-9
                 .tab-content
                     #personalInfo.tab-pane.fade.show.active
@@ -41,6 +45,12 @@ block mainContent
                                 label(class="small text-muted" for='userPasswordVerification') 新しいパスワードの確認
                                 input#userPasswordVerification.form-control(name="userPasswordVerification", type='password', placeholder='新しいパスワードを確認するために入力してください', required)
                             button.btn.btn-primary.mt-2.mb-4(type='submit') 送信
+                    if user.role === 'employee'
+                        #deleteAccount.tab-pane.fade
+                            h3 アカウントを削除する
+                            p この操作は取り消せません。本当にアカウントを削除しますか？
+                            form#deleteAccountForm(method='post', action='/user/deleteAccount')
+                                button.btn.btn-danger(type='submit') アカウントを削除する
 
     script.
         $(document).ready(() => {

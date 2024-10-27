@@ -93,6 +93,7 @@ function startServer() {
       const user = require('./routers/user');
       const auth = require('./routers/auth');
       const payment = require('./routers/payment');
+      const enterprise = require('./routers/enterprise');
       const dashboard= require('./routers/dashboard/index');
       const generator = require('./routers/api/generator');
       const autoblog = require('./routers/api/autoblog');
@@ -108,6 +109,7 @@ function startServer() {
       app.use('/auth', auth); 
       app.use('/payment', payment);
       app.use('/dashboard', dashboard);
+      app.use('/enterprise', enterprise);
       app.use('', templateRouter);
       app.use('/api/generator', generator);
       app.use('/api/autoblog', autoblog);

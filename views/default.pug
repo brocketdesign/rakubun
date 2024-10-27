@@ -48,7 +48,8 @@ html
     link(rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css")
     link(rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css")
     link(href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet")
-
+   
+    script(src='https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js')
     script(src="https://js.stripe.com/v3/")
     script(src="https://code.jquery.com/jquery-3.6.0.min.js")
     script. 
@@ -83,38 +84,69 @@ html
   body
       if !user
         //- ログインポップアップ
-        #login-container.position-fixed.d-flex.align-items-center.d-none(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:99;background-color: #000000b0;")
-            .position-fixed.top-50.start-50.translate-middle#positionElement.d-flex.justify-content-center
-                .col(style="max-width: 90%;")
-                    #login-form.card.shadow.bg-light.border.border-white.text-center
-                        .card-body.d-flex.flex-column.justify-content-center(style="min-height: 250px;")
-                            h1.card-title.text-center 
-                                span.b-custom-gradient-text.fw-bold RAKUBUN
-                                span.small(style="font-size:18px;") へようこそ
-                            span.fw-bold(style="font-size:16px;") リラックスしながら、AIに任せよう！🧘‍♂️
-                            .mb-3
-                            .verify-email.d-none(style="min-height: 60px;")
-                                span メールアドレスを確認してログインしてください
-                                a#resend-email(href="#" style="display:block" onclick="resendSigninMail()") メールを再送する
+        #login-container.position-fixed.d-flex.align-items-center.d-none.animate__animated(data-animate="animate__fadeIn" onclick="hideLogin()" style="inset:0;z-index:9999;background-color: rgba(0, 0, 0, 0.8);")
+          .position-fixed.top-50.start-50.translate-middle.col-md-6.col-lg-5
+            #login-form.card.shadow-lg.bg-light.border-0.rounded.text-center(style="border-radius: 15px;")
+              .card-body.d-flex.flex-column.justify-content-center(style="min-height: 400px; padding: 2rem;")
+                h1.card-title.text-center 
+                  span.b-custom-gradient-text.fw-bold(style="font-size: 2.5rem; font-family: 'Poppins', sans-serif; text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);") RAKUBUN
+                  span.small(style="font-size: 1.25rem; display: block; margin-top: 0.5rem; font-family: 'Poppins', sans-serif;") へようこそ
+                span.fw-bold(style="font-size: 1.25rem; font-family: 'Poppins', sans-serif; color: #444;") リラックスしながら、AIに任せよう！🧘‍♂️
+                
+                .mb-3.verify-email.d-none
+                  span(style="font-size: 1rem; color: #e74c3c; font-weight: bold;") メールアドレスを確認してログインしてください
+                  a#resend-email(href="#" style="display:block; font-size: 1rem; color: #3498db; text-decoration: underline; margin-top: 0.5rem;" onclick="resendSigninMail()") メールを再送する
 
-                            form.d-none
-                                .mb-3
-                                    label.d-none(for='email', class='form-label') メールアドレス:
-                                    .input-group
-                                        input(type='email', name='email', id='email', class='form-control' placeholder="メールアドレスを入力してください")
-                                        button.btn.btn-primary.shadow-0.input-group-append(type='submit') 
-                                            i.fas.fa-arrow-circle-right
-                            .separator.mb-3.d-none
-                                hr
-                                span または
-                                hr
-                            .container.text-center
-                                a(href='/auth/google', class='google-login-button')
-                                    img.me-2(src='/img/googleauth.svg', alt='Googleで続ける')
-                                    span で続ける
-                            .copyright.mt-3
-                                hr
-                                span.text-muted.small(style="font-size:12px") 続行することで、当社の利用規約およびプライバシーポリシーに同意するものとします。
+                form#loginForm(method='post', action='/user/login')
+                  .mb-3
+                    label(for='email', class='form-label', style="font-size: 1rem; font-family: 'Poppins', sans-serif; color: #555;") メールアドレス:
+                    .input-group
+                      input(type='email', name='email', id='email', class='form-control rounded', style="font-size: 1rem; padding: 0.75rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);", placeholder="メールアドレスを入力してください", required)
+                  .mb-3
+                    label(for='password', class='form-label', style="font-size: 1rem; font-family: 'Poppins', sans-serif; color: #555;") パスワード:
+                    .input-group
+                      input(type='password', name='password', id='password', class='form-control rounded', style="font-size: 1rem; padding: 0.75rem; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);", placeholder="パスワードを入力してください", required)
+                  button.btn.btn-primary.shadow-lg.rounded-pill.w-100(type='submit', style="font-size: 1.25rem; padding: 0.75rem; margin-top: 1rem; background-color: #3498db; border: none;") 
+                    i.fas.fa-arrow-circle-right(style="margin-right: 0.5rem;")
+                    | ログイン
+
+                .separator.mb-4
+                  hr
+                  span(style="font-size: 1rem; color: #888; font-family: 'Poppins', sans-serif; padding: 0 1rem;") または
+                  hr
+
+                .container.text-center
+                  a(href='/auth/google', class='google-login-button btn btn-danger w-100 d-flex align-items-center justify-content-center rounded-pill', style="font-size: 1.25rem; padding: 0.75rem; background-color: #ea4335; border: none; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);")
+                    img.me-2(src='/img/googleauth.svg', alt='Googleで続ける', style='width:24px; height:24px;')
+                    span Googleで続ける
+
+                .copyright.mt-4
+                  hr
+                  span.text-muted.small(style="font-size: 0.875rem; font-family: 'Poppins', sans-serif; color: #aaa;") 続行することで、当社の利用規約およびプライバシーポリシーに同意するものとします。
+
+            script.
+              $(document).ready(() => {
+                $('#loginForm').on('submit', function(e) {
+                  e.preventDefault();
+                  const email = $('#email').val();
+                  const password = $('#password').val();
+                  $.ajax({
+                    url: '/user/login',
+                    type: 'POST',
+                    data: { email, password },
+                    success: (response) => {
+                      if (response.status) {
+                        window.location.href = '/dashboard';
+                      } else {
+                        showNotification(response.message,'error');
+                      }
+                    },
+                    error: () => {
+                      showNotification('エラーが発生しました。もう一度お試しください。','error');
+                    }
+                  });
+                });
+              });
 
         .top-nav
           nav.navbar.navbar-expand-md.navbar-white.bg-white.shadow-0.py-3

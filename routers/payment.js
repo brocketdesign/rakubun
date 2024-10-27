@@ -1,13 +1,46 @@
 const express = require('express');
 const router = express.Router();
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET);
+const stripe = process.env.MODE == 'local'? require('stripe')(process.env.STRIPE_SECRET_KEY_TEST) : require('stripe')(process.env.STRIPE_SECRET_KEY)
 const { daysLeft } = require('../services/tools')
 const ensureAuthenticated = require('../middleware/authMiddleware');
 
 const {premiumPlan} = require('../modules/products')
 
 const { ObjectId } = require('mongodb');
+
+
+router.post('/create-enterprise-checkout-session', async (req, res) => {
+  try {
+    const { plan, companyName, email, domain } = req.body;
+    const priceId = getPriceIdForPlan(plan);
+    
+    const stripeCustomer = await stripe.customers.create({ email: email, name: companyName });
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{ price: priceId, quantity: 1 }],
+      mode: 'subscription',
+      customer: stripeCustomer.id,
+      success_url: `${req.protocol}://${req.get('host')}/enterprise/register-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.protocol}://${req.get('host')}/enterprise/register`,
+      metadata: { companyName, domain, email, plan },
+    });
+    
+    res.json({ id: session.id });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+
+function getPriceIdForPlan(plan) {
+  if (plan === '5') return process.env.STRIPE_PRICE_ID_PLAN_5;
+  else if (plan === '15') return process.env.STRIPE_PRICE_ID_PLAN_15;
+  else if (plan === '30') return process.env.STRIPE_PRICE_ID_PLAN_30;
+  else throw new Error('Invalid plan selected.');
+}
 
 router.get('/subscription',ensureAuthenticated, async (req, res) => {
   try {
