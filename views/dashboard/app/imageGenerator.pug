@@ -4,8 +4,11 @@ block mainContent
   .container-fluid
     .row
       // Sidebar with parameters
-      .col-md-3.bg-light
-        .sidebar.py-3
+      .col-md-3.mt-3
+        .card.bg-white.shadow.p-4
+          h5.custom-title 画像生成パラメータ
+          p.text-muted.custom-sub-title 必要な設定を入力して画像生成を行います
+
           form#generateForm
             .mb-3
               label.form-label(for="prompt") プロンプト
@@ -40,11 +43,15 @@ block mainContent
             .mb-3
               label.form-label(for="imageCount") 枚数
               input.form-control#imageCount(type="number", name="imageCount", value="1", min="1", max="4")
-            button.btn.btn-primary#generateButton(type="button") 画像生成
+            button.btn.btn-primary.w-100#generateButton(type="button") 画像生成
+
       // Result area
-      .col-md-9
-        .row#resultArea
-          // Generated images will appear here
+      .col-md-9.mt-3
+        .card.bg-white.shadow.p-4
+          h5.custom-title 生成された画像
+          p.text-muted.custom-sub-title 下に生成された画像が表示されます
+          .row#resultArea
+            // Generated images will appear here
 
   script(src="https://code.jquery.com/jquery-3.6.0.min.js")
   script(src="https://cdn.jsdelivr.net/npm/sweetalert2@11")

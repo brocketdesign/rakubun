@@ -1390,7 +1390,7 @@ function hideLogin(){
 
 function showNotification(message, icon) {
     Swal.fire({
-        position: 'top-end',
+        position: 'top',
         icon: icon,
         title: message,
         showConfirmButton: false,
@@ -1401,10 +1401,10 @@ function showNotification(message, icon) {
             popup: 'swal2-custom-popup'
         },
         showClass: {
-            popup: 'animate__animated animate__slideInRight'
+            popup: 'animate__animated animate__slideInDown'
         },
         hideClass: {
-            popup: 'animate__animated animate__slideOutRight'
+            popup: 'animate__animated animate__slideOutUp'
         }
     });
 }

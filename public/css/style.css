@@ -1,9 +1,56 @@
+body{
+  background: #f9fcff;
+  overflow-x: hidden;
+}
 main#dashboard {
   display:none;
+  background: #f9fcff;
+  min-height: 90vh;
 }
 .cta-button{
     font-size:1.3em;
 }
+.custom-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #1e90ff, #00bfff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.custom-sub-title{
+  font-size: 16px;
+  color: var(--chakra-colors-gray-500);
+  font-weight: 500;
+  margin-bottom: 30px;
+}
+.btn.btn-primary {
+  background: linear-gradient(90deg, #1e90ff, #00bfff);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: background 0.4s ease, box-shadow 0.4s ease, transform 0.2s ease;
+}
+.btn.btn-primary:hover {
+  background: linear-gradient(90deg, #00bfff, #1e90ff);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+.swal2-custom-popup{
+  border-radius: 50px;
+}
+.coming-soon {
+  background: linear-gradient(90deg, #9b5de5, #f15bb5);
+  color: #fff;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-left: 8px;
+}
+
 .hidden {
     opacity: 0;
 }

@@ -1,20 +1,27 @@
 extends ../base
 
 block mainContent
-  .container-fluid
-    .row
-      .col-12.col-md-6.mt-3
-        form#mailForm
-          .mb-3
-            label.form-label(for="emailContent") メールの文章をペーストしてください
-            textarea.form-control#emailContent(name="emailContent", rows="10")
-          .mb-3
-            label.form-label(for="replyContent") 返信内容を入力してください
-            textarea.form-control#replyContent(name="replyContent", rows="6")
-          button.btn.btn-primary(type="submit") メール作成
+    .container-fluid
+        .row
+            .col-12.col-md-4.mt-3
+                .card.bg-white.shadow.p-4
+                    h5.custom-title カスタムメール入力
+                    p.text-muted.custom-sub-title 受信したメールと希望する返信内容を入力してください
+                    form#mailForm
+                        .mb-3
+                            label.form-label(for="emailContent") メールの文章をペーストしてください
+                            textarea.form-control#emailContent(name="emailContent", rows="5")
+                        .mb-3
+                            label.form-label(for="replyContent") 返信内容を入力してください
+                            textarea.form-control#replyContent(name="replyContent", rows="5")
+                        button.btn.btn-primary.w-100.rounded(type="submit") メール作成
 
-      .col-12.col-md-6.mt-3
-        textarea#generatedEmail(name="generatedEmail", rows="16").form-control
+            .col-12.col-md-8.mt-3
+                .card.bg-white.shadow.p-4
+                    h5.custom-title AI生成メール
+                    p.text-muted.custom-sub-title このメールは編集可能で、返信に使用できます
+                    textarea#generatedEmail(name="generatedEmail", rows="16").form-control
+
 
     script(src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin")
     script(src="https://cdn.jsdelivr.net/npm/marked/marked.min.js")
