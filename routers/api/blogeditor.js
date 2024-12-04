@@ -67,6 +67,7 @@ router.post('/chat', async (req, res) => {
 });
 
 router.post('/generateEditorContent', async (req, res) => {
+    let content = req.body.content;
     let messages = req.session.messages || [];
 
     if (messages.length === 0) {
@@ -81,12 +82,17 @@ router.post('/generateEditorContent', async (req, res) => {
 
         const systemPrompt = `Your are a japanese blog writing assistant. Generate editorContent based on the conversation so far, and indicate whether to update the editor with updateEditor flag. Respond in JSON format with updateEditor and editorContent fields. Respond in Japanese.`;
 
+        // Add the current content as a user message to the conversation
+        if (content && content.trim()) {
+            messages.push({ role: 'user', content: `最新のエディターコンテンツ: ${content}` });
+        }
+
         const responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
 
         const completion = await client.chat.completions.create({
             model: 'gpt-4o',
             messages: responseMessages,
-            response_format: zodResponseFormat(ResponseSchema,'chat_structured_answer'),
+            response_format: zodResponseFormat(ResponseSchema, 'chat_structured_answer'),
         });
 
         const assistantParsedResponse = JSON.parse(completion.choices[0].message.content);
@@ -96,6 +102,10 @@ router.post('/generateEditorContent', async (req, res) => {
         if (assistantParsedResponse.updateEditor) {
             responseData.updateEditor = assistantParsedResponse.updateEditor;
             responseData.editorContent = assistantParsedResponse.editorContent;
+
+            // Add the assistant's response to the session messages
+            messages.push({ role: 'assistant', content: assistantParsedResponse.editorContent });
+            req.session.messages = messages;
         }
 
         res.json(responseData);
@@ -104,6 +114,7 @@ router.post('/generateEditorContent', async (req, res) => {
         res.status(500).json({ error: 'Error generating editor content' });
     }
 });
+
 
 router.post('/save', async (req, res) => {
     const content = req.body.content;

@@ -72,13 +72,13 @@ block mainContent
                 function processText() {
                     return reader.read().then(({ done, value }) => {
                         if (done || isComplete) {
-                            console.log('generateEditorContent');
+                            var blogContent = tinymce.get('blogContent').getContent();
                             fetch('/api/blogeditor/generateEditorContent', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ content: blogContent })
                             }).then(response => response.json())
                             .then(editorData => {
-                                console.log(editorData);
                                 if (editorData.updateEditor) {
                                     const htmlContent = marked.parse(editorData.editorContent);
                                     tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
