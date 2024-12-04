@@ -4,7 +4,7 @@ block mainContent
     section.my-2
         .row.row-cols-1.row-cols-md-3.row-cols-md-4
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/autoblog`)
+                a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/blogeditor`)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
                             i.fa.fa-robot.mx-3.display-6
@@ -13,6 +13,18 @@ block mainContent
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | 記事作成
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | ブログ記事を自動で作成します。
+            .col.mb-3
+                a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/autoblog`)
+                    .card-body.row.justify-start.items-start.px-2
+                        div.col.d-flex.align-items-center.justify-content-center.mb-3
+                            i.fa.fa-robot.mx-3.display-6
+                            i.fa.fa-arrow-right
+                            i.fab.fa-wordpress.mx-3.display-6
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-muted.text-center.fw-bold.w-100
+                                | 自動記事作成
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | ブログ記事を自動で作成します。
 

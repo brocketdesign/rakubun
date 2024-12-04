@@ -103,6 +103,7 @@ function startServer() {
       const mailgen = require('./routers/api/mailgen');
       const pdfsummary = require('./routers/api/pdfsummary');
       const imageGenerator = require('./routers/api/imageGenerator');
+      const blogeditor = require('./routers/api/blogeditor');
 
       app.use('/', index); 
       app.use('/user', user); 
@@ -117,6 +118,7 @@ function startServer() {
       app.use('/api/mailgen', mailgen);
       app.use('/api/pdfsummary', pdfsummary);
       app.use('/api/imageGenerator', imageGenerator);
+      app.use('/api/blogeditor', blogeditor);
       app.use('/admin', admin);
 
 

@@ -1,0 +1,167 @@
+extends ../base
+
+block mainContent
+    .container-fluid
+        .row
+            .col-12.col-md-4.mt-3
+                .card.bg-white.shadow.p-4
+                    h5.custom-title チャット
+                    p.text-muted.custom-sub-title AIアシスタントと対話してブログ記事を作成します
+                    #chatContainer
+                        .chat-messages
+                    form#chatForm
+                        .input-group.mt-3
+                            input.form-control#userMessage(type="text", placeholder="メッセージを入力")
+                            button.btn.btn-primary(type="submit") 送信
+            .col-12.col-md-8.mt-3
+                .card.bg-white.shadow.p-4
+                    h5.custom-title ブログ記事プレビュー
+                    p.text-muted.custom-sub-title 生成されたブログ記事を編集できます
+                    textarea#blogContent(name="blogContent", rows="16").form-control
+                    button.btn.btn-success.mt-3#saveButton(type="button") 保存
+
+    link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css")
+    script(src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin")
+    script(src="https://cdn.jsdelivr.net/npm/marked/marked.min.js")
+    script(src="https://code.jquery.com/jquery-3.6.0.min.js")
+    script.
+        tinymce.init({
+            selector: '#blogContent',
+            menubar: false,
+            plugins: 'lists link image preview',
+            toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | removeformat',
+            readonly: false
+        });
+
+        let assistantMessageElem = null;
+        let isGenerating = false;
+
+        function initializeConversation() {
+            const initialMessage = 'こんにちは！ブログ記事のテーマは何にしますか？';
+            assistantMessageElem = addAssistantMessage(initialMessage);
+        }
+
+        $(document).ready(function() {
+            initializeConversation();
+        });
+
+        $(document).on('submit', '#chatForm', function(e) {
+            e.preventDefault();
+            if (isGenerating) return;
+
+            var message = $('#userMessage').val();
+            if (!message.trim()) return;
+            addUserMessage(message);
+            $('#userMessage').val('');
+
+            assistantMessageElem = addAssistantMessage('');
+
+            isGenerating = true;
+            $('#userMessage').prop('disabled', true);
+            $('#chatForm button[type="submit"]').prop('disabled', true);
+
+            fetch('/api/blogeditor/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            }).then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let isComplete = false;
+
+                function processText() {
+                    return reader.read().then(({ done, value }) => {
+                        if (done || isComplete) {
+                            console.log('generateEditorContent');
+                            fetch('/api/blogeditor/generateEditorContent', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                            }).then(response => response.json())
+                            .then(editorData => {
+                                console.log(editorData);
+                                if (editorData.updateEditor) {
+                                    const htmlContent = marked.parse(editorData.editorContent);
+                                    tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
+                                }
+
+                                let editorUpdateMessage = 'エディターが更新されました。次は何をしますか？';
+                                assistantMessageElem = addAssistantMessage(editorUpdateMessage);
+
+                                isGenerating = false;
+                                $('#userMessage').prop('disabled', false);
+                                $('#chatForm button[type="submit"]').prop('disabled', false);
+                            }).catch(error => {
+                                console.error('Fetch error:', error);
+                                isGenerating = false;
+                                $('#userMessage').prop('disabled', false);
+                                $('#chatForm button[type="submit"]').prop('disabled', false);
+                            });
+                            return;
+                        }
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+                        for (let line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.substring(6).trim();
+                                if (dataStr === '[DONE]') {
+                                    isComplete = true;
+                                    continue;
+                                }
+                                const data = JSON.parse(dataStr);
+                                if (data.content) {
+                                    assistantMessageElem.append(data.content);
+                                }
+                            }
+                        }
+
+                        return processText(); // Continue reading until completion
+                    });
+                }
+
+                return processText();
+            }).catch(error => {
+                console.error('Fetch error:', error);
+                isGenerating = false;
+                $('#userMessage').prop('disabled', false);
+                $('#chatForm button[type="submit"]').prop('disabled', false);
+            });
+        });
+
+
+        $('#saveButton').on('click', function() {
+            var blogContent = tinymce.get('blogContent').getContent();
+            fetch('/api/blogeditor/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: blogContent })
+            }).then(response => {
+                if (response.ok) {
+                    showNotification('ブログ記事が保存されました', 'success');
+                } else {
+                    showNotification('保存に失敗しました', 'error');
+                }
+            });
+        });
+
+        function addUserMessage(message) {
+            var messageElem = $('<div class="user-message animate__animated animate__fadeInUp shadow-sm p-3 mb-2 bg-primary text-white rounded-pill"></div>').text(message);
+            $('#chatContainer .chat-messages').append(messageElem);
+        }
+
+        function addAssistantMessage(message) {
+            assistantMessageElem = $('<div class="assistant-message animate__animated animate__fadeInUp shadow-sm p-3 mb-2 bg-white text-dark rounded-pill border"></div>').text(message);
+            $('#chatContainer .chat-messages').append(assistantMessageElem);
+            return assistantMessageElem;
+        }
+
+        function showNotification(message, icon) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: icon,
+                title: message,
+                showConfirmButton: false,
+                timer: 1500
+            });
+        }
