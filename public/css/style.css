@@ -5,7 +5,7 @@ body{
 main#dashboard {
   display:none;
   background: #f9fcff;
-  min-height: 90vh;
+  min-height: 85vh;
 }
 .cta-button{
     font-size:1.3em;
@@ -14,6 +14,14 @@ main#dashboard {
   border-radius: 50px 0 0 50px;
   padding: 25px;
 }
+.chat-messages {
+  font-size: 12px;
+}
+#chatContainer{
+  height: 45vh;
+  overflow-y: scroll;
+}
+
 .custom-title {
   font-size: 1.75rem;
   font-weight: 700;

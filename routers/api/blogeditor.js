@@ -11,31 +11,63 @@ async function saveBlogPost(post) {
     const collection = db.collection('blogeditor');
     await collection.insertOne(post);
 }
-
 router.post('/chat', async (req, res) => {
     let message = req.body.message;
     let messages = req.session.messages || [];
+    let currentStep = req.session.currentStep || 'title';
 
-    if (messages.length === 0) {
-        const initialAssistantMessage = {
-            role: 'assistant',
-            content: 'こんにちは！ブログ記事のテーマは何にしますか？'
-        };
-        messages.push(initialAssistantMessage);
+    if (!req.session.initialized) {
+        req.session.initialized = true;
+        req.session.currentStep = 'title';
+        currentStep = 'title';
+        messages = [];
+        req.session.messages = messages;
+    }
+
+    let systemPrompt = `You are a japanese blog writing assistant. You answer with a short message to the user explaining what you will do next, but not the content itself. We are currently working on ${currentStep}. Respond in Japanese.`;
+
+    // Include previously saved data
+    let blogPost = req.session.blogPost || {};
+    let title = blogPost.title || '';
+    let structure = blogPost.structure || [];
+    let introduction = blogPost.introduction || '';
+    let conclusion = blogPost.conclusion || '';
+
+    // Add a new user message that contains the data of each previous step
+    let contextMessage = '';
+
+    switch (currentStep) {
+        case 'structure':
+            if (title) {
+                contextMessage = `これまでのデータ:\nタイトル: ${title}`;
+            }
+            break;
+        case 'introduction':
+            if (title && structure.length > 0) {
+                contextMessage = `これまでのデータ:\nタイトル: ${title}\n構成: ${JSON.stringify(structure)}`;
+            }
+            break;
+        case 'conclusion':
+            if (title && structure.length > 0 && introduction) {
+                contextMessage = `これまでのデータ:\nタイトル: ${title}\n構成: ${JSON.stringify(structure)}\n導入部分: ${introduction}`;
+            }
+            break;
+        default:
+            break;
+    }
+
+    if (contextMessage) {
+        messages.push({ role: 'user', content: contextMessage });
     }
 
     if (message && message.trim() !== '') {
         messages.push({ role: 'user', content: message });
     }
 
-    req.session.messages = messages;
+console.log({messages})
+    let responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
 
     try {
-
-        const systemPrompt = `Your are a japanese blog writing assistant. You answer with a short message to the user explaining what you will do next, but not the content itself. Respond in Japanese.`;
-
-        const responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
-
         res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache, no-transform');
         res.flushHeaders();
@@ -57,7 +89,7 @@ router.post('/chat', async (req, res) => {
         res.write('data: [DONE]\n\n');
         res.end();
 
-        messages.push({ role: 'assistant', content: assistantMessageContent});
+        messages.push({ role: 'assistant', content: assistantMessageContent });
         req.session.messages = messages;
 
     } catch (error) {
@@ -69,6 +101,9 @@ router.post('/chat', async (req, res) => {
 router.post('/generateEditorContent', async (req, res) => {
     let content = req.body.content;
     let messages = req.session.messages || [];
+    let currentStep = req.session.currentStep || 'title';
+    let title = req.session.blogPost?.title || '';
+    let structure = req.session.blogPost?.structure || [];
 
     if (messages.length === 0) {
         return res.status(400).json({ error: 'No conversation history found.' });
@@ -80,9 +115,25 @@ router.post('/generateEditorContent', async (req, res) => {
             editorContent: z.string().optional()
         });
 
-        const systemPrompt = `Your are a japanese blog writing assistant. Generate editorContent based on the conversation so far, and indicate whether to update the editor with updateEditor flag. Respond in JSON format with updateEditor and editorContent fields. Respond in Japanese.`;
+        let systemPrompt = '';
 
-        // Add the current content as a user message to the conversation
+        switch (currentStep) {
+            case 'title':
+                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。これまでの会話に基づいてブログのタイトルを最終決定するのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
+                break;
+            case 'structure':
+                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。タイトル「${title}」に基づいて記事の構成を作成するのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
+                break;
+            case 'introduction':
+                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。タイトル「${title}」と構成${JSON.stringify(structure)}に基づいて記事の導入部分を書くのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
+                break;
+            case 'conclusion':
+                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。タイトル「${title}」と構成${JSON.stringify(structure)}に基づいて記事の結論部分を書くのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
+                break;
+            default:
+                break;
+        }
+
         if (content && content.trim()) {
             messages.push({ role: 'user', content: `最新のエディターコンテンツ: ${content}` });
         }
@@ -103,7 +154,6 @@ router.post('/generateEditorContent', async (req, res) => {
             responseData.updateEditor = assistantParsedResponse.updateEditor;
             responseData.editorContent = assistantParsedResponse.editorContent;
 
-            // Add the assistant's response to the session messages
             messages.push({ role: 'assistant', content: assistantParsedResponse.editorContent });
             req.session.messages = messages;
         }
@@ -115,41 +165,123 @@ router.post('/generateEditorContent', async (req, res) => {
     }
 });
 
-
 router.post('/save', async (req, res) => {
     const content = req.body.content;
-    try {
-        const structuringPrompt = `次のブログ記事の内容をタイトル、構成、本文のJSON形式に変換してください。\n\n${content}\n\nJSON形式で出力してください。`;
+    let currentStep = req.session.currentStep || 'title';
+    let blogPost = req.session.blogPost || {};
 
-        const schema = z.object({
-            title: z.string(),
-            structure: z.array(z.object({
-                heading: z.string(),
-                content: z.string()
-            })),
-            content: z.string()
-        });
+    try {
+        let structuringPrompt = '';
+        let schema;
+
+        switch (currentStep) {
+            case 'title':
+                structuringPrompt = `次のテキストからブログ記事のタイトルを抽出してください。\n\n${content}\n\nJSON形式で"title"フィールドのみを含めて出力してください。`;
+                schema = z.object({
+                    title: z.string()
+                });
+                break;
+            case 'structure':
+                structuringPrompt = `次のテキストからブログ記事の構成を抽出してください。\n\n${content}\n\nJSON形式で"structure"フィールドのみを含めて出力してください。構成は見出しと説明の配列です。`;
+                schema = z.object({
+                    structure: z.array(z.object({
+                        heading: z.string(),
+                        description: z.string()
+                    }))
+                });
+                break;
+            case 'introduction':
+                structuringPrompt = `次のテキストからブログ記事の導入部分を抽出してください。\n\n${content}\n\nJSON形式で"introduction"フィールドのみを含めて出力してください。`;
+                schema = z.object({
+                    introduction: z.string()
+                });
+                break;
+            case 'conclusion':
+                structuringPrompt = `次のテキストからブログ記事の結論部分を抽出してください。\n\n${content}\n\nJSON形式で"conclusion"フィールドのみを含めて出力してください。`;
+                schema = z.object({
+                    conclusion: z.string()
+                });
+                break;
+            default:
+                break;
+        }
 
         const completion = await client.chat.completions.create({
             model: 'gpt-4o',
             messages: [{ role: 'user', content: structuringPrompt }],
+            response_format: zodResponseFormat(schema, 'content_structured'),
         });
 
         const structuredDataContent = completion.choices[0].message.content;
 
         let structuredData;
         try {
-            structuredData = schema.parse(JSON.parse(structuredDataContent));
+            structuredData = JSON.parse(structuredDataContent);
         } catch (parseError) {
             console.error('Error parsing structured data:', parseError);
             return res.status(500).json({ error: 'Error parsing structured data' });
         }
 
-        await saveBlogPost(structuredData);
-        res.status(200).json({ message: 'Blog post saved' });
+        blogPost = { ...blogPost, ...structuredData };
+        req.session.blogPost = blogPost;
+
+        if (currentStep === 'conclusion') {
+            await saveBlogPost(blogPost);
+        }
+
+        switch (currentStep) {
+            case 'title':
+                req.session.currentStep = 'structure';
+                break;
+            case 'structure':
+                req.session.currentStep = 'introduction';
+                break;
+            case 'introduction':
+                req.session.currentStep = 'conclusion';
+                break;
+            case 'conclusion':
+                req.session.currentStep = 'completed';
+                break;
+            default:
+                break;
+        }
+
+        req.session.messages = [];
+
+        res.status(200).json({ message: 'Data saved', nextStep: req.session.currentStep });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: 'Error saving blog post' });
+        res.status(500).json({ error: 'Error saving data' });
+    }
+});
+
+router.get('/currentStep', (req, res) => {
+    try {
+        // Check if the session is initialized, otherwise set the default step
+        if (!req.session.currentStep) {
+            req.session.currentStep = 'title';
+        }
+
+        res.status(200).json({
+            currentStep: req.session.currentStep,
+        });
+    } catch (error) {
+        console.error('Error fetching current step:', error);
+        res.status(500).json({ error: 'Error fetching current step' });
+    }
+});
+
+router.post('/reset', (req, res) => {
+    try {
+        req.session.messages = [];
+        req.session.currentStep = 'title';
+        req.session.blogPost = {};
+        req.session.initialized = false;
+
+        res.status(200).json({ message: 'ブログ投稿が正常にリセットされました。新しいブログ投稿を開始する準備ができました。' });
+    } catch (error) {
+        console.error('Error resetting data:', error);
+        res.status(500).json({ error: 'Error resetting data' });
     }
 });
 
