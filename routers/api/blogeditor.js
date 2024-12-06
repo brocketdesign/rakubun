@@ -1,15 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const OpenAI = require('openai');
+const { ObjectId } = require('mongodb');
 const { z } = require('zod');
 const { zodResponseFormat } = require('openai/helpers/zod');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-async function saveBlogPost(post) {
+async function saveBlogPost(post, session) {
     const db = global.db;
     const collection = db.collection('blogeditor');
-    await collection.insertOne(post);
+
+    if (post._id) {
+        const postId = new ObjectId(post._id);
+        const postToUpdate = { ...post };
+        delete postToUpdate._id; // Remove _id before updating
+        await collection.updateOne({ _id: postId }, { $set: postToUpdate });
+    } else {
+        const result = await collection.insertOne(post);
+        post._id = result.insertedId.toString(); // Save the new _id
+        session.blogPost._id = post._id; // Update the session with the new _id
+    }
 }
 router.post('/chat', async (req, res) => {
     let message = req.body.message;
@@ -37,6 +48,11 @@ router.post('/chat', async (req, res) => {
     let contextMessage = '';
 
     switch (currentStep) {
+        case 'title':
+            if (title) {
+                contextMessage = `これまでのデータ:\nタイトル: ${title}`;
+            }
+            break;
         case 'structure':
             if (title) {
                 contextMessage = `これまでのデータ:\nタイトル: ${title}`;
@@ -64,7 +80,6 @@ router.post('/chat', async (req, res) => {
         messages.push({ role: 'user', content: message });
     }
 
-console.log({messages})
     let responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
 
     try {
@@ -225,9 +240,7 @@ router.post('/save', async (req, res) => {
         blogPost = { ...blogPost, ...structuredData };
         req.session.blogPost = blogPost;
 
-        if (currentStep === 'conclusion') {
-            await saveBlogPost(blogPost);
-        }
+        await saveBlogPost(blogPost, req.session);
 
         switch (currentStep) {
             case 'title':
@@ -285,4 +298,12 @@ router.post('/reset', (req, res) => {
     }
 });
 
+  router.post('/delete/:id', async (req, res) => {
+    const db = global.db;
+    const collection = db.collection('blogeditor');
+    await collection.deleteOne({ _id: new require('mongodb').ObjectID(req.params.id) });
+    res.redirect('/blogeditor/list');
+  });
+
+  
 module.exports = router;

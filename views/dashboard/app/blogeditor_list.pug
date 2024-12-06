@@ -1,0 +1,18 @@
+extends ../base
+
+block mainContent
+    .container
+        h1 記事一覧
+        table.table
+            thead
+                tr
+                    th タイトル
+                    th アクション
+            tbody
+                each article in articles
+                    tr
+                        td= article.title
+                        td
+                            a.btn.btn-primary(href=`/dashboard/app/blogeditor?id=${article._id}`) 編集
+                            form(demethod='post', action=`/blogeditor/delete/${article._id}`, style='display:inline;')
+                                button.btn.btn-danger(type='submit') 削除

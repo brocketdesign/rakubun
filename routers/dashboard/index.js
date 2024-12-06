@@ -34,8 +34,36 @@ router.get('/app/transcription', async (req, res) => {
 });
 router.get('/app/blogeditor', async (req, res) => {
   const userId = req.user._id;
+  if (req.query.id) {
+    const db = global.db;
+    const collection = db.collection('blogeditor');
+    const article = await collection.findOne({ _id: new ObjectId(req.query.id) });
+    req.session.blogPost = article ? {
+      _id: article._id.toString(),
+      title: article.title || '',
+      structure: article.structure || [],
+      introduction: article.introduction || '',
+      conclusion: article.conclusion || ''
+    } : {};
+
+    req.session.messages = [];
+    req.session.currentStep = 'title';
+    req.session.initialized = false;
+
+    return res.render('dashboard/app/blogeditor', { user:req.user, articleId: article ? article._id.toString() : null });
+  }
   res.render('dashboard/app/blogeditor', { 
     user:req.user,
+    articleId: null
+   });
+});
+router.get('/app/blogeditor/list', async (req, res) => {
+  const userId = req.user._id;
+  const collection = db.collection('blogeditor');
+  const articles = await collection.find({}).toArray();
+  res.render('dashboard/app/blogeditor_list', { 
+    user:req.user,
+    articles
    });
 });
 router.get('/app/mailgen', async (req, res) => {
