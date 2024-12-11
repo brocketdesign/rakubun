@@ -1,30 +1,30 @@
 extends ../base
 
 block mainContent
-    .container-fluid
-        .row
-            .col-12.col-md-4.mt-3
-                .card.bg-white.shadow.p-4
-                    h5.custom-title チャット
-                    p.text-muted.custom-sub-title AIアシスタントと対話してブログ記事を作成します
-                    #chatContainer
-                        .chat-messages
-                    form#chatForm
-                        .input-group.mt-3
-                            input.form-control#userMessage(type="text", placeholder="メッセージを入力")
-                            button.btn.btn-primary(type="submit") 送信
-            .col-12.col-md-8.mt-3
-                .card.bg-white.shadow.p-4
-                    h5#currentStepTitle 現在のステップ: タイトル作成
-                    textarea#blogContent(name="blogContent", rows="16" style="height:65vh;").form-control
-                    .d-flex.justify-content-between
-                        button.btn.btn-danger.mt-3#resetButton(type="button") リセット
-                        button.btn.btn-success.mt-3#saveButton(type="button") 保存
+    .d-flex.flex-row.w-100(style="height: 87vh; overflow-y: hidden;")
+        // Left side: Chat area
+        .chat-side.bg-light.border-right.p-3.d-flex.flex-column.col-6.col-sm-4
+            #chatContainer.flex-grow-1.overflow-auto
+                .chat-messages
+
+            form#chatForm.mt-3
+                .input-group
+                    input.form-control#userMessage(type="text" placeholder="メッセージを入力")
+                    button.btn.btn-primary(type="submit") 送信
+
+        // Right side: Editor with spinner
+        .editor-side.flex-grow-1.p-3
+            .text-center.mt-3#loadingSpinner(style="display:none;")
+                .spinner-border(role="status")
+                span.visually-hidden ローディング中
+
+            textarea#blogContent(name="blogContent", rows="20", style="height:100%;").form-control
 
     link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css")
     script(src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin")
     script(src="https://cdn.jsdelivr.net/npm/marked/marked.min.js")
     script(src="https://code.jquery.com/jquery-3.6.0.min.js")
+
     script.
         tinymce.init({
             selector: '#blogContent',
@@ -33,85 +33,73 @@ block mainContent
             toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | removeformat',
             readonly: false
         });
+    script.
+        $(document).ready(function() {
+            fetch('/api/blogeditor/init')
+                .then(r => r.json())
+                .then(data => {
+                // Initialize chat messages
+                if (data.messages && data.messages.length > 0) {
+                    for (let m of data.messages) {
+                    if (m.role === 'user') {
+                        addUserMessage(m.content);
+                    } else if (m.role === 'assistant') {
+                        addAssistantMessage(m.content);
+                    }
+                    }
+                    scrollChat();
+                }
 
+                // Initialize editor content
+                if (data.content && data.content.trim() !== '') {
+                    tinymce.get('blogContent').setContent(data.content, { format: 'html' });
+                }
+                })
+                .catch(err => console.error('Error initializing:', err));
+            });
+
+    script.
         let assistantMessageElem = null;
         let isGenerating = false;
-        let currentStep = 'title';
 
-        const stepTitles = {
-            'title': 'タイトル作成',
-            'structure': '構成作成',
-            'introduction': '導入部分作成',
-            'conclusion': '結論作成',
-            'completed': '完了'
-        };
-
-        function updateCurrentStepTitle() {
-            $('#currentStepTitle').text(`現在のステップ: ${stepTitles[currentStep]}`);
+        function addUserMessage(msg) {
+            $('#chatContainer .chat-messages').append($('<div class="user-message animate__animated animate__fadeInUp shadow-sm p-2 mb-2 bg-primary text-white rounded-pill"></div>').text(msg));
+            scrollChat();
         }
 
-        function initializeConversation() {
-            let initialMessage = '';
+        function addAssistantMessage(msg) {
+            assistantMessageElem = $('<div class="assistant-message animate__animated animate__fadeInUp p-2 mb-2 bg-white text-dark rounded-pill"></div>').text(msg);
+            $('#chatContainer .chat-messages').append(assistantMessageElem);
+            scrollChat();
+            return assistantMessageElem;
+        }
 
-            switch (currentStep) {
-                case 'title':
-                    initialMessage = 'こんにちは！ブログ記事のテーマは何にしますか？';
-                    break;
-                case 'structure':
-                    initialMessage = '素晴らしいタイトルですね。次に記事の構成を考えてみましょう。';
-                    break;
-                case 'introduction':
-                    initialMessage = '構成が決まりました。導入部分を書き始めましょう。';
-                    break;
-                case 'conclusion':
-                    initialMessage = '素晴らしい導入部分です。最後に結論を書きましょう。';
-                    break;
-                case 'completed':
-                    initialMessage = 'お疲れ様でした！ブログ記事の作成が完了しました。';
-                    break;
-                default:
-                    initialMessage = 'こんにちは！ブログ記事の作成を始めましょう。';
-                    break;
+        function scrollChat() {
+            $('#chatContainer').animate({ scrollTop: $('#chatContainer')[0].scrollHeight }, 'fast');
+        }
+
+        function showLoading(show) {
+            if (show) {
+                $('#loadingSpinner').show();
+                tinymce.get('blogContent').mode.set('readonly');
+            } else {
+                $('#loadingSpinner').hide();
+                tinymce.get('blogContent').mode.set('design');
             }
-
-            assistantMessageElem = addAssistantMessage(initialMessage);
-            updateCurrentStepTitle();
-        }
-
-        $(document).ready(function() {
-            fetchCurrentStep();
-        });
-
-        function fetchCurrentStep() {
-            $.ajax({
-                url: '/api/blogeditor/currentStep',
-                method: 'GET',
-                success: function(data) {
-                    currentStep = data.currentStep || 'title';
-                    initializeConversation();
-                },
-                error: function(err) {
-                    console.error('Error fetching current step:', err);
-                    currentStep = 'title';
-                    initializeConversation();
-                }
-            });
         }
 
         $(document).on('submit', '#chatForm', function(e) {
             e.preventDefault();
             if (isGenerating) return;
-
-            var message = $('#userMessage').val();
+            let message = $('#userMessage').val();
             if (!message.trim()) return;
             addUserMessage(message);
             $('#userMessage').val('');
-
             assistantMessageElem = addAssistantMessage('');
-
             isGenerating = true;
             $('#userMessage').prop('disabled', true);
             $('#chatForm button[type="submit"]').prop('disabled', true);
+            showLoading(true);
 
             fetch('/api/blogeditor/chat', {
                 method: 'POST',
@@ -120,148 +108,59 @@ block mainContent
             }).then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
-                let isComplete = false;
+                let doneReading = false;
 
-                function processText() {
+                function readChunk() {
                     return reader.read().then(({ done, value }) => {
-                        if (done || isComplete) {
-                            var blogContent = tinymce.get('blogContent').getContent();
-                            fetch('/api/blogeditor/generateEditorContent', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ content: blogContent })
-                            }).then(response => response.json())
-                            .then(editorData => {
-                                if (editorData.updateEditor) {
-                                    const htmlContent = marked.parse(editorData.editorContent);
-                                    tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
-                                }
-
-                                isGenerating = false;
-                                $('#userMessage').prop('disabled', false);
-                                $('#chatForm button[type="submit"]').prop('disabled', false);
-                            }).catch(error => {
-                                console.error('Fetch error:', error);
-                                isGenerating = false;
-                                $('#userMessage').prop('disabled', false);
-                                $('#chatForm button[type="submit"]').prop('disabled', false);
-                            });
+                        if (done || doneReading) {
+                            updateEditorContent();
                             return;
                         }
-
                         const chunk = decoder.decode(value, { stream: true });
                         const lines = chunk.split('\n');
                         for (let line of lines) {
                             if (line.startsWith('data: ')) {
                                 const dataStr = line.substring(6).trim();
                                 if (dataStr === '[DONE]') {
-                                    isComplete = true;
+                                    doneReading = true;
                                     continue;
                                 }
                                 const data = JSON.parse(dataStr);
-                                if (data.content) {
-                                    assistantMessageElem.append(data.content);
-                                }
+                                if (data.content) assistantMessageElem.append(data.content);
                             }
                         }
-
-                        return processText();
+                        return readChunk();
                     });
                 }
-
-                return processText();
-            }).catch(error => {
-                console.error('Fetch error:', error);
-                isGenerating = false;
-                $('#userMessage').prop('disabled', false);
-                $('#chatForm button[type="submit"]').prop('disabled', false);
+                return readChunk();
+            }).catch(err => {
+                console.error(err);
+                finishGenerating();
             });
         });
 
-        $('#saveButton').on('click', function() {
-            var blogContent = tinymce.get('blogContent').getContent();
-            fetch('/api/blogeditor/save', {
+        function updateEditorContent() {
+            let blogContent = tinymce.get('blogContent').getContent();
+            fetch('/api/blogeditor/generateEditorContent', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: blogContent })
-            }).then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    showNotification('保存に失敗しました', 'error');
-                } else {
-                    showNotification('データが保存されました', 'success');
-                    currentStep = data.nextStep;
-                    updateCurrentStepTitle();
-                    if (currentStep === 'completed') {
-                        assistantMessageElem = addAssistantMessage('ブログ記事の作成が完了しました。');
-                    } else {
-                        // Clear chat and reset for next step
-                        $('#chatContainer .chat-messages').empty();
-                        tinymce.get('blogContent').setContent('');
-                        initializeConversation();
-                    }
+            }).then(r => r.json())
+            .then(editorData => {
+                if (editorData.updateEditor) {
+                    const htmlContent = marked.parse(editorData.editorContent);
+                    tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
                 }
-            }).catch(error => {
-                console.error('Error saving data:', error);
-                showNotification('保存に失敗しました', 'error');
-            });
-        });
-
-        $('#resetButton').on('click', function () {
-            Swal.fire({
-                title: 'リセットしますか？',
-                text: 'すべてのデータが削除されます。よろしいですか？',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'はい',
-                cancelButtonText: 'キャンセル',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: '/api/blogeditor/reset',
-                        method: 'POST',
-                        success: function (data) {
-                            Swal.fire('リセット成功', data.message, 'success');
-                            // Clear the editor and chat
-                            $('#chatContainer .chat-messages').empty();
-                            tinymce.get('blogContent').setContent('');
-                            // Reset step and reload the initial conversation
-                            currentStep = 'title';
-                            initializeConversation();
-                        },
-                        error: function (err) {
-                            console.error('Error resetting blog post:', err);
-                            Swal.fire('エラー', 'リセットに失敗しました。', 'error');
-                        },
-                    });
-                }
-            });
-        });
-
-        function addUserMessage(message) {
-            var messageElem = $('<div class="user-message animate__animated animate__fadeInUp shadow-sm p-3 mb-2 bg-primary text-white rounded-pill"></div>').text(message);
-            $('#chatContainer .chat-messages').append(messageElem);
-            scrollChatToBottom();
-        }
-
-        function addAssistantMessage(message) {
-            assistantMessageElem = $('<div class="assistant-message animate__animated animate__fadeInUp p-3 mb-2 bg-white text-dark rounded-pill"></div>').text(message);
-            $('#chatContainer .chat-messages').append(assistantMessageElem);
-            scrollChatToBottom();
-            return assistantMessageElem;
-        }
-
-        function showNotification(message, icon) {
-            Swal.fire({
-                toast: true,
-                position: 'top-end',
-                icon: icon,
-                title: message,
-                showConfirmButton: false,
-                timer: 1500
+                finishGenerating();
+            }).catch(err => {
+                console.error(err);
+                finishGenerating();
             });
         }
 
-        function scrollChatToBottom() {
-            $('#chatContainer').animate({ scrollTop: $('#chatContainer')[0].scrollHeight }, 'smooth');
+        function finishGenerating() {
+            isGenerating = false;
+            $('#userMessage').prop('disabled', false);
+            $('#chatForm button[type="submit"]').prop('disabled', false);
+            showLoading(false);
         }

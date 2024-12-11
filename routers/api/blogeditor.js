@@ -1,3 +1,9 @@
+// blogeditor.js
+// Routes:
+// POST /chat: user sends a message, server streams AI assistant response
+// POST /generateEditorContent: generate updated editor content, and possibly save/reset
+// Internal: saveBlogPost function
+
 const express = require('express');
 const router = express.Router();
 const OpenAI = require('openai');
@@ -8,302 +14,144 @@ const { zodResponseFormat } = require('openai/helpers/zod');
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 async function saveBlogPost(post, session) {
-    const db = global.db;
-    const collection = db.collection('blogeditor');
-
-    if (post._id) {
-        const postId = new ObjectId(post._id);
-        const postToUpdate = { ...post };
-        delete postToUpdate._id; // Remove _id before updating
-        await collection.updateOne({ _id: postId }, { $set: postToUpdate });
-    } else {
-        const result = await collection.insertOne(post);
-        post._id = result.insertedId.toString(); // Save the new _id
-        session.blogPost._id = post._id; // Update the session with the new _id
-    }
+  const db = global.db;
+  const collection = db.collection('blogeditor');
+  if (post._id) {
+    const postId = new ObjectId(post._id);
+    const postToUpdate = { ...post };
+    delete postToUpdate._id;
+    await collection.updateOne({ _id: postId }, { $set: postToUpdate });
+  } else {
+    const result = await collection.insertOne(post);
+    post._id = result.insertedId.toString();
+    session.blogPost._id = post._id;
+  }
 }
+
+// GET /init
+// Returns current session messages and editor content if available
+router.get('/init', (req, res) => {
+  const messages = req.session.messages || [];
+  const blogPost = req.session.blogPost || {};
+  const content = blogPost.content || '';
+  res.json({ messages, content });
+});
+
+// POST /chat
+// Streams assistant response for user's message
 router.post('/chat', async (req, res) => {
-    let message = req.body.message;
-    let messages = req.session.messages || [];
-    let currentStep = req.session.currentStep || 'title';
+  let message = req.body.message;
+  let messages = req.session.messages || [];
+  if (!req.session.initialized) {
+    req.session.initialized = true;
+    messages = [];
+    req.session.messages = messages;
+    req.session.blogPost = {};
+  }
 
-    if (!req.session.initialized) {
-        req.session.initialized = true;
-        req.session.currentStep = 'title';
-        currentStep = 'title';
-        messages = [];
-        req.session.messages = messages;
+  if (message && message.trim() !== '') {
+    messages.push({ role: 'user', content: message });
+  }
+
+  const systemPrompt = "You are a Japanese blog writing assistant. Respond concisely in Japanese.";
+
+  let responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
+
+  try {
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.flushHeaders();
+
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: responseMessages,
+      stream: true,
+    });
+
+    let assistantMessageContent = '';
+
+    for await (const part of completion) {
+      const content = part.choices[0].delta?.content || '';
+      assistantMessageContent += content;
+      res.write(`data: ${JSON.stringify({ content })}\n\n`);
     }
 
-    let systemPrompt = `You are a japanese blog writing assistant. You answer with a short message to the user explaining what you will do next, but not the content itself. We are currently working on ${currentStep}. Respond in Japanese.`;
+    res.write('data: [DONE]\n\n');
+    res.end();
 
-    // Include previously saved data
-    let blogPost = req.session.blogPost || {};
-    let title = blogPost.title || '';
-    let structure = blogPost.structure || [];
-    let introduction = blogPost.introduction || '';
-    let conclusion = blogPost.conclusion || '';
+    messages.push({ role: 'assistant', content: assistantMessageContent });
+    req.session.messages = messages;
 
-    // Add a new user message that contains the data of each previous step
-    let contextMessage = '';
-
-    switch (currentStep) {
-        case 'title':
-            if (title) {
-                contextMessage = `これまでのデータ:\nタイトル: ${title}`;
-            }
-            break;
-        case 'structure':
-            if (title) {
-                contextMessage = `これまでのデータ:\nタイトル: ${title}`;
-            }
-            break;
-        case 'introduction':
-            if (title && structure.length > 0) {
-                contextMessage = `これまでのデータ:\nタイトル: ${title}\n構成: ${JSON.stringify(structure)}`;
-            }
-            break;
-        case 'conclusion':
-            if (title && structure.length > 0 && introduction) {
-                contextMessage = `これまでのデータ:\nタイトル: ${title}\n構成: ${JSON.stringify(structure)}\n導入部分: ${introduction}`;
-            }
-            break;
-        default:
-            break;
-    }
-
-    if (contextMessage) {
-        messages.push({ role: 'user', content: contextMessage });
-    }
-
-    if (message && message.trim() !== '') {
-        messages.push({ role: 'user', content: message });
-    }
-
-    let responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
-
-    try {
-        res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-        res.setHeader('Cache-Control', 'no-cache, no-transform');
-        res.flushHeaders();
-
-        const completion = await client.chat.completions.create({
-            model: 'gpt-4o',
-            messages: responseMessages,
-            stream: true,
-        });
-
-        let assistantMessageContent = '';
-
-        for await (const part of completion) {
-            const content = part.choices[0].delta?.content || '';
-            assistantMessageContent += content;
-            res.write(`data: ${JSON.stringify({ content })}\n\n`);
-        }
-
-        res.write('data: [DONE]\n\n');
-        res.end();
-
-        messages.push({ role: 'assistant', content: assistantMessageContent });
-        req.session.messages = messages;
-
-    } catch (error) {
-        console.error('Error generating response:', error);
-        res.status(500).json({ error: 'Error generating response' });
-    }
+  } catch (error) {
+    console.error('Error generating response:', error);
+    res.status(500).json({ error: 'Error generating response' });
+  }
 });
 
+// POST /generateEditorContent
+// Uses conversation to update editor content, and possibly save/reset
 router.post('/generateEditorContent', async (req, res) => {
-    let content = req.body.content;
-    let messages = req.session.messages || [];
-    let currentStep = req.session.currentStep || 'title';
-    let title = req.session.blogPost?.title || '';
-    let structure = req.session.blogPost?.structure || [];
+  let content = req.body.content;
+  let messages = req.session.messages || [];
 
-    if (messages.length === 0) {
-        return res.status(400).json({ error: 'No conversation history found.' });
-    }
+  if (messages.length === 0) {
+    return res.status(400).json({ error: 'No conversation history found.' });
+  }
 
-    try {
-        const ResponseSchema = z.object({
-            updateEditor: z.boolean(),
-            editorContent: z.string().optional()
-        });
-
-        let systemPrompt = '';
-
-        switch (currentStep) {
-            case 'title':
-                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。これまでの会話に基づいてブログのタイトルを最終決定するのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
-                break;
-            case 'structure':
-                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。タイトル「${title}」に基づいて記事の構成を作成するのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
-                break;
-            case 'introduction':
-                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。タイトル「${title}」と構成${JSON.stringify(structure)}に基づいて記事の導入部分を書くのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
-                break;
-            case 'conclusion':
-                systemPrompt = `あなたは日本語のブログ記事作成アシスタントです。タイトル「${title}」と構成${JSON.stringify(structure)}に基づいて記事の結論部分を書くのを手伝ってください。JSON形式でupdateEditorとeditorContentのフィールドを含めて回答してください。`;
-                break;
-            default:
-                break;
-        }
-
-        if (content && content.trim()) {
-            messages.push({ role: 'user', content: `最新のエディターコンテンツ: ${content}` });
-        }
-
-        const responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
-
-        const completion = await client.chat.completions.create({
-            model: 'gpt-4o',
-            messages: responseMessages,
-            response_format: zodResponseFormat(ResponseSchema, 'chat_structured_answer'),
-        });
-
-        const assistantParsedResponse = JSON.parse(completion.choices[0].message.content);
-
-        let responseData = {};
-
-        if (assistantParsedResponse.updateEditor) {
-            responseData.updateEditor = assistantParsedResponse.updateEditor;
-            responseData.editorContent = assistantParsedResponse.editorContent;
-
-            messages.push({ role: 'assistant', content: assistantParsedResponse.editorContent });
-            req.session.messages = messages;
-        }
-
-        res.json(responseData);
-    } catch (error) {
-        console.error('Error generating editor content:', error);
-        res.status(500).json({ error: 'Error generating editor content' });
-    }
-});
-
-router.post('/save', async (req, res) => {
-    const content = req.body.content;
-    let currentStep = req.session.currentStep || 'title';
-    let blogPost = req.session.blogPost || {};
-
-    try {
-        let structuringPrompt = '';
-        let schema;
-
-        switch (currentStep) {
-            case 'title':
-                structuringPrompt = `次のテキストからブログ記事のタイトルを抽出してください。\n\n${content}\n\nJSON形式で"title"フィールドのみを含めて出力してください。`;
-                schema = z.object({
-                    title: z.string()
-                });
-                break;
-            case 'structure':
-                structuringPrompt = `次のテキストからブログ記事の構成を抽出してください。\n\n${content}\n\nJSON形式で"structure"フィールドのみを含めて出力してください。構成は見出しと説明の配列です。`;
-                schema = z.object({
-                    structure: z.array(z.object({
-                        heading: z.string(),
-                        description: z.string()
-                    }))
-                });
-                break;
-            case 'introduction':
-                structuringPrompt = `次のテキストからブログ記事の導入部分を抽出してください。\n\n${content}\n\nJSON形式で"introduction"フィールドのみを含めて出力してください。`;
-                schema = z.object({
-                    introduction: z.string()
-                });
-                break;
-            case 'conclusion':
-                structuringPrompt = `次のテキストからブログ記事の結論部分を抽出してください。\n\n${content}\n\nJSON形式で"conclusion"フィールドのみを含めて出力してください。`;
-                schema = z.object({
-                    conclusion: z.string()
-                });
-                break;
-            default:
-                break;
-        }
-
-        const completion = await client.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [{ role: 'user', content: structuringPrompt }],
-            response_format: zodResponseFormat(schema, 'content_structured'),
-        });
-
-        const structuredDataContent = completion.choices[0].message.content;
-
-        let structuredData;
-        try {
-            structuredData = JSON.parse(structuredDataContent);
-        } catch (parseError) {
-            console.error('Error parsing structured data:', parseError);
-            return res.status(500).json({ error: 'Error parsing structured data' });
-        }
-
-        blogPost = { ...blogPost, ...structuredData };
-        req.session.blogPost = blogPost;
-
-        await saveBlogPost(blogPost, req.session);
-
-        switch (currentStep) {
-            case 'title':
-                req.session.currentStep = 'structure';
-                break;
-            case 'structure':
-                req.session.currentStep = 'introduction';
-                break;
-            case 'introduction':
-                req.session.currentStep = 'conclusion';
-                break;
-            case 'conclusion':
-                req.session.currentStep = 'completed';
-                break;
-            default:
-                break;
-        }
-
-        req.session.messages = [];
-
-        res.status(200).json({ message: 'Data saved', nextStep: req.session.currentStep });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error saving data' });
-    }
-});
-
-router.get('/currentStep', (req, res) => {
-    try {
-        // Check if the session is initialized, otherwise set the default step
-        if (!req.session.currentStep) {
-            req.session.currentStep = 'title';
-        }
-
-        res.status(200).json({
-            currentStep: req.session.currentStep,
-        });
-    } catch (error) {
-        console.error('Error fetching current step:', error);
-        res.status(500).json({ error: 'Error fetching current step' });
-    }
-});
-
-router.post('/reset', (req, res) => {
-    try {
-        req.session.messages = [];
-        req.session.currentStep = 'title';
-        req.session.blogPost = {};
-        req.session.initialized = false;
-
-        res.status(200).json({ message: 'ブログ投稿が正常にリセットされました。新しいブログ投稿を開始する準備ができました。' });
-    } catch (error) {
-        console.error('Error resetting data:', error);
-        res.status(500).json({ error: 'Error resetting data' });
-    }
-});
-
-  router.post('/delete/:id', async (req, res) => {
-    const db = global.db;
-    const collection = db.collection('blogeditor');
-    await collection.deleteOne({ _id: new require('mongodb').ObjectID(req.params.id) });
-    res.redirect('/blogeditor/list');
+  const ResponseSchema = z.object({
+    updateEditor: z.boolean(),
+    editorContent: z.string().optional(),
+    save: z.boolean().optional(),
+    reset: z.boolean().optional()
   });
 
-  
+  const systemPrompt = "You are a Japanese blog assistant. Based on conversation and current content, update the blog editor content, possibly save or reset. Return JSON with updateEditor, editorContent, save, reset.";
+
+  if (content && content.trim()) {
+    messages.push({ role: 'user', content: `Current editor content: ${content}` });
+  }
+
+  const responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o',
+      messages: responseMessages,
+      response_format: zodResponseFormat(ResponseSchema, 'chat_structured_answer'),
+    });
+
+    const assistantParsedResponse = JSON.parse(completion.choices[0].message.content);
+    let responseData = {};
+
+    if (assistantParsedResponse.updateEditor && assistantParsedResponse.editorContent) {
+      responseData.updateEditor = true;
+      responseData.editorContent = assistantParsedResponse.editorContent;
+      messages.push({ role: 'assistant', content: assistantParsedResponse.editorContent });
+    }
+
+    if (assistantParsedResponse.save) {
+      let blogPost = req.session.blogPost || {};
+      blogPost.content = content;
+      blogPost.conversation = messages;
+      await saveBlogPost(blogPost, req.session);
+      messages.push({ role: 'assistant', content: 'I saved the article data' });
+    }
+
+    if (assistantParsedResponse.reset) {
+      req.session.messages = [];
+      req.session.blogPost = {};
+      req.session.initialized = false;
+      messages = req.session.messages;
+      messages.push({ role: 'assistant', content: 'I reset the article data' });
+    }
+
+    req.session.messages = messages;
+    res.json(responseData);
+
+  } catch (error) {
+    console.error('Error generating editor content:', error);
+    res.status(500).json({ error: 'Error generating editor content' });
+  }
+});
+
 module.exports = router;
