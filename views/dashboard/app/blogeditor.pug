@@ -213,7 +213,7 @@ block mainContent
             }).then(r => r.json())
             .then(editorData => {
                 if (editorData.editorContent) {
-                    const purifyContent = purifyEditorContent(data.content)
+                    const purifyContent = purifyEditorContent(editorData.editorContent)
                     const htmlContent = marked.parse(purifyContent);
                     tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
                 }
