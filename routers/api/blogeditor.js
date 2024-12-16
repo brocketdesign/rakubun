@@ -52,6 +52,7 @@ router.get('/init', (req, res) => {
 router.post('/chat', async (req, res) => {
   let message = req.body.message;
   let messages = req.session.messages || [];
+  let content = req.session?.blogPost?.content || '';
 
   if (!req.session.initialized) {
     req.session.initialized = true;
@@ -61,9 +62,11 @@ router.post('/chat', async (req, res) => {
   }
 
   if (message && message.trim() !== '') {
-    messages.push({ role: 'user', content: message });
+    const newMessage = { role: 'user', content: message }
+    messages.push(newMessage);
+    req.session.messages = messages;
+    console.log('add new message')
   }
-
 // System prompt instructs the assistant to produce concise Japanese answers and possibly triggers.
 const systemPrompt = `
 あなたは日本語のブログアシスタントです。ユーザーが提供するテキストに対して簡潔な日本語の応答をしてください。
@@ -74,7 +77,11 @@ const systemPrompt = `
 [reset] : 会話と記事データをリセットする時に入れてください。
 
 Do not provide the content in your answer. If needed tell me that the content is being generated in the editor.
-`;
+`+ 
+(content.trim() !== '' 
+  ? `現在のエディタコンテンツ:${content}
+You MUST not alter the previous editor content unless asked for. When you make an update, restore the previous content.` 
+  : '');
 
 
   let responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
@@ -165,13 +172,14 @@ router.post('/generateEditorContent', async (req, res) => {
   // We do not include the editor content in the chat message history.
   // Instead, we provide it directly in the system prompt.
   const systemPrompt = `
-あなたは日本語のブログアシスタントです。以下は現在の会話とエディタの内容です。
-これらを考慮して、ブログエディターに表示する最新のコンテンツ(Markdown)を提案してください。
-返答は新しいブログコンテンツのみ返してください。
-
-現在のエディタコンテンツ:
-${content}
-`;
+  あなたは日本語のブログアシスタントです。以下は現在の会話とエディタの内容です。
+  これらを考慮して、ブログエディターに表示する最新のコンテンツ(Markdown)を提案してください。
+  返答は頼まれたコンテンツのみ返してください。余計なことしないで。` + 
+  (content.trim() !== '' 
+    ? `現在のエディタコンテンツ:${content}
+  You MUST not alter the previous editor content unless asked for. When you make an update, restore the previous content.` 
+    : '');
+  
 
   const responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
 
