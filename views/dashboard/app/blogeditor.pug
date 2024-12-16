@@ -79,12 +79,12 @@ block mainContent
         let isGenerating = false;
 
         function addUserMessage(msg) {
-            $('#chatContainer .chat-messages').append($('<div class="user-message animate__animated animate__fadeInUp shadow-sm p-2 mb-2 text-dark rounded" style="background-color: #ddd;"></div>').text(msg));
+            $('#chatContainer .chat-messages').append($('<div class="user-message animate__animated animate__fadeInUp shadow-sm p-2 mb-2 text-dark rounded-pill" style="background-color: #f3f3f3;"></div>').text(msg));
             scrollChat();
         }
 
         function addAssistantMessage(msg) {
-            assistantMessageElem = $('<div class="assistant-message animate__animated animate__fadeInUp p-2 mb-2 bg-white text-dark rounded-pill"></div>').text(msg);
+            assistantMessageElem = $('<div class="assistant-message animate__animated animate__fadeInUp p-2 mb-2 bg-transparent text-dark rounded-pill"></div>').text(msg);
             $('#chatContainer .chat-messages').append(assistantMessageElem);
             scrollChat();
             return assistantMessageElem;
