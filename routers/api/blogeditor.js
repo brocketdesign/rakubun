@@ -65,7 +65,6 @@ router.post('/chat', async (req, res) => {
     const newMessage = { role: 'user', content: message }
     messages.push(newMessage);
     req.session.messages = messages;
-    console.log('add new message')
   }
 // System prompt instructs the assistant to produce concise Japanese answers and possibly triggers.
 const systemPrompt = `
