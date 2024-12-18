@@ -36,9 +36,10 @@ block mainContent
     script.
         tinymce.init({
             selector: '#blogContent',
+            language: 'ja',
             menubar: false,
-            plugins: 'lists link image preview',
-            toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | removeformat',
+            plugins: 'lists link image preview copy',
+            toolbar: 'undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | copyall',
             readonly: false,
             content_style: `
                 body {
@@ -48,6 +49,18 @@ block mainContent
                 }
             `,
             setup: function (editor) {
+                editor.ui.registry.addButton('copyall', {
+                    icon: 'copy', 
+                    tooltip: 'すべてコピー',
+                    onAction: function () {
+                        const content = editor.getContent({ format: 'text' });
+                        navigator.clipboard.writeText(content).then(() => {
+                        console.log('Content copied!');
+                        }).catch(err => {
+                        console.error('Error copying content:', err);
+                        });
+                    }
+                }),
                 editor.on('init', function () {
                     // Editor is fully initialized, fetch the content now
                     fetch('/api/blogeditor/init')
@@ -57,20 +70,16 @@ block mainContent
                             if (data.messages && data.messages.length > 0) {
                                 for (let m of data.messages) {
                                     if (m.role === 'user') {
-                                        addUserMessage(m.content);
+                                        addUserMessage(m.content,false);
                                     } else if (m.role === 'assistant') {
-                                        addAssistantMessage(m.content);
+                                        addAssistantMessage(m.content,false);
                                     }
                                 }
                                 scrollChat();
                             }
 
                             // Initialize editor content
-                            if (data.content && data.content.trim() !== '') {
-                                const purifyContent = purifyEditorContent(data.content)
-                                const htmlContent = marked.parse(purifyContent);
-                                editor.setContent(htmlContent, { format: 'html' });
-                            }
+                            getFullArticleInMarkdown();
                         })
                         .catch(err => console.error('Error initializing:', err));
                 });
@@ -82,15 +91,15 @@ block mainContent
         let assistantMessageElem = null;
         let isGenerating = false;
 
-        function addUserMessage(msg) {
+        function addUserMessage(msg, scroll=true) {
             $('#chatContainer .chat-messages').append($('<div class="user-message animate__animated animate__fadeInUp shadow-sm p-2 mb-2 text-dark rounded-pill" style="background-color: #f3f3f3;"></div>').text(msg));
-            scrollChat();
+            if(scroll){scrollChat();}
         }
 
-        function addAssistantMessage(msg) {
+        function addAssistantMessage(msg, scroll=true) {
             assistantMessageElem = $('<div class="assistant-message animate__animated animate__fadeInUp p-2 mb-2 bg-transparent text-dark rounded-pill"></div>').text(msg);
             $('#chatContainer .chat-messages').append(assistantMessageElem);
-            scrollChat();
+            if(scroll){scrollChat();}
             return assistantMessageElem;
         }
 
@@ -243,9 +252,6 @@ block mainContent
             }).then(r => r.json())
             .then(editorData => {
                 if (editorData.editorContent) {
-                    const purifyContent = purifyEditorContent(editorData.editorContent)
-                    const htmlContent = marked.parse(purifyContent);
-                    tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
                     sendUpdateToStructure(JSON.parse(editorData.editorContent))
                 }
                 showLoading(false);
@@ -255,14 +261,14 @@ block mainContent
             });
         }
         function sendUpdateToStructure(updates) {
-            
+            console.log({updates})
             const sanitizedUpdates = Object.fromEntries(
                 Object.entries(updates).filter(
                     ([key, value]) =>
                         value !== '' &&
                         value !== false &&
                         value !== 'false' &&
-                        (!Array.isArray(value) || value.length > 0)
+                        (value === null || !Array.isArray(value) || value.length > 0)
                 )
             );
 
@@ -270,7 +276,7 @@ block mainContent
                 console.warn('No valid updates to send.');
                 return;
             }
-
+            console.log({sanitizedUpdates})
             showLoading(true);
 
             fetch('/api/blogeditor/updateStructure', {
@@ -289,6 +295,7 @@ block mainContent
             .then(data => {
                 if (data.structure) {
                     console.log('Structure updated successfully:', data.structure);
+                    getFullArticleInMarkdown();
                 } else {
                     console.warn('No structure changes detected.');
                 }

@@ -60,23 +60,43 @@ const initializeSession = (req) => {
 
 const generateSystemPrompt = (blogPost, content) => {
   return `
-  You are a Japanese blog assistant. Respond concisely in Japanese to the text provided by the user. 
-  Your response should be brief and focus solely on informing the user about the next action plan, without including specific blog article details or content. 
-  If necessary, include one or more of the following triggers (only when needed):
+  You are a Japanese blog assistant. Respond concisely in Japanese to the text provided by the user. \n
+  Your response should be brief and focus solely on informing the user about the next action plan, without including specific blog article details or content.\n 
+  If necessary, include one or more of the following triggers (only when needed):\n\n
   
-  [full]: Use [full] when the user requests the full article.  
-  [editor]: Use [editor] when interacting with the blog editor.  
-  [save]: Use [save] when saving the blog post data.  
-  [reset]: Use [reset] when resetting the conversation and article data.
+  [full]: Use [full] when the user requests the full article.  \n
+  [editor]: Use [editor] when interacting with the blog editor.  \n
+  [save]: Use [save] when saving the blog post data.  \n
+  [reset]: Use [reset] when resetting the conversation and article data.\n
   
-  Do not include the article content in your reply.  
-  If needed, inform the user that content is being generated in the editor.
-  ` + (content.trim() !== '' 
-        ? `Current editor content: ${content}
-  You MUST not alter the previous editor content unless specifically requested. When making an update, restore the previous content.`
-        : '');
-  
-}
+  **All interactions related to editing or modifying the article must use the trigger [editor] in the response. Do not skip or forget this trigger.**\n
+
+  Do not include the article content in your reply.  \n
+  Example : \n
+  USER : Update the title.\n
+  ASSISTANT : [editor] Understood, I will update the title. \n\n
+  USER : Update the intro.\n
+  ASSISTANT : [editor] Understood, I will update the intro. \n\n
+  USER : Reset the data .\n
+  ASSISTANT : [reset] Understood, I will reset the data. \n\n
+  USER : Save the data .\n
+  ASSISTANT : [save] Understood, I will save the data. \n\n
+  USER : Show me the full article.\n
+  ASSISTANT : [full] Understood, I will display the full article.\n\n
+  USER : Show me the article.\n
+  ASSISTANT : [full] Understood, I will display the full article in the editor.\n\n
+
+  Always include [editor] if an update is required.
+  `;
+};
+
+const smallInstruction = `  
+  Do not forget to include the necessary trigger : \n\n
+  [full]: Use [full] when the user requests the full article. \n 
+  [editor]: Use [editor] when interacting with the blog editor.  \n
+  [save]: Use [save] when saving the blog post data.  \n
+  [reset]: Use [reset] when resetting the conversation and article data.`
+
 function sanitizeContent(content) {
 
   if (typeof content === 'string') {
@@ -103,7 +123,8 @@ function sanitizeContent(content) {
 const buildResponseMessages = (systemPrompt, messages, userMessage) => [
   { role: 'system', content: systemPrompt },
   ...messages,
-  { role: 'user', content: userMessage }
+  { role: 'user', content: userMessage },
+  { role: 'user', content: smallInstruction}
 ];
 
 const handleStreamedResponse = async (completion, res, req) => {
@@ -160,14 +181,14 @@ router.post('/chat', async (req, res) => {
     const messages = req.session.messages;
     const blogPost = req.session.blogPost;
     const content = req.session?.blogPost?.content || '';
-console.log(blogPost)
+
     const systemPrompt = generateSystemPrompt(blogPost, content);
     const responseMessages = buildResponseMessages(systemPrompt, messages, userMessage);
 
-    if (userMessage.trim() !== '') {
-      messages.push({ role: 'user', content: userMessage });
-      req.session.messages = messages;
-    }
+    messages.push({ role: 'user', content: userMessage });
+    req.session.messages = messages;
+
+    console.log({responseMessages})
 
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -196,7 +217,7 @@ router.post('/generateEditorContent', async (req, res) => {
   let content = req.body.content || '';
   let messages = req.session.messages || [];
   let blogPost = req.session.blogPost || {};
-console.log({messages})
+
   if (messages.length === 0) return res.status(400).json({ error: 'No conversation found.' });
 
   // If no structure: produce a JSON structure fitting BlogStructureSchema within [editor].
@@ -222,27 +243,39 @@ Return the JSON structure inside [editor]. Do not provide extra commentary. Just
   } else {
     // If structure exists, user wants to update content based on that structure.
     systemPrompt = `
-You are a blog assistant.
-A structure is defined as:
+You are a blog assistant.\n
+A structure is defined as:\n
 ${JSON.stringify(blogPost.structure)}
 
 User may ask for updates or new content for specific sections.
 Return the updated section only in Markdown.
 Do not produce extra text outside the updated content.
-for example if he user ask for the first section heading, you should respond : 
+for example :\n
+if he user ask for the first section heading, you should respond\n
 {
   "title": ""// empty string or false,
   "sections": [
   {heading:"new heading"}
   ],
-}
-for example if he user ask for the title, you should respond : 
+}\n\n
+if he user ask for the third section heading, you should respond\n
+{
+  "title": ""// empty string or false,
+  "sections": [
+    null,
+    null,
+    { "heading": "Updated Section 1" }
+  ],
+}\n
+In this cas you MUST include null for me to now which sections you are refering to. \n\n
+for example if he user ask for the title, you should respond\n
 {
   "title": "The new title",
-}
+}\n
 Respond in JSON with only the section to update. You MUST NOT respond with the full structure.
-Only the section that is being edited.
-Do not rewrite the entire structure. Omit the field that are not modified.
+Only the section that is being edited.\n
+Do not rewrite the entire content for the field that are not updated. 
+\nThe field that are not concerned by the update should be set to null.
     `;
   }
 
@@ -250,7 +283,7 @@ Do not rewrite the entire structure. Omit the field that are not modified.
   if (content.trim() !== '') {
     //responseMessages.push({ role: 'user', content: 'Here is the current content : '+content });
   }
-console.log({editormessage:responseMessages})
+
   try {
     let completion
       completion = await client.chat.completions.create({
@@ -329,7 +362,6 @@ router.get('/fullarticle', (req, res) => {
     }
 
     const htmlContent = convertToHTML(blogPost.structure);
-    console.log({htmlContent})
 
     res.status(200).send(htmlContent);
   } catch (error) {
@@ -346,7 +378,7 @@ const updateBlogStructure = (structure, updates) => {
       return (upd !== '' && upd !== false && upd !== undefined) ? upd : orig;
 
     if (Array.isArray(orig) && Array.isArray(upd))
-      return orig.map((item, i) => merge(item, upd[i]));
+      return orig.map((item, i) => (i in upd ? merge(item, upd[i]) : item));
 
     if (typeof orig === 'object') {
       const result = { ...orig };
