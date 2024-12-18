@@ -27,7 +27,11 @@ block mainContent
     script(src="https://code.jquery.com/jquery-3.6.0.min.js")
     script.
         function purifyEditorContent(content){
-            return content.replace('```markdown','').replace('```','')
+            if(content.includes('```markdown')){
+                return content.replace('```markdown','').replace('```','')
+            }else{
+                return content
+            }
         }
     script.
         tinymce.init({
@@ -116,10 +120,12 @@ block mainContent
             $('#userMessage').prop('disabled', true);
             $('#chatForm button[type="submit"]').prop('disabled', true);
 
+            let blogContent = tinymce.get('blogContent').getContent();
+
             fetch('/api/blogeditor/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message })
+                body: JSON.stringify({ message: message,  content: blogContent })
             }).then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
@@ -163,11 +169,15 @@ block mainContent
         });
 
         function handleTrigger(command) {
+            console.log({command})
             switch (command) {
                 case 'editor':
                     // The frontend knows it should update the editor
                     // by calling /generateEditorContent
                     updateEditorContent();
+                    break;
+                case 'full':
+                    getFullArticleInMarkdown();
                     break;
                 case 'save':
                     // Already handled in server (saving)
@@ -202,6 +212,26 @@ block mainContent
             console.log('Chat messages and editor content have been reset, keeping the last message.');
         }
 
+        function getFullArticleInMarkdown() {
+            showLoading(true);
+            fetch('/api/blogeditor/fullarticle', {
+                method: 'GET',
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch article content');
+                }
+                return response.text(); // Process response as text
+            })
+            .then(articleContent => {
+                tinymce.get('blogContent').setContent(articleContent, { format: 'html' }); // Set content in HTML format
+                showLoading(false);
+            })
+            .catch(err => {
+                console.error(err);
+                showLoading(false);
+            });
+        }
 
         function updateEditorContent() {
             let blogContent = tinymce.get('blogContent').getContent();
@@ -216,6 +246,7 @@ block mainContent
                     const purifyContent = purifyEditorContent(editorData.editorContent)
                     const htmlContent = marked.parse(purifyContent);
                     tinymce.get('blogContent').setContent(htmlContent, { format: 'html' });
+                    sendUpdateToStructure(JSON.parse(editorData.editorContent))
                 }
                 showLoading(false);
             }).catch(err => {
@@ -223,6 +254,52 @@ block mainContent
                 showLoading(false);
             });
         }
+        function sendUpdateToStructure(updates) {
+            
+            const sanitizedUpdates = Object.fromEntries(
+                Object.entries(updates).filter(
+                    ([key, value]) =>
+                        value !== '' &&
+                        value !== false &&
+                        value !== 'false' &&
+                        (!Array.isArray(value) || value.length > 0)
+                )
+            );
+
+            if (Object.keys(sanitizedUpdates).length === 0) {
+                console.warn('No valid updates to send.');
+                return;
+            }
+
+            showLoading(true);
+
+            fetch('/api/blogeditor/updateStructure', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ updates: sanitizedUpdates })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update structure');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.structure) {
+                    console.log('Structure updated successfully:', data.structure);
+                } else {
+                    console.warn('No structure changes detected.');
+                }
+                showLoading(false);
+            })
+            .catch(err => {
+                console.error('Error updating structure:', err);
+                showLoading(false);
+            });
+        }
+
 
         function finishGenerating() {
             isGenerating = false;
