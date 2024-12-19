@@ -259,8 +259,7 @@ Return the JSON structure inside [editor]. Do not provide extra commentary. Just
     systemPrompt = `
 You are a blog assistant. You must respond in my language.\n
 A structure is defined as:\n
-${JSON.stringify(blogPost.structure)}
-
+${JSON.stringify(blogPost.structure)}\n
 User may ask for updates or new content for specific sections.
 Return the updated section only in Markdown.
 Do not produce extra text outside the updated content.
