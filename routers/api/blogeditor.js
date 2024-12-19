@@ -13,19 +13,19 @@ const { zodResponseFormat } = require("openai/helpers/zod");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const BlogStructureSchema = z.object({
-  title: z.string(),
-  introduction: z.string(),
+  title: z.string().optional(),
+  introduction: z.string().optional(),
   sections: z.array(z.object({
-    heading: z.string(),
+    heading: z.string().optional(),
     content: z.object({
-      text: z.string(),
+      text: z.string().optional(),
       subSections: z.array(z.object({
-        subHeading: z.string(),
+        subHeading: z.string().optional(),
         subContent: z.string()
       })).optional()
-    })
-  })),
-  conclusion: z.string()
+    }).optional()
+  })).optional(),
+  conclusion: z.string().optional()
 });
 
 /**
@@ -288,7 +288,8 @@ for example if he user ask for the title, you should respond\n
 Respond in JSON with only the section to update. You MUST NOT respond with the full structure.
 Only the section that is being edited.\n
 Do not rewrite the entire content for the field that are not updated. 
-\nThe field that are not concerned by the update should be set to null.
+\nThe field that are not concerned by the update should be set to null.\n
+I forbid you from rewritting the entire strucutre. You must omit the field that are not concerned.
     `;
   }
 
