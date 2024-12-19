@@ -12,16 +12,22 @@ const { z } = require("zod");
 const { zodResponseFormat } = require("openai/helpers/zod");
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Define the blog structure schema
 const BlogStructureSchema = z.object({
   title: z.string(),
   introduction: z.string(),
   sections: z.array(z.object({
     heading: z.string(),
-    content: z.string()
+    content: z.object({
+      text: z.string(),
+      subSections: z.array(z.object({
+        subHeading: z.string(),
+        subContent: z.string()
+      })).optional()
+    })
   })),
   conclusion: z.string()
 });
+
 /**
  * Saves the blog post to MongoDB.
  */
@@ -60,7 +66,7 @@ const initializeSession = (req) => {
 
 const generateSystemPrompt = (blogPost, content) => {
   return `
-  You are a blog assistant. Respond concisely in to the text provided by the user. \n
+  You are a blog assistant. Respond concisely in to the text provided by the user. You must respond in my language. \n
   Your response should be brief and focus solely on informing the user about the next action plan, without including specific blog article details or content.\n 
   If necessary, include one or more of the following triggers (only when needed):\n\n
   
@@ -91,11 +97,13 @@ const generateSystemPrompt = (blogPost, content) => {
 };
 
 const smallInstruction = `  
-  Do not forget to include the necessary trigger : \n\n
+  Always include the necessary trigger : \n\n
   [full]: Use [full] when the user requests the full article. \n 
   [editor]: Use [editor] when interacting with the blog editor.  \n
   [save]: Use [save] when saving the blog post data.  \n
-  [reset]: Use [reset] when resetting the conversation and article data.`
+  [reset]: Use [reset] when resetting the conversation and article data.
+  You are just a guide. Do no respond with the content but only a short answer.You must respond in my language.
+  `
 
 function sanitizeContent(content) {
 
@@ -188,8 +196,6 @@ router.post('/chat', async (req, res) => {
     messages.push({ role: 'user', content: userMessage });
     req.session.messages = messages;
 
-    console.log({responseMessages})
-
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.flushHeaders();
@@ -225,17 +231,25 @@ router.post('/generateEditorContent', async (req, res) => {
   let systemPrompt;
   if (!blogPost.structure) {
     systemPrompt = `
-You are a blog assistant.
+You are a blog assistant. You must respond in my language.
 Produce a JSON structure for the blog using the given schema:
-{
+
+const BlogStructureSchema = z.object({
   title: z.string(),
   introduction: z.string(),
   sections: z.array(z.object({
     heading: z.string(),
-    content: z.string()
-  })).length(3),
+    content: z.object({
+      text: z.string(),
+      subSections: z.array(z.object({
+        subHeading: z.string(),
+        subContent: z.string()
+      })).optional()
+    })
+  })),
   conclusion: z.string()
-}
+});
+
 It is only for structural purpose. You must on write short comment of what the content will be about. 
 Do not write the entire article. It is a roadmap.
 Return the JSON structure inside [editor]. Do not provide extra commentary. Just the JSON and then done.
@@ -243,7 +257,7 @@ Return the JSON structure inside [editor]. Do not provide extra commentary. Just
   } else {
     // If structure exists, user wants to update content based on that structure.
     systemPrompt = `
-You are a blog assistant.\n
+You are a blog assistant. You must respond in my language.\n
 A structure is defined as:\n
 ${JSON.stringify(blogPost.structure)}
 
@@ -316,9 +330,8 @@ Do not rewrite the entire content for the field that are not updated.
   }
 });
 const convertToHTML = (structure) => {
-  
   if (typeof structure !== 'object') {
-    structure = JSON.parse(structure)
+    structure = JSON.parse(structure);
   }
   if (!structure || typeof structure !== 'object') {
     throw new Error('Invalid structure for HTML conversion.');
@@ -327,7 +340,18 @@ const convertToHTML = (structure) => {
   const parseSections = (sections) => {
     return sections
       .map((section) => {
-        return `<h2>${section.heading}</h2><p>${section.content}</p>`;
+        let sectionHTML = `<h2>${section.heading}</h2><p>${section.content.text}</p>`;
+
+        if (section.content.subSections && Array.isArray(section.content.subSections)) {
+          sectionHTML += section.content.subSections
+            .map(
+              (subSection) =>
+                `<h3>${subSection.subHeading}</h3><p>${subSection.subContent}</p>`
+            )
+            .join('');
+        }
+
+        return sectionHTML;
       })
       .join('');
   };
@@ -352,6 +376,7 @@ const convertToHTML = (structure) => {
 
   return html.trim();
 };
+
 
 router.get('/fullarticle', (req, res) => {
   try {
