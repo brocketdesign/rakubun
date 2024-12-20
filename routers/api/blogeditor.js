@@ -66,7 +66,7 @@ const initializeSession = (req) => {
 
 const generateSystemPrompt = (blogPost, content) => {
   return `
-  You are a blog assistant. Respond concisely in to the text provided by the user. You must respond in my language. \n
+  You are a blog assistant. Respond concisely in to the text provided by the user. You must respond in my language (english or japanese). \n
   Your response should be brief and focus solely on informing the user about the next action plan, without including specific blog article details or content.\n 
   If necessary, include one or more of the following triggers (only when needed):\n\n
   
@@ -102,7 +102,7 @@ const smallInstruction = `
   [editor]: Use [editor] when interacting with the blog editor.  \n
   [save]: Use [save] when saving the blog post data.  \n
   [reset]: Use [reset] when resetting the conversation and article data.
-  You are just a guide. Do no respond with the content but only a short answer.You must respond in my language.
+  You are just a guide. Do no respond with the content but only a short answer.You must respond in my language (english or japanese).
   `
 
 function sanitizeContent(content) {
@@ -178,6 +178,7 @@ const handleStreamedResponse = async (completion, res, req) => {
 
   if (assistantMessageContent.trim() !== '') {
     req.session.messages.push({ role: 'assistant', content: assistantMessageContent });
+    req.session.save()
   }
 };
 
@@ -190,11 +191,13 @@ router.post('/chat', async (req, res) => {
     const blogPost = req.session.blogPost;
     const content = req.session?.blogPost?.content || '';
 
+    messages.push({ role: 'user', content: userMessage });
+    req.session.messages = messages;
+    req.session.save();
+
     const systemPrompt = generateSystemPrompt(blogPost, content);
     const responseMessages = buildResponseMessages(systemPrompt, messages, userMessage);
 
-    messages.push({ role: 'user', content: userMessage });
-    req.session.messages = messages;
 
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -213,6 +216,39 @@ router.post('/chat', async (req, res) => {
   }
 });
 
+const analyzeUpdates = async (blogPost,previousMessages) => {
+  const systemPrompt = `
+  Analyze the user's message and identify the fields to be updated in the JSON structure.\n
+  The current structure is:\n ${JSON.stringify(blogPost.structure)}\n
+  Return the entire structure, replacing fields not requested for updates with \`false\` and marking requested fields with \`true\`.\n
+  Example:\n
+  User's Message: "Update the title and author fields."\n
+  JSON Structure: { "title": "Sample Title", "author": "John Doe", "content": "Lorem ipsum", "tags": ["example", "sample"] }\n
+  Expected Output:\n
+  { "title": true, "author": true, "content": false, "tags": false }\n
+
+  You must keep the current structure intact.
+`;
+
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...previousMessages
+  ];
+
+  const completion = await client.chat.completions.create({
+    model: 'gpt-4o',
+    messages
+  });
+  
+  let response = sanitizeContent(completion.choices[0].message.content)
+  try {
+    return response;
+  } catch (error) {
+    console.log(completion.choices[0].message.content)
+    throw new Error('Invalid JSON returned by AI completion.');
+  }
+};
 
 // POST /generateEditorContent
 // This route interacts with the model to actually produce the structure or update the blog content.
@@ -226,12 +262,20 @@ router.post('/generateEditorContent', async (req, res) => {
 
   if (messages.length === 0) return res.status(400).json({ error: 'No conversation found.' });
 
+  let updateField
+  if (blogPost.structure) {
+    // Determine what needs to be updated
+    updateField = await analyzeUpdates(blogPost,messages)
+    console.log(JSON.stringify(updateField))
+  }
+
   // If no structure: produce a JSON structure fitting BlogStructureSchema within [editor].
   // If structure exists: update content based on that structure. Return updated content in Markdown with [editor].
   let systemPrompt;
   if (!blogPost.structure) {
+    
     systemPrompt = `
-You are a blog assistant. You must respond in my language.
+You are a blog assistant. You must respond in my language (english or japanese).
 Produce a JSON structure for the blog using the given schema:
 
 const BlogStructureSchema = z.object({
@@ -257,49 +301,25 @@ Return the JSON structure inside [editor]. Do not provide extra commentary. Just
   } else {
     // If structure exists, user wants to update content based on that structure.
     systemPrompt = `
-You are a blog assistant. You must respond in my language.\n
-A structure is defined as:\n
-${JSON.stringify(blogPost.structure)}\n
-User may ask for updates or new content for specific sections.
-Return the updated section only in Markdown.
-Do not produce extra text outside the updated content.
-for example :\n
-if he user ask for the first section heading, you should respond\n
-{
-  "title": ""// empty string or false,
-  "sections": [
-  {heading:"new heading"}
-  ],
-}\n\n
-if he user ask for the third section heading, you should respond\n
-{
-  "title": ""// empty string or false,
-  "sections": [
-    null,
-    null,
-    { "heading": "Updated Section 1" }
-  ],
-}\n
-In this cas you MUST include null for me to now which sections you are refering to. \n\n
-for example if he user ask for the title, you should respond\n
-{
-  "title": "The new title",
-}\n
-Respond in JSON with only the section to update. You MUST NOT respond with the full structure.
-Only the section that is being edited.\n
-Do not rewrite the entire content for the field that are not updated. 
-\nThe field that are not concerned by the update should be set to null.\n
-I forbid you from rewritting the entire strucutre. You must omit the field that are not concerned.
+    You are a blog assistant. You must respond in my language (English or Japanese).\n
+    The current content is:\n
+    ${JSON.stringify(blogPost.structure)}\n
+    
+    The user asked for an update. Respond with the new JSON content only. Do not include any comments or anything else. Only the new content.\n
+    Replace the \`true\` in ${JSON.stringify(updateField)} with the corresponding updates.
     `;
+    
   }
 
+
   const responseMessages = [{ role: 'system', content: systemPrompt }, ...messages];
-  if (content.trim() !== '') {
-    //responseMessages.push({ role: 'user', content: 'Here is the current content : '+content });
+  if (blogPost.structure) {
+    responseMessages.push({ role: 'user', content: "You must not rewrite the entire structure. You JSON should contain false and only update true to the new content." });
   }
 
   try {
     let completion
+    if(!blogPost.structure){
       completion = await client.chat.completions.create({
         model: 'gpt-4o',
         messages: responseMessages,
@@ -308,6 +328,16 @@ I forbid you from rewritting the entire strucutre. You must omit the field that 
         stream: false,
         response_format: zodResponseFormat(BlogStructureSchema, "blog_structure"),
       });
+    }
+    if(blogPost.structure){
+      completion = await client.chat.completions.create({
+        model: 'gpt-4o',
+        messages: responseMessages,
+        max_tokens: 1500,
+        temperature: 0.7,
+        stream: false,
+      });
+    }
     
     const updatedContent = completion.choices[0].message.content.trim();
 
