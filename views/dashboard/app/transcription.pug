@@ -22,7 +22,7 @@ block mainContent
               li.list-group-item.border.rounded.mb-2
                 .file-container
                   span.file-name.file-item(data-id=file._id) #{file.originalname}
-                  audio.plyr.mt-3(controls)
+                  audio.plyr.mt-2(controls style="width: 101%;")
                     source(src='/uploads/#{file.filename}', type='#{file.mimetype}')
                   .d-flex.justify-content-between.mt-3
                     div
@@ -45,7 +45,6 @@ block mainContent
 
 
   link(rel="stylesheet" href="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/skins/ui/oxide/skin.min.css")
-  link(rel="stylesheet" href="https://cdn.plyr.io/3.6.8/plyr.css")
   script(src="https://cdn.tiny.cloud/1/9t4li7yzu8rpqw0jc0ti8n8dqjmdq0kahece8yruouajveun/tinymce/7/tinymce.min.js" referrerpolicy="origin")
   script.
     tinymce.init({
@@ -58,15 +57,7 @@ block mainContent
   script(src="https://code.jquery.com/jquery-3.6.0.min.js")
   script(src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js")
   script(src="https://cdn.jsdelivr.net/npm/sweetalert2@11")
-  script(src="https://cdn.plyr.io/3.6.8/plyr.polyfilled.js")
   script.
-    document.addEventListener('DOMContentLoaded', function() {
-      const players = Plyr.setup('.plyr');
-      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-      var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-      });
-    });
 
     $(document).on('submit', '#uploadForm', function(e) {
       e.preventDefault();
@@ -83,7 +74,7 @@ block mainContent
               var li = $('<li class="list-group-item border mb-1 rounded"></li>');
               var div = $('<div class="file-container"></div>');
               var span = $('<span class="file-name file-item"></span>').text(file.originalname).attr('data-id', file._id);
-              var audio = $('<audio class="plyr mt-2" controls></audio>');
+              var audio = $('<audio class="plyr mt-2" style="width: 101%;" controls></audio>');
               var source = $('<source>').attr('src', '/uploads/' + file.filename).attr('type', file.mimetype);
               audio.append(source);
               var btnDiv = $('<div class="d-flex justify-content-between mt-2"></div>');
@@ -100,10 +91,10 @@ block mainContent
 
               leftBtnsDiv.append(transcribeBtn, renameBtn);
               btnDiv.append(leftBtnsDiv, deleteBtn);
-              div.append(span, audio, btnDiv);
+              //div.append(span, audio, btnDiv);
               li.append(div);
               $('ul.list-group').append(li);
-              Plyr.setup(audio[0]);
+              //Plyr.setup(audio[0]);
           }
         });
     });
