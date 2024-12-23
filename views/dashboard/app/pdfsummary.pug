@@ -104,27 +104,38 @@ block mainContent
 
       $(document).on('click', '.preview-pdf', function() {
         var id = $(this).data('id');
+        
+        // Fetch the signed URL from the backend
         $.get('/api/pdfsummary/get/' + id, function(data) {
-          var url = data.s3Url;
+          var signedUrl = data.signedUrl; // Use signed URL instead of s3Url
           $('#pdfViewerContainer').show();
-          var loadingTask = pdfjsLib.getDocument(url);
+          
+          // Load the PDF using pdfjsLib with the signed URL
+          var loadingTask = pdfjsLib.getDocument(signedUrl);
           loadingTask.promise.then(function(pdf) {
             pdf.getPage(1).then(function(page) {
               var scale = 1.5;
               var viewport = page.getViewport({ scale: scale });
               var canvas = document.getElementById('pdfViewerCanvas');
               var context = canvas.getContext('2d');
+              
               canvas.height = viewport.height;
               canvas.width = viewport.width;
+              
               var renderContext = {
                 canvasContext: context,
                 viewport: viewport
               };
               page.render(renderContext);
             });
+          }).catch(function(error) {
+            console.error('Error loading PDF:', error);
           });
+        }).fail(function(err) {
+          console.error('Error fetching signed URL:', err);
         });
       });
+
 
       $(document).on('click', '.file-item', function() {
         var id = $(this).data('id');

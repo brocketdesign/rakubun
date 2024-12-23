@@ -133,12 +133,24 @@ router.post('/chat/:id', async (req, res) => {
 });
 
 router.get('/get/:id', async (req, res) => {
-  const id = req.params.id;
-  const file = await File.findOne({ _id: id, userId: req.user._id });
-  if (!file) return res.status(404).json({ error: 'ファイルが見つかりません' });
+  try {
+    const id = req.params.id;
+    const file = await File.findOne({ _id: id, userId: req.user._id });
+    if (!file) return res.status(404).json({ error: 'ファイルが見つかりません' });
 
-  res.json({ s3Url: file.s3Url });
+    const signedUrl = s3.getSignedUrl('getObject', {
+      Bucket: process.env.AWS_BUCKET_NAME,
+      Key: file.filename, // Use the S3 object key (filename)
+      Expires: 60 * 5, // Signed URL valid for 5 minutes
+    });
+
+    res.json({ signedUrl });
+  } catch (error) {
+    console.error('Error generating signed URL:', error);
+    res.status(500).json({ error: 'サイン付きURLの生成中にエラーが発生しました' });
+  }
 });
+
 
 const extractTextFromPDF = async (pdfBuffer) => {
   const data = await pdfParse(pdfBuffer);
