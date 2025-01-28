@@ -111,7 +111,6 @@ router.post('/blog-info', async (req, res) => {
   try {
     const userId = req.user._id;
     const blogData = req.body;
-    
     const loginResult = await checkLoginInfo(blogData);
     if (!loginResult.success) {
       return res.status(401).send({ message: 'Login failed', error: loginResult.error });
@@ -234,8 +233,8 @@ router.post('/bot-start', async (req, res) => {
     blogInfo.userId = userId
     botInfo.botId = botInfo._id
     blogInfo.blogId = blogInfo._id
-    const combinedPowers = { ...botInfo, ...blogInfo };
-
+    const combinedPowers = {  ...blogInfo, ...botInfo, _id: blogInfo._id  };
+ 
     // Call autoBlog to post and save the article
     const { postId, articleLink, articleId } = await autoBlog(combinedPowers, global.db);
 

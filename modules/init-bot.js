@@ -57,16 +57,16 @@ async function autoBlog(blogInfo, db) {
   const promise_categories = generateCategories(blogInfo, template, client, language);
 
   // Generate title and slug
-  const { japaneseTitle, slug } = await generateTitles(blogInfo, template);
+  const { postTitle, slug } = await generateTitles(blogInfo, template);
 
   // Generate tags
-  const promise_tags = generateTags(blogInfo, template, japaneseTitle, client, language, modelGPT);
+  const promise_tags = generateTags(blogInfo, template, postTitle, client, language, modelGPT);
 
   // Initiate image generation
   const imageTaskId = await initiateImageGeneration(slug, modelGPT, blogInfo, template);
 
   // Generate article content
-  const promise_content = generateSimpleArticle(japaneseTitle, blogInfo, 'gpt-4o', template);
+  const promise_content = generateSimpleArticle(postTitle, blogInfo, 'gpt-4o', template);
 
   // Post the article without the image
   try {
@@ -79,7 +79,7 @@ async function autoBlog(blogInfo, db) {
     const content_HTML = markdownToHtml(content).replace(/<h1>.*?<\/h1>/, '');
 
     const postId = await post(
-      japaneseTitle,
+      postTitle,
       slug,
       content_HTML,
       categories,
@@ -100,7 +100,7 @@ async function autoBlog(blogInfo, db) {
 
     try {
       const saveResult = await saveArticleUpdateBlog(
-        japaneseTitle,
+        postTitle,
         slug,
         content,
         categories,
@@ -170,29 +170,29 @@ async function generateCategories(blogInfo, template, client, language) {
 // Generate title and slug
 async function generateTitles(blogInfo, template) {
   const TitleAndSlugSchema = z.object({
-    japaneseTitle: z.string(),
+    postTitle: z.string(),
     slug: z.string(),
   });
 
-  let japaneseTitlePrompt = template?.titleGenerationPrompt
+  let postTitlePrompt = template?.titleGenerationPrompt
     ? template.titleGenerationPrompt.replace('{botDescription}', blogInfo.botDescription)
     : titlePromptGen(blogInfo, template);
 
   const titleAndSlugPrompt = `
-    以下の情報に基づいて、記事の日本語のタイトルと英語のスラグを生成してください。
+    Based on the following information, generate a title and an English slug for the article.
 
-    情報:
-    - ${japaneseTitlePrompt}
+    Information:
+    - ${postTitlePrompt}
 
-    結果を次のJSON形式で提供してください:
+    Provide the result in the following JSON format:
     {
-      "japaneseTitle": "ここに日本語のタイトル. The user must want to open and read the article. Provide something that catch the attention.",
-      "slug": "ここに英語のスラグ"
+      "postTitle": "Here is the title. The user must want to open and read the article. Provide something that catches the attention.",
+      "slug": "Here is the English slug"
     }
 
-    スラグは、日本語のタイトルを英語に翻訳し、スペースをハイフンに置き換え、小文字にしてください。特殊文字や記号は除外し、URLに適した形式にしてください。
+    The slug should be the English translation of the title, replacing spaces with hyphens, and converting to lowercase. Exclude special characters and symbols, and ensure it is in a URL-friendly format.
 
-    JSONオブジェクトのみを提供し、それ以外は含めないでください。
+    Provide only the JSON object and nothing else.
   `;
 
   const messages = [
@@ -200,7 +200,7 @@ async function generateTitles(blogInfo, template) {
       role: 'system',
       content:
         template?.systemMessage ||
-        'あなたは熟練したブロガーです。提供された情報に基づいて、日本語のタイトルと英語のスラグを生成してください。',
+        'You are a proficient blogger. Based on the provided information, generate a  title and an English slug.',
     },
     { role: 'user', content: titleAndSlugPrompt },
   ];
@@ -212,16 +212,16 @@ async function generateTitles(blogInfo, template) {
   }, TitleAndSlugSchema);
 
   if (!completionResult) {
-    throw new Error('タイトルとスラグの生成に失敗しました。');
+    return false;
   }
 
-  const { japaneseTitle, slug } = completionResult;
+  const { postTitle, slug } = completionResult;
 
-  return { japaneseTitle, slug };
+  return { postTitle, slug };
 }
 
 // Generate tags
-async function generateTags(blogInfo, template, japaneseTitle, client, language, modelGPT) {
+async function generateTags(blogInfo, template, postTitle, client, language, modelGPT) {
   const PossibleAnswersExtraction = z.object({
     answers: z.array(z.string()),
   });
@@ -230,8 +230,8 @@ async function generateTags(blogInfo, template, japaneseTitle, client, language,
     return addTaxonomy(template.tags, 'post_tag', client, language);
   } else {
     const tagPrompt = template?.tagGenerationPrompt
-      ? template.tagGenerationPrompt.replace('{fetchTitle}', japaneseTitle)
-      : categoryPromptGen(japaneseTitle, 'post_tag', language);
+      ? template.tagGenerationPrompt.replace('{fetchTitle}', postTitle)
+      : categoryPromptGen(postTitle, 'post_tag', language);
 
     const tagPrompt_messages = [
       {
@@ -446,7 +446,8 @@ async function saveArticleUpdateBlog(
     );
 
     if (blogUpdateResult.modifiedCount === 0) {
-      throw new Error('Failed to update the blog with the new article ID.');
+      console.error('Failed to update the blog with the new article ID.');
+      return { message: 'Failed to update the blog with the new article ID.' };ß
     }
 
     return {
