@@ -231,6 +231,7 @@ router.post('/bot-start', async (req, res) => {
     }
 
     // Prepare combinedPowers
+    blogInfo.userId = userId
     botInfo.botId = botInfo._id
     blogInfo.blogId = blogInfo._id
     const combinedPowers = { ...botInfo, ...blogInfo };

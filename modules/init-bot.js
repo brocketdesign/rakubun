@@ -1,4 +1,15 @@
-// init-bot.js
+// Required modules and dependencies
+const { ObjectId } = require('mongodb');
+const fetch = require('node-fetch');
+const marked = require('marked');
+const axios = require('axios');
+const fs = require('fs');
+require('dotenv').config({ path: './.env' });
+
+// WordPress client
+var wordpress = require('wordpress');
+
+// Custom modules
 const {
   getCategoryId,
   categoryExists,
@@ -15,27 +26,22 @@ const {
   getImageSearchResult,
 } = require('../services/tools.js');
 const { txt2img } = require('../modules/sdapi.js');
-const { ObjectId } = require('mongodb');
-const fetch = require('node-fetch');
-const marked = require('marked');
-const axios = require('axios');
-var wordpress = require('wordpress');
-const fs = require('fs');
-const { generateCompleteArticle } = require('./article.js');
+const { generateSimpleArticle } = require('./article.js');
+const { sendNotificationToUser } = require('../modules/websocket.js');
+
+// Validation library
 const { z } = require('zod');
-require('dotenv').config({ path: './.env' });
 
 // autoBlog.js
-
 async function autoBlog(blogInfo, db) {
-  blogInfo.username = blogInfo.blogUsername;
-  blogInfo.url = blogInfo.blogUrl;
-  blogInfo.password = blogInfo.blogPassword;
-
+  // Initialize blog information
+  initializeBlogInfo(blogInfo);
+  const userId = blogInfo.userId
   const language = blogInfo.postLanguage;
-  const description = blogInfo.botDescription
   const client = wordpress.createClient(blogInfo);
-  let modelGPT = 'gpt-4o-mini';
+  const modelGPT = 'gpt-4o-mini';
+  const statusSelector = `#status_${blogInfo.botId}`
+  sendNotificationToUser(userId, 'updateElementText', {selector:statusSelector, message:'Initialize blog information'})
 
   if (!isBlogInfoComplete(blogInfo)) {
     console.log('You need to provide the blog information');
@@ -45,136 +51,22 @@ async function autoBlog(blogInfo, db) {
   console.log(`Generating article for: ${blogInfo.botName}`);
 
   // Fetch the selected template
-  const templateId = blogInfo.templateId ? new ObjectId(blogInfo.templateId) : null;
-  let template = null;
+  const template = await fetchTemplate(blogInfo, db);
 
-  if (templateId) {
-    template = await db.collection('templates').findOne({ _id: templateId });
-    if (!template) {
-      console.log('Template not found. Using default settings.');
-    }
-  } else {
-    template = await db.collection('templates').findOne({});
-    console.log('No template selected. Using default settings.');
-  }
+  // Generate categories
+  const promise_categories = generateCategories(blogInfo, template, client, language);
 
-  // Categories
-  let promise_categories = addTaxonomy(
-    [template?.categoryName || blogInfo.postCategory || 'Uncategorized'],
-    'category',
-    client,
-    language
-  ).then((myCategories) => {
-    let newCategories = blogInfo.postCategory;
-    return updateCategories(myCategories, newCategories, 'category', client);
-  });
-
-  // Define the schema for parsing the completion result
-  const TitleAndSlugSchema = z.object({
-    japaneseTitle: z.string(),
-    slug: z.string(),
-  });
-
-  // Title
+  // Generate title and slug
   const { japaneseTitle, slug } = await generateTitles(blogInfo, template);
 
-  // Update the generateTitles function
-  async function generateTitles(blogInfo, template) {
-    // Use the custom title generation prompt from the template
-    let japaneseTitlePrompt = template?.titleGenerationPrompt
-      ? template.titleGenerationPrompt.replace('{botDescription}', blogInfo.botDescription)
-      : titlePromptGen(blogInfo, template);
-      
-    // Create a prompt that asks for both the Japanese title and the slug
-    const titleAndSlugPrompt = `
-      以下の情報に基づいて、記事の日本語のタイトルと英語のスラグを生成してください。
+  // Generate tags
+  const promise_tags = generateTags(blogInfo, template, japaneseTitle, client, language, modelGPT);
 
-      情報:
-      - ${japaneseTitlePrompt}
-
-      結果を次のJSON形式で提供してください:
-      {
-        "japaneseTitle": "ここに日本語のタイトル. The user must want to open and read the article. Provide something that catch the attention.",
-        "slug": "ここに英語のスラグ"
-      }
-
-      スラグは、日本語のタイトルを英語に翻訳し、スペースをハイフンに置き換え、小文字にしてください。特殊文字や記号は除外し、URLに適した形式にしてください。
-
-      JSONオブジェクトのみを提供し、それ以外は含めないでください。
-    `;
-
-    const messages = [
-      {
-        role: 'system',
-        content:
-          template?.systemMessage ||
-          'あなたは熟練したブロガーです。提供された情報に基づいて、日本語のタイトルと英語のスラグを生成してください。',
-      },
-      { role: 'user', content: titleAndSlugPrompt },
-    ];
-
-    // Use moduleCompletion with the zod schema to parse the result
-    const completionResult = await moduleCompletion({
-      model: 'gpt-4o-mini',
-      messages: messages,
-      max_tokens: 1000,
-    }, TitleAndSlugSchema);
-
-    if (!completionResult) {
-      throw new Error('タイトルとスラグの生成に失敗しました。');
-    }
-
-    const { japaneseTitle, slug } = completionResult;
-
-    return { japaneseTitle, slug };
-  }
-
-  // Tags
-  const PossibleAnswersExtraction = z.object({
-    answers: z.array(z.string()),
-  });
-
-  let promise_tags;
-  if (template?.tags && template.tags.length > 0) {
-    promise_tags = addTaxonomy(template.tags, 'post_tag', client, language);
-  } else {
-    const tagPrompt = template?.tagGenerationPrompt
-      ? template.tagGenerationPrompt.replace('{fetchTitle}', japaneseTitle)
-      : categoryPromptGen(japaneseTitle, 'post_tag', language);
-
-    const tagPrompt_messages = [
-      {
-        role: 'system',
-        content:
-          template?.systemMessage ||
-          'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
-      },
-      { role: 'user', content: tagPrompt },
-    ];
-
-    promise_tags = moduleCompletion(
-      { model: modelGPT, messages: tagPrompt_messages, max_tokens: 600 },
-      PossibleAnswersExtraction
-    ).then((parsedTags) => {
-      if (parsedTags !== null) {
-        return addTaxonomy(parsedTags, 'post_tag', client, language);
-      } else {
-        return [];
-      }
-    });
-  }
-
-
-  // Initiate Image Generation
+  // Initiate image generation
   const imageTaskId = await initiateImageGeneration(slug, modelGPT, blogInfo, template);
 
-  // Generate Article Content
-  const promise_content = generateCompleteArticle(
-    japaneseTitle,
-    blogInfo,
-    'gpt-4o',
-    template
-  );
+  // Generate article content
+  const promise_content = generateSimpleArticle(japaneseTitle, blogInfo, 'gpt-4o', template);
 
   // Post the article without the image
   try {
@@ -234,6 +126,133 @@ async function autoBlog(blogInfo, db) {
   } catch (err) {
     console.log(err);
     return err;
+  }
+}
+
+// Initialize blog information
+function initializeBlogInfo(blogInfo) {
+  blogInfo.username = blogInfo.blogUsername;
+  blogInfo.url = blogInfo.blogUrl;
+  blogInfo.password = blogInfo.blogPassword;
+}
+
+// Fetch the selected template
+async function fetchTemplate(blogInfo, db) {
+  const templateId = blogInfo.templateId ? new ObjectId(blogInfo.templateId) : null;
+  let template = null;
+
+  if (templateId) {
+    template = await db.collection('templates').findOne({ _id: templateId });
+    if (!template) {
+      console.log('Template not found. Using default settings.');
+    }
+  } else {
+    template = await db.collection('templates').findOne({});
+    console.log('No template selected. Using default settings.');
+  }
+
+  return template;
+}
+
+// Generate categories
+async function generateCategories(blogInfo, template, client, language) {
+  return addTaxonomy(
+    [template?.categoryName || blogInfo.postCategory || 'Uncategorized'],
+    'category',
+    client,
+    language
+  ).then((myCategories) => {
+    let newCategories = blogInfo.postCategory;
+    return updateCategories(myCategories, newCategories, 'category', client);
+  });
+}
+
+// Generate title and slug
+async function generateTitles(blogInfo, template) {
+  const TitleAndSlugSchema = z.object({
+    japaneseTitle: z.string(),
+    slug: z.string(),
+  });
+
+  let japaneseTitlePrompt = template?.titleGenerationPrompt
+    ? template.titleGenerationPrompt.replace('{botDescription}', blogInfo.botDescription)
+    : titlePromptGen(blogInfo, template);
+
+  const titleAndSlugPrompt = `
+    以下の情報に基づいて、記事の日本語のタイトルと英語のスラグを生成してください。
+
+    情報:
+    - ${japaneseTitlePrompt}
+
+    結果を次のJSON形式で提供してください:
+    {
+      "japaneseTitle": "ここに日本語のタイトル. The user must want to open and read the article. Provide something that catch the attention.",
+      "slug": "ここに英語のスラグ"
+    }
+
+    スラグは、日本語のタイトルを英語に翻訳し、スペースをハイフンに置き換え、小文字にしてください。特殊文字や記号は除外し、URLに適した形式にしてください。
+
+    JSONオブジェクトのみを提供し、それ以外は含めないでください。
+  `;
+
+  const messages = [
+    {
+      role: 'system',
+      content:
+        template?.systemMessage ||
+        'あなたは熟練したブロガーです。提供された情報に基づいて、日本語のタイトルと英語のスラグを生成してください。',
+    },
+    { role: 'user', content: titleAndSlugPrompt },
+  ];
+
+  const completionResult = await moduleCompletion({
+    model: 'gpt-4o-mini',
+    messages: messages,
+    max_tokens: 1000,
+  }, TitleAndSlugSchema);
+
+  if (!completionResult) {
+    throw new Error('タイトルとスラグの生成に失敗しました。');
+  }
+
+  const { japaneseTitle, slug } = completionResult;
+
+  return { japaneseTitle, slug };
+}
+
+// Generate tags
+async function generateTags(blogInfo, template, japaneseTitle, client, language, modelGPT) {
+  const PossibleAnswersExtraction = z.object({
+    answers: z.array(z.string()),
+  });
+
+  if (template?.tags && template.tags.length > 0) {
+    return addTaxonomy(template.tags, 'post_tag', client, language);
+  } else {
+    const tagPrompt = template?.tagGenerationPrompt
+      ? template.tagGenerationPrompt.replace('{fetchTitle}', japaneseTitle)
+      : categoryPromptGen(japaneseTitle, 'post_tag', language);
+
+    const tagPrompt_messages = [
+      {
+        role: 'system',
+        content:
+          template?.systemMessage ||
+          'You are a proficient blog writer. Provide concise, simply written content. Do not include chapters or subchapters, do not include numbers for each title, and do not use the names of celebrities. Do not invent false stories that involve real people.',
+      },
+      { role: 'user', content: tagPrompt },
+    ];
+
+    return moduleCompletion(
+      { model: modelGPT, messages: tagPrompt_messages, max_tokens: 600 },
+      PossibleAnswersExtraction
+    ).then((parsedTags) => {
+      if (parsedTags !== null) {
+        return addTaxonomy(parsedTags, 'post_tag', client, language);
+      } else {
+        return [];
+      }
+    });
   }
 }
 

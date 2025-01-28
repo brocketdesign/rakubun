@@ -526,6 +526,9 @@ block mainContent
                                             <button class="toggle-bot-btn btn btn-warning btn-sm shadow-0 mx-2 toggleBotStatusBtn ${!bot.isActive ? '' : 'd-none'}" data-id="${bot._id}" onclick="toggleBotStatus('${bot._id}', true)"><i class="fas fa-toggle-off me-2"></i>OFF</button>
                                             <button class="btn btn-secondary btn-sm shadow-0 mx-2 startBotBtn" data-id="${bot._id}"><i class="fas fa-play"></i></button>
                                             <a href="/dashboard/app/autoblog?botId=${bot._id}" class="d-none btn btn-secondary btn-sm shadow-0 mx-2"><i class="fa fa-file-alt"></i></a>
+                                            
+                                            <span id="status_${bot._id}" class="badge bg-light text-secondary" style="display:none;">ステータス: 未開始</span>
+                                            
                                             <button class="delete-bot-btn btn btn-danger btn-sm shadow-0 float-end mx-2" data-id="${bot._id}"><i class="fas fa-trash-alt"></i></button>
                                         </div>
                                     </div>

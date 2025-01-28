@@ -1,26 +1,36 @@
+// Load environment variables from .env file
 require('dotenv').config();
 
+// Import core modules
+const fs = require('fs');
+const path = require('path');
+const http = require('http');
+const ip = require('ip');
+
+// Import npm packages
 const express = require('express');
 const session = require('express-session');
 const flash = require('connect-flash');
 const compression = require('compression');
-const http = require('http');
-const LocalStrategy = require('passport-local').Strategy;
+const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
 const MongoDBStore = require('connect-mongodb-session')(session);
-
-const { initializeCronJobs } = require('./modules/cronJobs-bot.js');
-const { updateAllFavicons } = require('./services/tools.js')
 const passport = require("passport");
-const passportConfig = require('./middleware/passport')(passport);
-const path = require('path'); // Add path module
-const ip = require('ip');
-const app = express();
+const LocalStrategy = require('passport-local').Strategy;
 const mongoose = require('mongoose');
-const server = http.createServer(app);
-const cors = require('cors');
-const port = process.env.PORT || 3000;
 
+// Import custom modules
+const { initializeCronJobs } = require('./modules/cronJobs-bot.js');
+const { updateAllFavicons } = require('./services/tools.js');
+const passportConfig = require('./middleware/passport')(passport);
+const { setupWebSocketServer, sendNotificationToUser, getActiveConnections } = require('./modules/websocket');
+
+// Initialize Express app and HTTP server
+const app = express();
+const server = http.createServer(app);
+
+// Set up port and MongoDB URL from environment variables
+const port = process.env.PORT || 3000;
 const url = process.env.MONGODB_URL; // Use MONGODB_URL from .env file
 const dbName = process.env.MONGODB_DATABASE; // Use MONGODB_DATABASE from .env file
 
@@ -60,6 +70,23 @@ function startServer() {
 
       // Serve static files from the 'public' directory
       app.use(express.static(path.join(__dirname, 'public')));
+      
+      // Middleware to load translations
+      function translationMiddleware(req, res, next) {
+          const lang = req.query.lang || 'ja'; // Default to 'ja' if no lang is specified
+          const langPath = path.join(__dirname, 'local', `${lang}.json`);
+      
+          try {
+          const translations = JSON.parse(fs.readFileSync(langPath, 'utf-8'));
+          req.translations = translations; // Attach translations to the request
+          global.translations = translations; // Attach translations to the global scope for WebSocket server
+          } catch (error) {
+          req.translations = {}; // Fallback if no file found
+          global.translations = {}; // Fallback if no file found
+          }
+          next();
+      }
+      app.use(translationMiddleware);
 
       app.use(compression());
       app.use(flash());
@@ -68,7 +95,7 @@ function startServer() {
         next();
       });
       app.use((req, res, next) => {
-        if (process.env.NODE_ENV !== 'local' && req.header('x-forwarded-proto') !== 'https') {
+        if (process.env.MODE !== 'local' && req.header('x-forwarded-proto') !== 'https') {
           res.redirect(`https://${req.header('host')}${req.url}`);
         } else {
           next();
@@ -105,6 +132,13 @@ function startServer() {
       const imageGenerator = require('./routers/api/imageGenerator');
       const blogeditor = require('./routers/api/blogeditor');
 
+      // Make MODE available in all routes
+      app.use((req, res, next) => {
+        res.locals.MODE = process.env.MODE;
+        res.locals.translations = global.translations;
+        next();
+      });
+
       app.use('/', index); 
       app.use('/user', user); 
       app.use('/auth', auth); 
@@ -122,6 +156,8 @@ function startServer() {
       app.use('/admin', admin);
 
 
+      // Initialize WebSocket server with translations
+      setupWebSocketServer(server);
 
       server.listen(port, () => 
       console.log(`Express running → PORT http://${ip.address()}:${port}`));

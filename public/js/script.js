@@ -38,6 +38,35 @@ $(document).ready(function() {
         $(this).toggle().toggleClass('d-flex')
     })
 });
+
+window.showNotification = function(message, icon) {
+    const toastHTML = `
+    <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" style="z-index: 9999">
+        <div id="liveToast" class="toast animate__animated animate__fadeInUp" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-body">
+                <i class="bi bi-${icon} me-2"></i>
+                ${message}
+            </div>
+        </div>
+    </div>
+    `;
+
+    $('body').append(toastHTML);
+    const toastElement = document.getElementById('liveToast');
+    const toast = new bootstrap.Toast(toastElement);
+    toast.show();
+
+    // Remove the toast after it hides
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        $(toastElement).parent().remove();
+    });
+}
+
+window.updateElementText = function(selector, message) {
+    $(document).find(selector).text(message);
+    $(document).find(selector).fadeIn();
+}
+
 function scrollBottomWindow(){
     $('html, body').animate({ scrollTop: $(document).height() }, 'fast', function() {
         // After the animation is complete, disable scrolling

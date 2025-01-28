@@ -14,7 +14,6 @@ const { ObjectId } = require('mongodb');
 router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
   try {
     //return res.redirect('/dashboard/app/autoblog')
-
     return res.render('dashboard/top', {
       user: req.user,
       title: "RAKUBUN - Dashboard",
@@ -144,7 +143,7 @@ router.get('/app/autoblog', ensureAuthenticated, ensureMembership, async (req, r
       botId,
       blogId,
       user:req.user,
-      title: "RAKUBUN - Dashboard"
+      title: "RAKUBUN - Dashboard",
     });
   } catch (error) {
     console.log(error);

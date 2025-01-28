@@ -1,6 +1,76 @@
 const fetch = require('node-fetch');
 const { createParser } = require('eventsource-parser');
 
+const apiDetails = {
+  openai: {
+    apiUrl: 'https://api.openai.com/v1/chat/completions',
+    model: 'gpt-4o',
+    key: process.env.OPENAI_API_KEY
+  },
+  novita: {
+    apiUrl: 'https://api.novita.ai/v3/openai/chat/completions',
+    model: 'google/gemma-2-9b-it',
+    key: process.env.NOVITA_API_KEY
+  },
+  novita_nsfw: {
+    apiUrl: 'https://api.novita.ai/v3/openai/chat/completions',
+    model: 'openchat/openchat-7b',
+    key: process.env.NOVITA_API_KEY
+  },
+  venice: {
+    apiUrl: 'https://api.venice.ai/api/v1/chat/completions',
+    model:  'llama-3.1-405b', //'dolphin-2.9.2-qwen2-72b',
+    key: process.env.VENICE_API_KEY
+  }
+};
+
+let currentModel = apiDetails.openai; // Change this to switch models
+
+async function generateCompletion(messages, maxToken = 1000, model = null, lang = 'en') {
+  const selectedModel = model ? apiDetails[model] : currentModel;
+  const finalModel = lang === 'ja' ? apiDetails.openai : selectedModel;
+
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const response = await fetch(finalModel.apiUrl, {
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${finalModel.key}`
+        },
+        method: "POST",
+        body: JSON.stringify({
+            model: finalModel.model,
+            messages,
+            temperature: 0.85,
+            top_p: 0.95,
+            frequency_penalty: 0,
+            presence_penalty: 0,
+            max_tokens: maxToken,
+            stream: false,
+            n: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        if (attempt === 2) {
+          const errorData = await response.json().catch(() => ({}));
+          console.log(`Failed after ${attempt} attempts:`, errorData.error?.message || '');
+          return false;
+        }
+        continue; // Try second attempt
+      }
+
+      const data = await response.json();
+      const filter = data.choices[0]?.content_filter_results;
+      return data.choices[0].message.content.trim();
+    } catch (error) {
+      if (attempt === 2) {
+        console.error(`Failed after ${attempt} attempts:`, error.message);
+        return false;
+      }
+    }
+  }
+}
 const fetchOpenAICompletion = async (messages,max_tokens, res) => {
     try {
         let response = await fetch(
@@ -12,7 +82,7 @@ const fetchOpenAICompletion = async (messages,max_tokens, res) => {
                 },
                 method: "POST",
                 body: JSON.stringify({
-                    model: "gpt-3.5-turbo-0125",
+                    model: "gpt-4o",
                     messages,
                     max_tokens,
                     temperature: 1.2,
@@ -238,4 +308,4 @@ async function getChatResponseOllama(messages, max_tokens) {
   }
 }
 
-  module.exports = {fetchOpenAICompletion,moduleCompletion, fetchOllamaCompletion, moduleCompletionOllama}
+  module.exports = {fetchOpenAICompletion, generateCompletion, moduleCompletion, fetchOllamaCompletion, moduleCompletionOllama}

@@ -77,5 +77,16 @@ router.get('/about-us', (req, res) => {
   res.render('about-us',{user});
 });
 
+router.post('/notify-user', (req, res) => {
+  const { userId, type, additionalData } = req.body;
+  sendNotificationToUser(userId, type, additionalData);
+  res.send({ status: 'Notification sent' });
+});
+
+router.get('/active-connections', (req, res) => {
+  const activeConnections = getActiveConnections();
+  res.send({ activeConnections });
+});
+
 // Export the router
 module.exports = router;
