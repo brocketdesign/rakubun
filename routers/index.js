@@ -6,6 +6,8 @@ const axios = require('axios');
 const session = require('express-session');
 const { email, sendEmail } = require('../services/email')
 
+const imageGeneratorRoutes = require('./api/imageGenerator');
+const trendAutoBlogRoutes = require('./api/trendautoblog'); // Added this line
 
 router.get('/',async(req, res, next) => {
   if (req.isAuthenticated()) {
@@ -87,6 +89,9 @@ router.get('/active-connections', (req, res) => {
   const activeConnections = getActiveConnections();
   res.send({ activeConnections });
 });
+
+router.use('/api/image-generator', imageGeneratorRoutes);
+router.use('/api/trendautoblog', trendAutoBlogRoutes); // Added this line
 
 // Export the router
 module.exports = router;

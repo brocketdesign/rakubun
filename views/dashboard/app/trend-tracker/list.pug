@@ -1,0 +1,345 @@
+extends ../../base
+
+block mainContent
+    .container-fluid.px-0
+        .d-flex.justify-content-between.align-items-center.px-3.pt-3
+            div
+                h1.my-0 トレンド自動ブログ設定
+                p.text-muted.mb-0 Googleトレンドに基づいて、選択したブログに自動で記事を投稿します。
+            div
+                // Maybe a general help button or info icon here
+                // i.fas.fa-info-circle.text-muted(data-bs-toggle="tooltip" title="各ブログのトレンドキーワードや、記事生成に使用するAIモデルの設定を行ってください。")
+
+        // User Guide / Explanation
+        .alert.alert-info.mx-3.mt-3(role="alert")
+            i.fas.fa-info-circle.me-2
+            strong ご利用方法：
+            ol.mb-0.ps-4
+                li 下記に表示されているご自身のブログを選択してください。
+                li 各ブログの「トレンド設定」ボタンから、追跡したいGoogleトレンドのキーワードを設定します。
+                li 「AI設定」ボタンから、記事生成に使用する言語、トーン、記事テンプレートをカスタマイズします。
+                li 設定が完了すると、システムが定期的にトレンドをチェックし、関連性の高いトピックで「gpt-4o」モデルを使用して記事を自動生成・投稿します。
+            small.d-block.mt-2 ※ 事前に「自動ブログ」アプリでブログが登録されている必要があります。
+
+        // Blog List Area
+        .row.px-3.mt-4
+            .col-md-12
+                h4.mb-3.border-bottom.pb-2 登録ブログ一覧
+                #blogListContainer.row
+                    // Blogs will be loaded here by JavaScript
+
+    // Scripts section
+    script.
+        $(document).ready(function() {
+            const user = !{JSON.stringify(user)};
+            const isAdmin = !{JSON.stringify(isAdmin)};
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+
+            function showNotification(message, type, duration = 3000) {
+                Swal.fire({
+                    text: message,
+                    icon: type,
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: duration,
+                    timerProgressBar: true,
+                    customClass: {
+                        popup: 'swal2-custom-notification'
+                    }
+                });
+            }
+
+            function fetchUserBlogs() {
+                $('#blogListContainer').html(`
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                            <span class="visually-hidden">読み込み中...</span>
+                        </div>
+                        <p class="mt-2 text-muted">ブログ情報を読み込んでいます...</p>
+                    </div>
+                `);
+                $.ajax({
+                    url: '/api/autoblog/user-blogs', // This endpoint should also return trend/model settings for each blog
+                    method: 'GET',
+                    success: function(blogs) {
+                        $('#blogListContainer').empty();
+                        if (blogs && blogs.length > 0) {
+                            blogs.forEach(function(blog) {
+                                const trendKeywordsDisplay = blog.trendKeywords && blog.trendKeywords.length > 0 ? blog.trendKeywords.join(', ') : '未設定';
+                                const modelLanguageDisplay = blog.trendModelSettings && blog.trendModelSettings.language ? blog.trendModelSettings.language : '未設定';
+                                
+                                const blogCardHtml = `
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card h-100 shadow-sm">
+                                            <div class="card-body d-flex flex-column">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <img src="${blog.favicon || '/img/logo.png'}" alt="${blog.blogName} Favicon" class="me-2" style="width: 24px; height: 24px; border-radius: 4px;">
+                                                    <h5 class="card-title mb-0" style="font-size: 1.15rem;">${blog.blogName}</h5>
+                                                </div>
+                                                <p class="card-text small text-muted mb-1">
+                                                    <a href="${blog.blogUrl}" target="_blank" title="ブログURLを開く">${blog.blogUrl} <i class="fas fa-external-link-alt fa-xs"></i></a>
+                                                </p>
+                                                <p class="card-text small mb-1" title="設定されているトレンドキーワード">
+                                                    <i class="fas fa-key me-1 text-info"></i>キーワード: <span class="fw-bold">${trendKeywordsDisplay}</span>
+                                                </p>
+                                                <p class="card-text small" title="設定されているAI言語">
+                                                    <i class="fas fa-language me-1 text-success"></i>AI言語: <span class="fw-bold">${modelLanguageDisplay}</span>
+                                                </p>
+                                                <div class="mt-auto pt-3 border-top">
+                                                    <button class="btn btn-sm btn-primary trend-settings-btn me-2" data-blog-id="${blog._id}" data-blog-name="${blog.blogName}" title="トレンドキーワード設定">
+                                                        <i class="fas fa-chart-line me-1"></i> トレンド設定
+                                                    </button>
+                                                    <button class="btn btn-sm btn-info model-settings-btn text-white" data-blog-id="${blog._id}" data-blog-name="${blog.blogName}" title="AIモデル設定">
+                                                        <i class="fas fa-robot me-1"></i> AI設定
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                $('#blogListContainer').append(blogCardHtml);
+                            });
+                        } else {
+                            $('#blogListContainer').html(`
+                                <div class="col-12">
+                                    <div class="alert alert-warning text-center">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        登録されているブログがありません。まず「自動ブログ」アプリでブログを登録してください。
+                                        <a href="/dashboard/app/autoblog" class="btn btn-sm btn-outline-primary ms-2">自動ブログへ</a>
+                                    </div>
+                                </div>
+                            `);
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#blogListContainer').html(`
+                            <div class="col-12">
+                                <div class="alert alert-danger text-center">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    ブログ情報の読み込みに失敗しました。ページを再読み込みしてみてください。
+                                </div>
+                            </div>
+                        `);
+                        showNotification('ブログ情報の読み込みに失敗しました。', 'error');
+                        console.error("Error fetching user blogs:", xhr.responseText);
+                    }
+                });
+            }
+
+            fetchUserBlogs();
+
+            // Trend Settings Modal
+            $(document).on('click', '.trend-settings-btn', function() {
+                const blogId = $(this).data('blog-id');
+                const blogName = $(this).data('blog-name');
+
+                // Show loading state in modal
+                Swal.fire({
+                    title: `${blogName} - トレンドキーワード設定`,
+                    html: '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">読み込み中...</span></div><p class="mt-2">設定を読み込んでいます...</p></div>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        // Fetch existing settings
+                        $.ajax({
+                            url: `/api/trendautoblog/settings/${blogId}`, // New endpoint to get settings for a specific blog
+                            method: 'GET',
+                            success: function(settings) {
+                                const currentKeywords = settings && settings.trendKeywords ? settings.trendKeywords.join(', ') : '';
+                                Swal.update({
+                                    html: `
+                                        <p class="text-muted small mb-3 text-start">このブログで追跡するGoogleトレンドのキーワードを入力してください。定期的にこれらのキーワードでトレンドを検索し、関連する記事を生成します。</p>
+                                        <div id="trendKeywordsForm" class="text-start">
+                                            <input type="hidden" name="blogId" value="${blogId}">
+                                            <div class="form-group">
+                                                <label for="trend_keywords" class="form-label fw-bold">トレンドキーワード:</label>
+                                                <textarea id="trend_keywords" name="keywords" class="form-control" rows="4" placeholder="例: AI技術, 最新ガジェット, 健康食品">${currentKeywords}</textarea>
+                                                <small class="form-text text-muted">複数のキーワードはカンマ（,）で区切って入力してください。</small>
+                                            </div>
+                                        </div>`,
+                                    confirmButtonText: '保存する <i class="fas fa-save ms-1"></i>',
+                                    showConfirmButton: true,
+                                    showCancelButton: true,
+                                    cancelButtonText: 'キャンセル',
+                                    focusConfirm: false,
+                                    preConfirm: () => {
+                                        const keywords = Swal.getPopup().querySelector('#trend_keywords').value.trim();
+                                        if (!keywords) {
+                                            Swal.showValidationMessage(`キーワードを入力してください`);
+                                            return false;
+                                        }
+                                        return { blogId: blogId, keywords: keywords };
+                                    }
+                                });
+                            },
+                            error: function() {
+                                Swal.fire('エラー', '設定の読み込みに失敗しました。', 'error');
+                            }
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: '保存中...',
+                            html: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">保存中...</span></div>',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                $.ajax({
+                                    url: '/api/trendautoblog/settings/trends',
+                                    method: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(result.value),
+                                    success: function() {
+                                        showNotification('トレンドキーワードを保存しました。', 'success');
+                                        fetchUserBlogs(); // Refresh blog list to show updated info
+                                        Swal.close();
+                                    },
+                                    error: function() {
+                                        Swal.fire('エラー', 'トレンドキーワードの保存に失敗しました。', 'error');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Model Settings Modal
+            $(document).on('click', '.model-settings-btn', function() {
+                const blogId = $(this).data('blog-id');
+                const blogName = $(this).data('blog-name');
+
+                Swal.fire({
+                    title: `${blogName} - AIモデル設定`,
+                    html: '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">読み込み中...</span></div><p class="mt-2">設定を読み込んでいます...</p></div>',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        $.ajax({
+                            url: `/api/trendautoblog/settings/${blogId}`, // Reuse endpoint or create specific one
+                            method: 'GET',
+                            success: function(settings) {
+                                const modelSettings = settings && settings.trendModelSettings ? settings.trendModelSettings : {};
+                                const currentLanguage = modelSettings.language || 'japanese';
+                                const currentTone = modelSettings.tone || 'Informative';
+                                const currentTemplate = modelSettings.template || '';
+
+                                Swal.update({
+                                    html: `
+                                        <p class="text-muted small mb-3 text-start">記事生成に使用するAIモデル（gpt-4o）の言語、トーン、記事テンプレートを設定します。</p>
+                                        <div id="modelSettingsForm" class="text-start">
+                                            <input type="hidden" name="blogId" value="${blogId}">
+                                            <div class="form-group mb-3">
+                                                <label for="model_language" class="form-label fw-bold">記事の言語:</label>
+                                                <select id="model_language" name="language" class="form-select">
+                                                    <option value="japanese" ${currentLanguage === 'japanese' ? 'selected' : ''}>日本語</option>
+                                                    <option value="english" ${currentLanguage === 'english' ? 'selected' : ''}>英語</option>
+                                                    <option value="french" ${currentLanguage === 'french' ? 'selected' : ''}>フランス語</option>
+                                                    <option value="spanish" ${currentLanguage === 'spanish' ? 'selected' : ''}>スペイン語</option>
+                                                    <option value="german" ${currentLanguage === 'german' ? 'selected' : ''}>ドイツ語</option>
+                                                    <option value="chinese" ${currentLanguage === 'chinese' ? 'selected' : ''}>中国語</option>
+                                                </select>
+                                                <small class="form-text text-muted">生成される記事の主要な言語を選択します。</small>
+                                            </div>
+                                            <div class="form-group mb-3">
+                                                <label for="model_tone" class="form-label fw-bold">記事のトーン:</label>
+                                                <select id="model_tone" name="tone" class="form-select">
+                                                    <option value="Informative" ${currentTone === 'Informative' ? 'selected' : ''}>情報的 (事実ベースで客観的)</option>
+                                                    <option value="Descriptive" ${currentTone === 'Descriptive' ? 'selected' : ''}>記述的 (詳細に情景を描写)</option>
+                                                    <option value="Creative" ${currentTone === 'Creative' ? 'selected' : ''}>創造的 (ユニークで想像力豊か)</option>
+                                                    <option value="Professional" ${currentTone === 'Professional' ? 'selected' : ''}>プロフェッショナル (フォーマルで専門的)</option>
+                                                    <option value="Casual" ${currentTone === 'Casual' ? 'selected' : ''}>カジュアル (親しみやすく会話的)</option>
+                                                    <option value="Persuasive" ${currentTone === 'Persuasive' ? 'selected' : ''}>説得力のある (読者の行動を促す)</option>
+                                                    <option value="Enthusiastic" ${currentTone === 'Enthusiastic' ? 'selected' : ''}>情熱的 (熱意を込めて)</option>
+                                                    <option value="Humorous" ${currentTone === 'Humorous' ? 'selected' : ''}>ユーモラス (面白おかしく)</option>
+                                                </select>
+                                                <small class="form-text text-muted">記事全体の文体や雰囲気を指定します。</small>
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="model_template" class="form-label fw-bold">ブログ記事テンプレート (任意):</label>
+                                                <textarea id="model_template" name="template" class="form-control" rows="6" placeholder="例:\nタイトル: {{title}}\n\n導入:\n{{introduction}}\n\n本文 (Googleトレンドの主要な情報):\n{{trend_content}}\n\n追加情報 (もしあれば):\n{{additional_details}}\n\n結論:\n{{conclusion}}\n\nキーワード: {{keywords}}">${currentTemplate}</textarea>
+                                                <small class="form-text text-muted">記事の基本構造を定義します。<code>{{title}}</code>, <code>{{trend_content}}</code>, <code>{{keywords}}</code> などのプレースホルダーが利用可能です。空の場合は標準テンプレートが使用されます。</small>
+                                            </div>
+                                        </div>`,
+                                    confirmButtonText: '保存する <i class="fas fa-save ms-1"></i>',
+                                    showConfirmButton: true,
+                                    showCancelButton: true,
+                                    cancelButtonText: 'キャンセル',
+                                    focusConfirm: false,
+                                    width: '700px',
+                                    preConfirm: () => {
+                                        const language = Swal.getPopup().querySelector('#model_language').value;
+                                        const tone = Swal.getPopup().querySelector('#model_tone').value;
+                                        const template = Swal.getPopup().querySelector('#model_template').value.trim();
+                                        // Template can be empty
+                                        return { blogId: blogId, language: language, tone: tone, template: template };
+                                    }
+                                });
+                            },
+                            error: function() {
+                                Swal.fire('エラー', '設定の読み込みに失敗しました。', 'error');
+                            }
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                         Swal.fire({
+                            title: '保存中...',
+                            html: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">保存中...</span></div>',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                $.ajax({
+                                    url: '/api/trendautoblog/settings/model',
+                                    method: 'POST',
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(result.value),
+                                    success: function() {
+                                        showNotification('AIモデル設定を保存しました。', 'success');
+                                        fetchUserBlogs(); // Refresh blog list
+                                        Swal.close();
+                                    },
+                                    error: function() {
+                                        Swal.fire('エラー', 'AIモデル設定の保存に失敗しました。', 'error');
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+    style.
+        .swal2-custom-notification {
+            font-size: 0.9rem;
+        }
+        .form-label.fw-bold {
+            font-size: 0.95rem;
+        }
+        .card-title {
+            color: #333;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+        }
+        .alert-info {
+            background-color: #e6f7ff;
+            border-color: #b3e0ff;
+            color: #005c99;
+        }
+        .alert-info strong {
+            color: #004c80;
+        }

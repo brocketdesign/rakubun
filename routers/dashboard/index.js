@@ -87,6 +87,68 @@ router.get('/app/imageGenerator', async (req, res) => {
   });
 });
 
+// New route for Trend Tracker app
+router.get('/app/trend-tracker', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    const userId = new ObjectId(req.user._id);
+    // Fetching blog data for the current user
+    const blogData = await global.db.collection('blogInfos')
+      .find({ userId: userId })
+      .sort({ _id: -1 })
+      .toArray();
+
+    // Count bots for each blog (similar to autoblog)
+    for (let i = 0; i < blogData.length; i++) {
+      const botCount = await global.db.collection('botInfos')
+        .countDocuments({ blogId: (blogData[i]._id.toString()), isActive:true });
+      blogData[i].botCount = botCount; // Or a new field like trendBotCount if needed
+    }
+    
+    const user = await global.db.collection('users').findOne({ _id: userId });
+    const sanitizedUser = {
+      _id: user._id,
+      subscriptionStatus: user.subscriptionStatus,
+      profileImage: user.profileImage
+    };
+    const isAdmin = user?.email === adminMail;
+
+
+    res.render('dashboard/app/trend-tracker/list', { // Changed this line
+      user: sanitizedUser,
+      isAdmin,
+      blogData, // Pass blogData to the template
+      title: "RAKUBUN - トレンドトラッカー"
+    });
+  } catch (error) {
+    console.error('Error loading Trend Tracker app:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+// Route for the new Trend AutoBlog app
+router.get('/app/trend-autoblog', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    // For now, just render a simple page
+    // We will fetch user blogs and other data later
+    const user = await global.db.collection('users').findOne({ _id: new ObjectId(req.user._id) });
+    const sanitizedUser = {
+      _id: user._id,
+      subscriptionStatus: user.subscriptionStatus,
+      profileImage: user.profileImage
+    };
+    const isAdmin = user?.email === adminMail;
+
+    res.render('dashboard/app/trend-autoblog/list', {
+      user: sanitizedUser,
+      isAdmin,
+      title: "RAKUBUN - トレンド自動ブログ", // Trend AutoBlog
+    });
+  } catch (error) {
+    console.error('Error in /app/trend-autoblog:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 // Route for handling '/generator/'
 router.get('/app/generator/:appname', ensureAuthenticated,ensureMembership, async (req, res) => {  
   const appname = req.params.appname
@@ -189,6 +251,19 @@ router.get('/app/autoblog/blog-info/:blogId?', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
+router.get('/app/trendblog', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    res.render('dashboard/app/trendblog/index', {
+      user: req.user,
+      title: "RAKUBUN - トレンドブログ",
+    });
+  } catch (error) {
+    console.error('Error rendering TrendBlog page:', error);
+    res.status(500).send('Server Error');
+  }
+});
+
 router.get('/app/autoblog/article/edit/:articleId', async (req, res) => {
   try {
     const articleId = new ObjectId(req.params.articleId);
@@ -199,4 +274,18 @@ router.get('/app/autoblog/article/edit/:articleId', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
+// Route for the new Trend Tracker app
+router.get('/app/trendtracker', ensureAuthenticated, ensureMembership, async (req, res) => {
+  try {
+    res.render('dashboard/app/trendtracker', {
+      user: req.user,
+      title: "RAKUBUN - トレンド自動投稿", // RAKUBUN - Trend Auto Post
+    });
+  } catch (error) {
+    console.error('Error loading Trend Tracker page:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 module.exports = router;
