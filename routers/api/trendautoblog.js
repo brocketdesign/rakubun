@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { ObjectId } = require('mongodb');
 const ensureAuthenticated = require('../../middleware/authMiddleware');
+const { findMatchingTrendsForBlog } = require('../../modules/trendMatcher'); // Added for trend matching
+const TrendAnalysisResult = require('../../models/TrendAnalysisResult'); // Import the model for cached results
 
 // GET /api/trendautoblog/settings/:blogId - Get trend and model settings for a specific blog
 router.get('/settings/:blogId', ensureAuthenticated, async (req, res) => {
@@ -95,6 +97,112 @@ router.post('/settings/model', ensureAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Error saving AI model settings:', error);
         res.status(500).json({ success: false, message: 'AIモデル設定の保存中にエラーが発生しました。' }); // Error saving AI model settings
+    }
+});
+
+// GET /api/trendautoblog/match-trends/:blogId - New endpoint to get matching trends for a blog
+router.get('/match-trends/:blogId', ensureAuthenticated, async (req, res) => {
+    try {
+        const blogId = req.params.blogId;
+        const userId = req.user._id.toString(); // Get userId for WebSocket
+        const forceReanalysis = req.query.forceReanalysis === 'true';
+
+        console.log(`[/api/trendautoblog/match-trends] Received request for blogId: ${blogId}, userId: ${userId}, forceReanalysis: ${forceReanalysis}`);
+
+        if (!ObjectId.isValid(blogId)) {
+            console.error(`[/api/trendautoblog/match-trends] Invalid blogId: ${blogId}`);
+            return res.status(400).json({ success: false, message: '無効なブログIDです。' });
+        }
+
+        const blog = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(blogId), userId: new ObjectId(req.user._id) });
+        if (!blog) {
+            console.error(`[/api/trendautoblog/match-trends] Blog not found or access denied for blogId: ${blogId}`);
+            return res.status(404).json({ success: false, message: 'ブログが見つからないか、アクセス権がありません。' });
+        }
+        console.log(`[/api/trendautoblog/match-trends] Blog found: ${blog.blogName}. Invoking findMatchingTrendsForBlog.`);
+
+        findMatchingTrendsForBlog(blogId, userId, forceReanalysis)
+            .then(result => {
+                console.log(`[/api/trendautoblog/match-trends] findMatchingTrendsForBlog completed for blog ${blogId}. Success: ${result.success}, Message: ${result.message}`);
+            })
+            .catch(error => {
+                console.error(`[/api/trendautoblog/match-trends] Error after findMatchingTrendsForBlog promise for blog ${blogId}:`, error);
+            });
+
+        const message = forceReanalysis 
+            ? 'トレンド分析を強制的に再実行しています。結果はリアルタイムで表示されます。' 
+            : 'トレンド分析が開始されました。結果はリアルタイムで表示されます。キャッシュされた結果がある場合は再利用されます。';
+        
+        res.json({ success: true, message });
+
+    } catch (error) {
+        console.error(`[/api/trendautoblog/match-trends] Error in endpoint for blogId ${blogId}:`, error);
+        res.status(500).json({ success: false, message: 'トレンドのマッチング中にサーバーエラーが発生しました。' });
+    }
+});
+
+// GET /api/trendautoblog/cached-analysis/:blogId - Get cached analysis results for a blog
+router.get('/cached-analysis/:blogId', ensureAuthenticated, async (req, res) => {
+    try {
+        const blogId = req.params.blogId;
+        
+        if (!ObjectId.isValid(blogId)) {
+            return res.status(400).json({ success: false, message: '無効なブログIDです。' });
+        }
+        
+        // Ensure the blog belongs to the user
+        const blog = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(blogId), userId: new ObjectId(req.user._id) });
+        if (!blog) {
+            return res.status(404).json({ success: false, message: 'ブログが見つからないか、アクセス権がありません。' });
+        }
+        
+        // Get cached analysis results for this blog
+        const cachedResults = await TrendAnalysisResult.find({ 
+            blogId: new ObjectId(blogId) 
+        }).sort({ analyzedAt: -1 }).limit(100).lean();
+        
+        res.json({
+            success: true,
+            blog: {
+                id: blogId,
+                name: blog.blogName,
+                keywords: blog.trendKeywords || []
+            },
+            cachedResults,
+            count: cachedResults.length
+        });
+    } catch (error) {
+        console.error('Error fetching cached analysis results:', error);
+        res.status(500).json({ success: false, message: 'キャッシュされた分析結果の取得中にエラーが発生しました。' });
+    }
+});
+
+// DELETE /api/trendautoblog/cached-analysis/:blogId - Clear cached analysis results for a blog
+router.delete('/cached-analysis/:blogId', ensureAuthenticated, async (req, res) => {
+    try {
+        const blogId = req.params.blogId;
+        
+        if (!ObjectId.isValid(blogId)) {
+            return res.status(400).json({ success: false, message: '無効なブログIDです。' });
+        }
+        
+        // Ensure the blog belongs to the user
+        const blog = await global.db.collection('blogInfos').findOne({ _id: new ObjectId(blogId), userId: new ObjectId(req.user._id) });
+        if (!blog) {
+            return res.status(404).json({ success: false, message: 'ブログが見つからないか、アクセス権がありません。' });
+        }
+        
+        // Delete all cached analysis results for this blog
+        const result = await TrendAnalysisResult.deleteMany({ blogId: new ObjectId(blogId) });
+        
+        res.json({
+            success: true,
+            message: `${result.deletedCount}件のキャッシュされた分析結果が削除されました。`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error('Error clearing cached analysis results:', error);
+        res.status(500).json({ success: false, message: 'キャッシュされた分析結果の削除中にエラーが発生しました。' });
     }
 });
 

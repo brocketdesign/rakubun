@@ -8,6 +8,10 @@ const { setCronJobForUser } = require('../../modules/cronJobs-bot.js');
 var wordpress = require("wordpress");
 const { txt2img,txt2imgOpenAI } = require('../../modules/sdapi.js')
 const { fetchFavicon } = require('../../services/tools.js')
+const mongoose = require('mongoose');
+const authMiddleware = require('../../middleware/authMiddleware');
+const BlogInfo = require('../../models/BlogInfo');
+const TrendAnalysisResult = require('../../models/TrendAnalysisResult');
 
 router.post('/generate-image', async (req, res) => {
   const { prompt, negativePrompt, aspectRatio, height, width, size, blogId } = req.body;
@@ -378,6 +382,85 @@ router.post('/article/post/:articleId', async (req, res) => {
     console.log(error);
     res.json({ success: false, error: error.message });
   }
+});
+
+router.get('/blog/:blogId/cached-trend-analysis', authMiddleware, async (req, res) => {
+    const { blogId } = req.params;
+    const userId = req.user._id;
+    console.log(`[/api/autoblog/cached-trend-analysis] Received request for blogId: ${blogId}, userId: ${userId}`);
+
+    try {
+        if (!mongoose.Types.ObjectId.isValid(blogId)) {
+            console.log(`[/api/autoblog/cached-trend-analysis] Invalid blogId format: ${blogId}`);
+            return res.status(400).json({ success: false, message: 'Invalid blog ID format.' });
+        }
+
+        const blog = await BlogInfo.findById(blogId).lean();
+        if (!blog) {
+            console.log(`[/api/autoblog/cached-trend-analysis] Blog not found: ${blogId}`);
+            return res.status(404).json({ success: false, message: 'Blog not found.' });
+        }
+        console.log(`[/api/autoblog/cached-trend-analysis] Blog found: ${blog.blogName}`);
+
+        // Fetch the latest 20 TrendAnalysisResult for this blog, sorted by analyzedAt descending.
+        // Then, join with the Trend collection to get the latest trend details (like tweetCount, scrapedAt).
+        const cachedAnalysis = await TrendAnalysisResult.aggregate([
+            { $match: { blogId: new mongoose.Types.ObjectId(blogId) } },
+            { $sort: { analyzedAt: -1 } }, // Sort by when it was analyzed
+            { $limit: 30 }, // Limit to last 30 analysis results for this blog
+            {
+                $lookup: {
+                    from: 'trends', // The collection name for Trend model
+                    localField: 'trendId', // Field from TrendAnalysisResult
+                    foreignField: '_id',   // Field from Trend
+                    as: 'trendDetails'
+                }
+            },
+            {
+                $unwind: {
+                    path: "$trendDetails",
+                    preserveNullAndEmptyArrays: true // Keep results even if trend is not found (e.g. deleted)
+                }
+            },
+            {
+                $project: { // Reshape the output
+                    _id: 1,
+                    blogId: 1,
+                    trendName: 1,
+                    trendId: 1,
+                    isRelevant: 1,
+                    relevanceScore: 1,
+                    reasoning: 1,
+                    suggestedAngle: 1,
+                    analyzedAt: 1, // When this specific analysis was performed
+                    keywordsUsed: 1,
+                    // Include fields from the joined trend document
+                    trend: {
+                        name: "$trendDetails.name",
+                        tweetCount: "$trendDetails.tweetCount",
+                        scrapedAt: "$trendDetails.scrapedAt", // When the trend itself was scraped
+                        source: "$trendDetails.source",
+                        region: "$trendDetails.region"
+                    },
+                    // Keep the original analysis result structure for the frontend if it expects it
+                    analysisResult: {
+                        is_relevant: "$isRelevant",
+                        relevance_score: "$relevanceScore",
+                        reasoning: "$reasoning",
+                        suggested_angle: "$suggestedAngle"
+                    }
+                }
+            },
+            { $sort: { "trend.scrapedAt": -1, analyzedAt: -1 } } // Final sort by trend scrape time, then analysis time
+        ]);
+
+        console.log(`[/api/autoblog/cached-trend-analysis] Found ${cachedAnalysis.length} cached analysis results for blogId: ${blogId}`);
+        res.json({ success: true, data: cachedAnalysis });
+
+    } catch (error) {
+        console.error(`[/api/autoblog/cached-trend-analysis] Error fetching cached trend analysis for blog ${blogId}:`, error);
+        res.status(500).json({ success: false, message: 'Internal server error while fetching cached analysis.', error: error.message });
+    }
 });
 
 //TOOLS

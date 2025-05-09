@@ -37,6 +37,7 @@ const dbName = process.env.MONGODB_DATABASE; // Use MONGODB_DATABASE from .env f
 mongoose.connect(process.env.MONGODB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  dbName: dbName // Explicitly set the database name for Mongoose
 });
 
 mongoose.connection.on('connected', () => {
@@ -131,6 +132,7 @@ function startServer() {
       const pdfsummary = require('./routers/api/pdfsummary');
       const imageGenerator = require('./routers/api/imageGenerator');
       const blogeditor = require('./routers/api/blogeditor');
+      const trendautoblog = require('./routers/api/trendautoblog'); // Added for trend auto blog API
 
       // Make MODE available in all routes
       app.use((req, res, next) => {
@@ -154,6 +156,7 @@ function startServer() {
       app.use('/api/imageGenerator', imageGenerator);
       app.use('/api/blogeditor', blogeditor);
       app.use('/admin', admin);
+      app.use('/api/trendautoblog', trendautoblog); // Added for trend auto blog API
 
 
       // Initialize WebSocket server with translations
