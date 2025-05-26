@@ -22,7 +22,15 @@ router.get('/', ensureAuthenticated, ensureMembership, async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-
+router.get('/app/blog-summary', ensureAuthenticated, ensureMembership, async (req, res) => {
+  const userId = req.user._id;
+  const db = global.db;
+  const isAdmin = req.user?.email === adminMail;
+  res.render('dashboard/app/blog-summary/list', { 
+    isAdmin,
+    user:req.user,
+   });
+});
 router.get('/app/transcription', async (req, res) => {
   const userId = req.user._id;
   const files = await db.collection('files').find({ userId: new ObjectId(userId) }).toArray();

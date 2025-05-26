@@ -1,10 +1,10 @@
 let reconnectAttempts = 0;
 const maxReconnectAttempts = 3;
 const reconnectInterval = 10000; // 10 seconds
+let socket; // Make socket globally accessible
+const messageHandlers = {}; // Store registered message handlers
 
 function initializeWebSocket() {
-
-  let socket;
   if (MODE === 'local') {
     socket = new WebSocket(`ws://localhost:3000/ws?userId=${user._id}`);
   } else {
@@ -37,6 +37,9 @@ function initializeWebSocket() {
         const { selector, message } = data.notification;
         updateElementText(selector, message );
       }
+    } else if (data.type && messageHandlers[data.type]) {
+      // Handle custom message types through registered handlers
+      messageHandlers[data.type](data);
     } else {
       //console.log('Message from server:', event.data);
     }
@@ -59,6 +62,21 @@ function initializeWebSocket() {
   socket.onerror = (error) => {
     console.error('WebSocket error:', error);
   };
+}
+
+// Function to register message handlers
+function registerMessageHandler(messageType, handler) {
+  messageHandlers[messageType] = handler;
+}
+
+// Function to unregister message handlers
+function unregisterMessageHandler(messageType) {
+  delete messageHandlers[messageType];
+}
+
+// Function to get WebSocket connection status
+function isWebSocketConnected() {
+  return socket && socket.readyState === WebSocket.OPEN;
 }
 
 // Initialize WebSocket

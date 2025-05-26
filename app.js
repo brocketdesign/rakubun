@@ -157,7 +157,7 @@ function startServer() {
       app.use('/api/blogeditor', blogeditor);
       app.use('/admin', admin);
       app.use('/api/trendautoblog', trendautoblog); // Added for trend auto blog API
-
+      app.use('/api/blog-summary', require('./routers/api/blog-summary-api')); // Added for blog summary API
 
       // Initialize WebSocket server with translations
       setupWebSocketServer(server);
