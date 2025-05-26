@@ -83,7 +83,7 @@ const initializeCronJobs = async (db) => {
   });
 
   // Initialize the trend scraper job
-  initializeTrendScraperJob(db); // Pass db if scrapeTwittrend needs it, otherwise it's not strictly necessary here
+  //initializeTrendScraperJob(db); // Pass db if scrapeTwittrend needs it, otherwise it's not strictly necessary here
 };
 
 module.exports = { setCronJobForUser, initializeCronJobs, initializeTrendScraperJob }; // Export the new function as well
