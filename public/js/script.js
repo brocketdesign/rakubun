@@ -1417,23 +1417,49 @@ function hideLogin(){
     $('#login-container').addClass('d-none')
 }
 
-function showNotification(message, icon) {
-    Swal.fire({
-        position: 'top',
-        icon: icon,
-        title: message,
-        showConfirmButton: false,
-        timer: 3000,
-        toast: true,
-        customClass: {
-            title: 'swal2-custom-title',
-            popup: 'swal2-custom-popup'
-        },
-        showClass: {
-            popup: 'animate__animated animate__slideInDown'
-        },
-        hideClass: {
-            popup: 'animate__animated animate__slideOutUp'
-        }
+
+function showNotification(message, icon = 'check-circle', type = 'success') {
+    // Map icon types to Bootstrap classes
+    const iconMap = {
+        'check-circle': 'bi-check-circle-fill',
+        'exclamation-triangle': 'bi-exclamation-triangle-fill',
+        'info-circle': 'bi-info-circle-fill',
+        'x-circle': 'bi-x-circle-fill'
+    };
+
+    // Map types to Bootstrap alert classes
+    const typeMap = {
+        'success': 'alert-success',
+        'warning': 'alert-warning',
+        'info': 'alert-info',
+        'error': 'alert-danger'
+    };
+
+    const toastHTML = `
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999">
+        <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header ${typeMap[type]} border-0">
+                <i class="bi ${iconMap[icon]} me-2"></i>
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        </div>
+    </div>
+    `;
+
+    $('body').append(toastHTML);
+    const toastElement = $('.toast').last()[0];
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 5000
+    });
+    toast.show();
+
+    // Remove the toast container after it hides
+    toastElement.addEventListener('hidden.bs.toast', function () {
+        $(toastElement).closest('.toast-container').remove();
     });
 }

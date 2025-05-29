@@ -173,6 +173,12 @@ async function fetchBlogPosts(blogInfo, limit = 20, order = 'desc') {
 }
 
 async function updatePostContent(blogInfo, postId, content) {
+  console.log(`[WordPress] 記事更新開始: postId=${postId}`);
+  console.log(`[WordPress] ブログ設定:`, {
+    url: blogInfo.blogUrl,
+    username: blogInfo.blogUsername ? '***' : 'undefined'
+  });
+  
   const client = wordpress.createClient({
     username: blogInfo.blogUsername,
     url: blogInfo.blogUrl,
@@ -181,21 +187,35 @@ async function updatePostContent(blogInfo, postId, content) {
 
   // Check if post exists and user can edit
   try {
-    await new Promise((resolve, reject) => {
+    const existingPost = await new Promise((resolve, reject) => {
       client.getPost(postId, (err, post) => {
-        if (err) return reject(new Error('Post not found or access denied.'));
+        if (err) {
+          console.error(`[WordPress] 記事取得エラー: ${err.message}`);
+          return reject(new Error('Post not found or access denied.'));
+        }
+        console.log(`[WordPress] 記事取得成功: ${post.title}`);
         resolve(post);
       });
     });
+    
+    console.log(`[WordPress] 現在の記事内容長: ${existingPost.content ? existingPost.content.length : 0}文字`);
+    console.log(`[WordPress] 新しい記事内容長: ${content ? content.length : 0}文字`);
+    
   } catch (err) {
     throw new Error(`Cannot update: ${err.message}`);
   }
 
   return new Promise((resolve, reject) => {
+    console.log(`[WordPress] 記事更新実行中...`);
+    
     client.editPost(postId, { content: content }, (err, result) => {
       if (err) {
+        console.error(`[WordPress] 記事更新エラー:`, err);
         return reject(err);
       }
+      
+      console.log(`[WordPress] 記事更新結果:`, result);
+      console.log(`[WordPress] 記事更新成功: postId=${postId}`);
       resolve(result);
     });
   });
@@ -208,49 +228,119 @@ async function updatePostContent(blogInfo, postId, content) {
  */
 async function getWordPressLanguage(blog) {
     try {
+        // Map database field names to expected field names
+        const blogConfig = {
+            blogUrl: blog.blogUrl || blog.url,
+            blogUsername: blog.blogUsername || blog.username,
+            blogPassword: blog.blogPassword || blog.password
+        };
+
+        console.log(`[WordPress] Language detection for blog:`, {
+            url: blogConfig.blogUrl,
+            username: blogConfig.blogUsername ? '***' : 'undefined'
+        });
+
+        // Validate blog configuration
+        if (!blogConfig.blogUrl || blogConfig.blogUrl === 'undefined' || !blogConfig.blogUrl.startsWith('http')) {
+            console.log(`[WordPress] Invalid blog URL: ${blogConfig.blogUrl}, using default language: en`);
+            return 'en';
+        }
+
+        if (!blogConfig.blogUsername || !blogConfig.blogPassword) {
+            console.log('[WordPress] Missing blog credentials, using default language: en');
+            return 'en';
+        }
+
         const axios = require('axios');
         
-        // Try to get site settings first
-        const settingsUrl = `${blog.url}/wp-json/wp/v2/settings`;
+        // Clean and validate the blog URL
+        let baseUrl = blogConfig.blogUrl.trim();
+        if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+        }
         
+        console.log(`[WordPress] Attempting language detection for: ${baseUrl}`);
+        
+        // Try to get site settings first (requires authentication)
         try {
+            const settingsUrl = `${baseUrl}/wp-json/wp/v2/settings`;
+            
             const response = await axios.get(settingsUrl, {
                 auth: {
-                    username: blog.username,
-                    password: blog.password
+                    username: blogConfig.blogUsername,
+                    password: blogConfig.blogPassword
                 },
-                timeout: 10000
+                timeout: 5000,
+                validateStatus: function (status) {
+                    return status < 500; // Accept any status code below 500
+                }
             });
             
-            if (response.data && response.data.language) {
+            if (response.status === 200 && response.data && response.data.language) {
                 const lang = response.data.language.split('_')[0]; // Extract language code from locale
                 console.log(`[WordPress] Detected language from settings: ${lang}`);
                 return lang;
             }
         } catch (settingsError) {
-            console.log('[WordPress] Settings API not accessible, trying alternative method');
+            console.log(`[WordPress] Settings API not accessible: ${settingsError.message}`);
         }
         
-        // Fallback: Try to detect from site content
-        const postsUrl = `${blog.url}/wp-json/wp/v2/posts?per_page=1`;
-        const postsResponse = await axios.get(postsUrl, {
-            timeout: 10000
-        });
-        
-        if (postsResponse.data && postsResponse.data.length > 0) {
-            const content = postsResponse.data[0].content.rendered || postsResponse.data[0].title.rendered;
-            const detectedLang = detectLanguageFromContent(content);
-            console.log(`[WordPress] Detected language from content: ${detectedLang}`);
-            return detectedLang;
+        // Fallback: Try to detect from site content (no authentication required)
+        try {
+            const postsUrl = `${baseUrl}/wp-json/wp/v2/posts?per_page=1`;
+            const postsResponse = await axios.get(postsUrl, {
+                timeout: 5000,
+                validateStatus: function (status) {
+                    return status < 500; // Accept any status code below 500
+                }
+            });
+            
+            if (postsResponse.status === 200 && postsResponse.data && postsResponse.data.length > 0) {
+                const content = postsResponse.data[0].content.rendered || postsResponse.data[0].title.rendered;
+                const detectedLang = detectLanguageFromContent(content);
+                console.log(`[WordPress] Detected language from content: ${detectedLang}`);
+                return detectedLang;
+            }
+        } catch (postsError) {
+            console.log(`[WordPress] Posts API not accessible: ${postsError.message}`);
         }
         
-        // Default fallback
-        console.log('[WordPress] Using default language: en');
+        // Last fallback: Try to detect from the existing post content using WordPress client
+        try {
+            console.log('[WordPress] Trying to detect language from existing posts using WordPress client');
+            const client = wordpress.createClient({
+                username: blogConfig.blogUsername,
+                url: blogConfig.blogUrl,
+                password: blogConfig.blogPassword
+            });
+            
+            const posts = await new Promise((resolve, reject) => {
+                client.getPosts({ number: 1 }, (err, posts) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(posts);
+                    }
+                });
+            });
+            
+            if (posts && posts.length > 0) {
+                const content = posts[0].content || posts[0].title;
+                const detectedLang = detectLanguageFromContent(content);
+                console.log(`[WordPress] Detected language from WordPress client: ${detectedLang}`);
+                return detectedLang;
+            }
+        } catch (clientError) {
+            console.log(`[WordPress] WordPress client detection failed: ${clientError.message}`);
+        }
+        
+        // Ultimate fallback
+        console.log('[WordPress] All detection methods failed, using default language: en');
         return 'en';
         
     } catch (error) {
-        console.error('[WordPress] Language detection error:', error);
-        return 'en'; // Default to English
+        console.error('[WordPress] Language detection error:', error.message);
+        return 'en'; // Default to English on any error
     }
 }
 
@@ -418,4 +508,21 @@ Summary:`
     return prompts[language] || prompts['en'];
 }
 
-module.exports = { getCategoryId, categoryExists, ensureCategory, getPostLink, getTermDetails, checkLoginInfo, post, fetchBlogPosts, updatePostContent, getWordPressLanguage, getLanguageSpecificPrompt };
+async function fetchSingleBlogPost(blogInfo, postId) {
+  const client = wordpress.createClient({
+    username: blogInfo.blogUsername,
+    url: blogInfo.blogUrl,
+    password: blogInfo.blogPassword
+  });
+
+  return new Promise((resolve, reject) => {
+    client.getPost(postId, (err, post) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(post);
+    });
+  });
+}
+
+module.exports = { getCategoryId, categoryExists, ensureCategory, getPostLink, getTermDetails, checkLoginInfo, post, fetchBlogPosts, fetchSingleBlogPost, updatePostContent, getWordPressLanguage, getLanguageSpecificPrompt };

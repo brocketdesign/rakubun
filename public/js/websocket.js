@@ -37,6 +37,16 @@ function initializeWebSocket() {
         const { selector, message } = data.notification;
         updateElementText(selector, message );
       }
+      // Handle blog summary notifications
+      if (data.notification.type === 'blog-summary-progress') {
+        handleBlogSummaryProgress(data.notification);
+      }
+      if (data.notification.type === 'blog-summary-complete') {
+        handleBlogSummaryComplete(data.notification);
+      }
+      if (data.notification.type === 'blog-summary-error') {
+        handleBlogSummaryError(data.notification);
+      }
     } else if (data.type && messageHandlers[data.type]) {
       // Handle custom message types through registered handlers
       messageHandlers[data.type](data);
@@ -77,6 +87,26 @@ function unregisterMessageHandler(messageType) {
 // Function to get WebSocket connection status
 function isWebSocketConnected() {
   return socket && socket.readyState === WebSocket.OPEN;
+}
+
+// Blog summary notification handlers
+function handleBlogSummaryProgress(notification) {
+  console.log(`[Blog Summary Progress] ${notification.message} (${notification.progress}%)`);
+  // You can add UI updates here, like updating a progress bar
+  showNotification(`${notification.message} (${notification.progress}%)`, 'info');
+}
+
+function handleBlogSummaryComplete(notification) {
+  console.log('[Blog Summary Complete]', notification.result);
+  const message = notification.result.processedPost 
+    ? `要約完了: ${notification.result.processedPost}` 
+    : notification.result.message || '要約処理が完了しました';
+  showNotification(message, 'success');
+}
+
+function handleBlogSummaryError(notification) {
+  console.error('[Blog Summary Error]', notification.error);
+  showNotification(`要約エラー: ${notification.error}`, 'error');
 }
 
 // Initialize WebSocket

@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const { ObjectId } = require('mongodb');
 const { fetchBlogPosts, updatePostContent, getWordPressLanguage, getLanguageSpecificPrompt } = require('./post');
 const { generateCompletion } = require('./openai');
-const { sendNotification } = require('./websocket');
+const { sendNotificationToUser } = require('./websocket');
 
 // アクティブなCronジョブを管理するマップ
 const activeCronJobs = new Map();
@@ -29,6 +29,12 @@ async function scheduleCronJob(blogId, frequency, blogData) {
         switch (frequency) {
             case 'hourly':
                 cronExpression = '0 * * * *'; // 毎時0分
+                break;
+            case 'two_daily':
+                cronExpression = '0 9,21 * * *'; // 毎日午前9時と午後9時
+                break;
+            case 'tree_daily':
+                cronExpression = '0 9,15,21 * * *'; // 毎日午前9時、午後3時、午後9時
                 break;
             case 'daily':
                 cronExpression = '0 9 * * *'; // 毎日午前9時
@@ -62,7 +68,7 @@ async function scheduleCronJob(blogId, frequency, blogData) {
                 
                 // エラーをWebSocketで通知
                 if (blogData.userId) {
-                    sendNotification(blogData.userId.toString(), 'blog-summary-error', {
+                    sendNotificationToUser(blogData.userId.toString(), 'blog-summary-error', {
                         blogId,
                         error: `自動実行エラー: ${error.message}`
                     });
@@ -143,7 +149,7 @@ async function executeAutomaticSummary(blogId, blogData) {
         console.log(`[自動実行] 単一記事要約処理開始: ${blogId}`);
         
         // WebSocket通知: 開始
-        sendNotification(blogData.userId.toString(), 'blog-summary-progress', {
+        sendNotificationToUser(blogData.userId.toString(), 'blog-summary-progress', {
             blogId,
             progress: 0,
             message: '自動要約を開始しています...'
@@ -209,7 +215,7 @@ async function executeAutomaticSummary(blogId, blogData) {
 
         if (!targetPost) {
             console.log(`[自動実行] 処理対象の記事がありません: ${blogId}`);
-            sendNotification(blogData.userId.toString(), 'blog-summary-complete', {
+            sendNotificationToUser(blogData.userId.toString(), 'blog-summary-complete', {
                 blogId,
                 result: { 
                     processedCount: 0, 
@@ -221,7 +227,7 @@ async function executeAutomaticSummary(blogId, blogData) {
         }
 
         // プログレス通知
-        sendNotification(blogData.userId.toString(), 'blog-summary-progress', {
+        sendNotificationToUser(blogData.userId.toString(), 'blog-summary-progress', {
             blogId,
             progress: 50,
             message: `記事「${targetPost.title}」を処理中...`
@@ -244,7 +250,7 @@ async function executeAutomaticSummary(blogId, blogData) {
             });
 
             // 完了通知
-            sendNotification(blogData.userId.toString(), 'blog-summary-complete', {
+            sendNotificationToUser(blogData.userId.toString(), 'blog-summary-complete', {
                 blogId,
                 result: { 
                     processedCount: 1, 
@@ -264,7 +270,7 @@ async function executeAutomaticSummary(blogId, blogData) {
         console.error(`[自動実行] 要約処理エラー: ${blogId}`, error);
         
         // エラー通知
-        sendNotification(blogData.userId.toString(), 'blog-summary-error', {
+        sendNotificationToUser(blogData.userId.toString(), 'blog-summary-error', {
             blogId,
             error: `自動実行エラー: ${error.message}`
         });
