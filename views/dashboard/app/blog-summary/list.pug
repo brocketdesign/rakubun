@@ -33,17 +33,22 @@ block mainContent
             const user = !{JSON.stringify(user)};
             const isAdmin = !{JSON.stringify(isAdmin)};
 
+            // Store active operations to track spinner states
+            const activeOperations = new Set();
+
             // Register WebSocket message handlers for blog-summary
             registerMessageHandler('blog-summary-progress', function(data) {
-                updateProgressBar(data.blogId, data.progress, data.message);
+                updateProgressStatus(data.blogId, data.progress, data.message);
             });
             
             registerMessageHandler('blog-summary-complete', function(data) {
                 handleSummaryComplete(data.blogId, data.result);
+                activeOperations.delete(data.blogId);
             });
             
             registerMessageHandler('blog-summary-error', function(data) {
-                handleSummaryError(data.blogId, data.error);
+                handleSummaryError(data.blogId, data.error, data.suggestion);
+                activeOperations.delete(data.blogId);
             });
 
             // Cleanup handlers when page unloads
@@ -166,48 +171,99 @@ block mainContent
                 });
             }
 
-            // プログレスバー更新
-            function updateProgressBar(blogId, progress, message) {
-                console.log(`[プログレス] ブログ${blogId}: ${progress}% - ${message}`);
+            // プログレス状況更新（改善版）
+            function updateProgressStatus(blogId, progress, message) {
+                console.log(`[プログレス] ブログ${blogId}: ${message}`);
+                
                 const progressContainer = $(`#progress-${blogId}`);
                 const progressBar = $(`#progress-bar-${blogId}`);
+                const button = $(`.manual-summary-btn[data-blog-id="${blogId}"]`);
                 
-                if (progress > 0) {
+                if (progress > 0 && progress < 100) {
+                    // Show progress during processing
                     progressContainer.show();
                     progressBar.css('width', `${progress}%`);
-                    progressBar.text(`${progress}%`);
-                } else {
-                    progressContainer.hide();
+                    
+                    // Update button state
+                    if (!button.prop('disabled')) {
+                        button.prop('disabled', true);
+                        button.html('<i class="fas fa-spinner fa-spin me-1"></i>処理中...');
+                    }
+                    
+                    activeOperations.add(blogId);
+                } else if (progress >= 100) {
+                    // Hide progress when complete
+                    setTimeout(() => {
+                        progressContainer.hide();
+                        if (!activeOperations.has(blogId)) {
+                            button.prop('disabled', false);
+                            button.html('<i class="fas fa-play me-1"></i>次の記事');
+                        }
+                    }, 1000);
                 }
                 
-                if (message) {
-                    showNotification(`${message}`, 'info', 2000);
+                // Show important messages
+                if (message && (
+                    message.includes('開始') || 
+                    message.includes('完了') || 
+                    message.includes('エラー') ||
+                    message.includes('生成中') ||
+                    message.includes('取得') ||
+                    message.includes('更新')
+                )) {
+                    showNotification(message, 'info', 2000);
                 }
             }
 
-            // 要約完了処理
+            // 要約完了処理（改善版）
             function handleSummaryComplete(blogId, result) {
                 console.log(`[完了] ブログ${blogId}の要約完了:`, result);
-                updateProgressBar(blogId, 0, '');
                 
-                let message = '';
+                // Reset button state
+                const button = $(`.manual-summary-btn[data-blog-id="${blogId}"]`);
+                button.prop('disabled', false);
+                button.html('<i class="fas fa-play me-1"></i>次の記事');
+                
+                // Hide progress
+                $(`#progress-${blogId}`).hide();
+                
+                // Show completion message
+                let message = '要約処理が完了しました';
                 if (result.processedPost) {
-                    message = `記事「${result.processedPost}」の要約が完了しました`;
+                    message = `「${result.processedPost}」の要約が完了しました`;
                 } else if (result.message) {
                     message = result.message;
-                } else {
+                } else if (result.processedCount > 0) {
                     message = `${result.processedCount}件の記事を処理しました`;
                 }
                 
-                showNotification(message, 'success');
-                fetchUserBlogs(); // リスト更新
+                showNotification(message, 'success', 5000);
+                
+                // Refresh blog list to show updated status
+                setTimeout(() => {
+                    fetchUserBlogs();
+                }, 2000);
             }
 
-            // 要約エラー処理
-            function handleSummaryError(blogId, error) {
+            // 要約エラー処理（改善版）
+            function handleSummaryError(blogId, error, suggestion) {
                 console.error(`[エラー] ブログ${blogId}の要約エラー:`, error);
-                updateProgressBar(blogId, 0, '');
-                showNotification(`要約処理でエラーが発生しました: ${error}`, 'error');
+                
+                // Reset button state
+                const button = $(`.manual-summary-btn[data-blog-id="${blogId}"]`);
+                button.prop('disabled', false);
+                button.html('<i class="fas fa-play me-1"></i>次の記事');
+                
+                // Hide progress
+                $(`#progress-${blogId}`).hide();
+                
+                // Show error message with suggestion
+                let message = `要約処理でエラーが発生しました: ${error}`;
+                if (suggestion) {
+                    message += `\n\n💡 ${suggestion}`;
+                }
+                
+                showNotification(message, 'error', 8000);
             }
 
             // システムプロンプト設定
@@ -267,14 +323,16 @@ block mainContent
                 });
             });
 
-            // 手動要約実行
+            // 手動要約実行（改善版）
             $(document).on('click', '.manual-summary-btn', function() {
                 const blogId = $(this).data('blog-id');
                 console.log(`[手動実行] ブログ${blogId}の手動要約開始`);
                 
                 const button = $(this);
                 button.prop('disabled', true);
-                button.html('<i class="fas fa-spinner fa-spin me-1"></i>実行中...');
+                button.html('<i class="fas fa-spinner fa-spin me-1"></i>開始中...');
+                
+                activeOperations.add(blogId);
                 
                 $.ajax({
                     url: '/api/blog-summary/manual-run',
@@ -283,15 +341,17 @@ block mainContent
                     data: JSON.stringify({ blogId }),
                     success: function(response) {
                         console.log('[手動実行] 開始成功:', response);
-                        showNotification('次の記事の要約処理を開始しました', 'success');
+                        showNotification('次の記事の要約処理を開始しました', 'success', 3000);
+                        button.html('<i class="fas fa-spinner fa-spin me-1"></i>処理中...');
                     },
                     error: function(xhr) {
                         console.error('[手動実行] エラー:', xhr.responseText);
-                        showNotification('要約処理の開始に失敗しました', 'error');
-                    },
-                    complete: function() {
+                        showNotification('要約処理の開始に失敗しました', 'error', 5000);
+                        
+                        // Reset button state on error
                         button.prop('disabled', false);
                         button.html('<i class="fas fa-play me-1"></i>次の記事');
+                        activeOperations.delete(blogId);
                     }
                 });
             });
@@ -458,7 +518,7 @@ block mainContent
                 });
             });
 
-            // 個別記事の手動要約
+            // 個別記事の手動要約（改善版）
             $(document).on('click', '.manual-post-summary-btn', function() {
                 const postId = $(this).data('post-id');
                 const blogId = $(this).data('blog-id');
@@ -470,17 +530,36 @@ block mainContent
                 button.prop('disabled', true);
                 button.html('<i class="fas fa-spinner fa-spin"></i>');
                 
+                // Update post status
+                button.closest('.list-group-item').find('.badge')
+                    .removeClass('bg-secondary')
+                    .addClass('bg-warning')
+                    .text('処理中');
+
                 // Register temporary handlers for this specific post
                 const tempProgressHandler = function(data) {
                     if (data.blogId === blogId) {
-                        console.log(`[個別要約] 進捗: ${data.progress}% - ${data.message}`);
+                        console.log(`[個別要約] 進捗: ${data.message}`);
+                        
+                        // Show important progress updates
+                        if (data.message && (
+                            data.message.includes('開始') || 
+                            data.message.includes('生成中') ||
+                            data.message.includes('更新中')
+                        )) {
+                            showNotification(`記事処理: ${data.message}`, 'info', 2000);
+                        }
                     }
                 };
                 
                 const tempCompleteHandler = function(data) {
                     if (data.blogId === blogId) {
                         console.log(`[個別要約] 完了: 記事${postId}`);
-                        showNotification(`記事「${data.result.processedPost}」の要約が完了しました`, 'success');
+                        
+                        const message = data.result.processedPost 
+                            ? `「${data.result.processedPost}」の要約が完了しました`
+                            : '記事の要約が完了しました';
+                        showNotification(message, 'success', 5000);
                         
                         // Update the badge in the current post list
                         button.closest('.list-group-item').find('.badge')
@@ -488,22 +567,40 @@ block mainContent
                             .addClass('bg-success')
                             .text('要約済み');
                         
+                        // Reset button
+                        button.prop('disabled', false);
+                        button.html(originalHtml);
+                        
                         // Cleanup temp handlers
-                        unregisterMessageHandler('blog-summary-progress', tempProgressHandler);
-                        unregisterMessageHandler('blog-summary-complete', tempCompleteHandler);
-                        unregisterMessageHandler('blog-summary-error', tempErrorHandler);
+                        unregisterMessageHandler('blog-summary-progress');
+                        unregisterMessageHandler('blog-summary-complete');
+                        unregisterMessageHandler('blog-summary-error');
                     }
                 };
                 
                 const tempErrorHandler = function(data) {
                     if (data.blogId === blogId) {
                         console.error(`[個別要約] エラー: 記事${postId}`, data.error);
-                        showNotification(`記事の要約でエラーが発生しました: ${data.error}`, 'error');
+                        
+                        let message = `記事の要約でエラーが発生しました: ${data.error}`;
+                        if (data.suggestion) {
+                            message += `\n\n💡 ${data.suggestion}`;
+                        }
+                        showNotification(message, 'error', 8000);
+                        
+                        // Reset badge and button
+                        button.closest('.list-group-item').find('.badge')
+                            .removeClass('bg-warning')
+                            .addClass('bg-secondary')
+                            .text('未処理');
+                        
+                        button.prop('disabled', false);
+                        button.html(originalHtml);
                         
                         // Cleanup temp handlers
-                        unregisterMessageHandler('blog-summary-progress', tempProgressHandler);
-                        unregisterMessageHandler('blog-summary-complete', tempCompleteHandler);
-                        unregisterMessageHandler('blog-summary-error', tempErrorHandler);
+                        unregisterMessageHandler('blog-summary-progress');
+                        unregisterMessageHandler('blog-summary-complete');
+                        unregisterMessageHandler('blog-summary-error');
                     }
                 };
                 
@@ -518,52 +615,64 @@ block mainContent
                     contentType: 'application/json',
                     data: JSON.stringify({ blogId, postId }),
                     success: function() {
-                        showNotification('記事の要約を開始しました', 'success');
-                        button.closest('.list-group-item').find('.badge')
-                            .removeClass('bg-secondary')
-                            .addClass('bg-warning')
-                            .text('処理中');
+                        showNotification('記事の要約を開始しました', 'success', 3000);
                     },
                     error: function(xhr) {
                         console.error('[個別要約] API エラー:', xhr.responseText);
-                        showNotification('記事の要約開始に失敗しました', 'error');
+                        showNotification('記事の要約開始に失敗しました', 'error', 5000);
                         
-                        // Cleanup temp handlers on error
-                        unregisterMessageHandler('blog-summary-progress', tempProgressHandler);
-                        unregisterMessageHandler('blog-summary-complete', tempCompleteHandler);
-                        unregisterMessageHandler('blog-summary-error', tempErrorHandler);
-                    },
-                    complete: function() {
+                        // Reset on API error
+                        button.closest('.list-group-item').find('.badge')
+                            .removeClass('bg-warning')
+                            .addClass('bg-secondary')
+                            .text('未処理');
+                        
                         button.prop('disabled', false);
                         button.html(originalHtml);
+                        
+                        // Cleanup temp handlers on error
+                        unregisterMessageHandler('blog-summary-progress');
+                        unregisterMessageHandler('blog-summary-complete');
+                        unregisterMessageHandler('blog-summary-error');
                     }
                 });
             });
 
-            // 全ブログ更新
+            // 全ブログ更新（改善版）
             $('#refreshAllBtn').on('click', function() {
                 console.log('[全更新] 全ブログの要約実行開始');
                 
                 const button = $(this);
                 button.prop('disabled', true);
-                button.html('<i class="fas fa-spinner fa-spin me-2"></i>実行中...');
+                button.html('<i class="fas fa-spinner fa-spin me-2"></i>開始中...');
                 
                 $.ajax({
                     url: '/api/blog-summary/refresh-all',
                     method: 'POST',
                     success: function(response) {
                         console.log('[全更新] 開始成功:', response);
-                        showNotification('全ブログで次の記事の要約処理を開始しました', 'success');
+                        showNotification('全ブログで次の記事の要約処理を開始しました', 'success', 5000);
+                        button.html('<i class="fas fa-spinner fa-spin me-2"></i>処理中...');
+                        
+                        // Button will be reset by progress handlers when all complete
                     },
                     error: function(xhr) {
                         console.error('[全更新] エラー:', xhr.responseText);
-                        showNotification('全ブログの要約処理開始に失敗しました', 'error');
-                    },
-                    complete: function() {
+                        showNotification('全ブログの要約処理開始に失敗しました', 'error', 5000);
+                        
+                        // Reset button on error
                         button.prop('disabled', false);
                         button.html('<i class="fas fa-sync-alt me-2"></i>全ブログ次記事');
                     }
                 });
+                
+                // Reset button after reasonable time if no progress updates
+                setTimeout(() => {
+                    if (button.prop('disabled')) {
+                        button.prop('disabled', false);
+                        button.html('<i class="fas fa-sync-alt me-2"></i>全ブログ次記事');
+                    }
+                }, 60000); // 1 minute timeout
             });
 
             // 初期化

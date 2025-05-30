@@ -91,22 +91,40 @@ function isWebSocketConnected() {
 
 // Blog summary notification handlers
 function handleBlogSummaryProgress(notification) {
-  console.log(`[Blog Summary Progress] ${notification.message} (${notification.progress}%)`);
-  // You can add UI updates here, like updating a progress bar
-  showNotification(`${notification.message} (${notification.progress}%)`, 'info');
+    console.log(`[Blog Summary Progress] ${notification.message}`);
+    
+    // Only show important progress messages, not percentage
+    if (notification.progress === 0 || notification.progress === 100 || 
+        notification.message.includes('開始') || notification.message.includes('完了') ||
+        notification.message.includes('エラー') || notification.message.includes('生成中')) {
+        showNotification(notification.message, 'info', 3000);
+    }
 }
 
 function handleBlogSummaryComplete(notification) {
-  console.log('[Blog Summary Complete]', notification.result);
-  const message = notification.result.processedPost 
-    ? `要約完了: ${notification.result.processedPost}` 
-    : notification.result.message || '要約処理が完了しました';
-  showNotification(message, 'success');
+    console.log('[Blog Summary Complete]', notification.result);
+    
+    let message = '要約処理が完了しました';
+    if (notification.result.processedPost) {
+        message = `「${notification.result.processedPost}」の要約が完了しました`;
+    } else if (notification.result.message) {
+        message = notification.result.message;
+    } else if (notification.result.processedCount > 0) {
+        message = `${notification.result.processedCount}件の記事を処理しました`;
+    }
+    
+    showNotification(message, 'success', 5000);
 }
 
 function handleBlogSummaryError(notification) {
-  console.error('[Blog Summary Error]', notification.error);
-  showNotification(`要約エラー: ${notification.error}`, 'error');
+    console.error('[Blog Summary Error]', notification.error);
+    
+    let message = `要約エラー: ${notification.error}`;
+    if (notification.suggestion) {
+        message += `\n\n💡 ${notification.suggestion}`;
+    }
+    
+    showNotification(message, 'error', 8000);
 }
 
 // Initialize WebSocket
