@@ -344,8 +344,33 @@ async function processSingleBlogSummary(blogId, blog, userId, userIdString) {
             message: '記事一覧を取得中...'
         });
 
-        const posts = await fetchBlogPosts(blog, 50, 'asc'); // 最古50件を古い順で取得
-        console.log(`[処理] ${posts.length}件の記事を取得`);
+        let posts;
+        try {
+            posts = await fetchBlogPosts(blog, 50, 'asc'); // 最古50件を古い順で取得
+            console.log(`[処理] ${posts.length}件の記事を取得`);
+        } catch (fetchError) {
+            console.error(`[処理] 記事一覧取得エラー: ${blogId}`, fetchError);
+            
+            // ネットワークエラーの判定
+            if (isNetworkError(fetchError)) {
+                const errorMessage = 'ネットワーク接続エラー: WordPressサイトに接続できません';
+                sendNotificationToUser(userIdString, 'blog-summary-progress', {
+                    blogId,
+                    progress: 100,
+                    message: `エラー: ${errorMessage}`
+                });
+                
+                sendNotificationToUser(userIdString, 'blog-summary-error', {
+                    blogId,
+                    error: errorMessage,
+                    errorType: 'network',
+                    suggestion: 'しばらく時間をおいてから再度お試しください。問題が続く場合は、WordPressサイトが正常に動作しているかご確認ください。'
+                });
+                return;
+            }
+            
+            throw fetchError;
+        }
 
         if (posts.length === 0) {
             sendNotificationToUser(userIdString, 'blog-summary-progress', {
@@ -497,20 +522,45 @@ async function processSingleBlogSummary(blogId, blog, userId, userIdString) {
 
         } catch (error) {
             console.error(`[処理] 記事${targetPost.id}の処理エラー:`, error);
+            
+            // ネットワークエラーの場合は特別な処理
+            if (isNetworkError(error)) {
+                const errorMessage = 'ネットワーク接続エラー: WordPressサイトとの通信中に問題が発生しました';
+                sendNotificationToUser(userIdString, 'blog-summary-progress', {
+                    blogId,
+                    progress: 100,
+                    message: `エラー: ${errorMessage}`
+                });
+                
+                sendNotificationToUser(userIdString, 'blog-summary-error', {
+                    blogId,
+                    error: errorMessage,
+                    errorType: 'network',
+                    suggestion: 'しばらく時間をおいてから再度お試しください。'
+                });
+                return;
+            }
+            
             throw error;
         }
 
     } catch (error) {
         console.error(`[処理] 単一記事要約エラー: ${blogId}`, error);
+        
+        // エラーの詳細な分析
+        const errorInfo = analyzeError(error);
+        
         sendNotificationToUser(userIdString, 'blog-summary-progress', {
             blogId,
             progress: 100,
-            message: `エラーが発生しました: ${error.message}`
+            message: `エラーが発生しました: ${errorInfo.message}`
         });
         
         sendNotificationToUser(userIdString, 'blog-summary-error', {
             blogId,
-            error: error.message
+            error: errorInfo.message,
+            errorType: errorInfo.type,
+            suggestion: errorInfo.suggestion
         });
     }
 }
@@ -545,8 +595,8 @@ async function processPostSummary(blogId, postId, blog, userId, userIdString, po
             });
 
             try {
-                // WordPress APIから直接記事を取得
-                postData = await fetchSingleBlogPost(blog, postId);
+                // WordPress APIから直接記事を取得（リトライ機能付き）
+                postData = await retryOperation(() => fetchSingleBlogPost(blog, postId), 3);
                 console.log(`[処理] WordPress APIから記事を取得成功: ${postId}`);
                 
                 sendNotificationToUser(userIdString, 'blog-summary-progress', {
@@ -556,11 +606,30 @@ async function processPostSummary(blogId, postId, blog, userId, userIdString, po
                 });
             } catch (error) {
                 console.log(`[処理] WordPress APIからの記事取得失敗: ${postId}`, error);
+                
+                if (isNetworkError(error)) {
+                    const errorMessage = 'ネットワーク接続エラー: 記事の取得に失敗しました';
+                    sendNotificationToUser(userIdString, 'blog-summary-progress', {
+                        blogId,
+                        progress: 100,
+                        message: `エラー: ${errorMessage}`
+                    });
+                    
+                    sendNotificationToUser(userIdString, 'blog-summary-error', {
+                        blogId,
+                        error: errorMessage,
+                        errorType: 'network',
+                        suggestion: 'WordPressサイトの接続状況をご確認ください。'
+                    });
+                    return;
+                }
+                
                 sendNotificationToUser(userIdString, 'blog-summary-progress', {
                     blogId,
                     progress: 100,
                     message: `エラー: 記事の取得に失敗しました`
                 });
+                throw error;
             }
         }
 
@@ -752,9 +821,9 @@ ${cleanContent}
         });
 
         try {
-            // WordPress記事を更新
+            // WordPress記事を更新（リトライ機能付き）
             console.log(`[処理] WordPress記事更新開始: ${postId}`);
-            const updateResult = await updatePostContent(blog, postId, updatedContent);
+            const updateResult = await retryOperation(() => updatePostContent(blog, postId, updatedContent), 3);
             console.log(`[処理] WordPress記事更新完了: ${postId}`, updateResult);
             
             sendNotificationToUser(userIdString, 'blog-summary-progress', {
@@ -765,11 +834,30 @@ ${cleanContent}
             
         } catch (updateError) {
             console.error(`[処理] WordPress記事更新エラー: ${postId}`, updateError);
+            
+            if (isNetworkError(updateError)) {
+                const errorMessage = 'ネットワーク接続エラー: 記事の更新に失敗しました';
+                sendNotificationToUser(userIdString, 'blog-summary-progress', {
+                    blogId,
+                    progress: 100,
+                    message: `エラー: ${errorMessage}`
+                });
+                
+                sendNotificationToUser(userIdString, 'blog-summary-error', {
+                    blogId,
+                    error: errorMessage,
+                    errorType: 'network',
+                    suggestion: 'しばらく時間をおいてから再度お試しください。要約は生成されましたが、WordPressへの反映に失敗しました。'
+                });
+                return;
+            }
+            
             sendNotificationToUser(userIdString, 'blog-summary-progress', {
                 blogId,
                 progress: 100,
                 message: `エラー: 記事の更新に失敗しました`
             });
+            throw updateError;
         }
 
         sendNotificationToUser(userIdString, 'blog-summary-progress', {
@@ -821,20 +909,107 @@ ${cleanContent}
     } catch (error) {
         console.error(`[処理] 個別記事要約エラー: ${postId}`, error);
         
+        // エラーの詳細な分析
+        const errorInfo = analyzeError(error);
+        
         // エラー通知
         sendNotificationToUser(userIdString, 'blog-summary-progress', {
             blogId,
             progress: 100,
-            message: `エラー: ${error.message}`
+            message: `エラー: ${errorInfo.message}`
         });
         
         sendNotificationToUser(userIdString, 'blog-summary-error', {
             blogId,
-            error: `記事${postId}の要約処理エラー: ${error.message}`
+            error: `記事${postId}の要約処理エラー: ${errorInfo.message}`,
+            errorType: errorInfo.type,
+            suggestion: errorInfo.suggestion
         });
         
         throw error;
     }
+}
+
+// ネットワークエラーの判定
+function isNetworkError(error) {
+    if (!error) return false;
+    
+    const networkErrorCodes = ['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ENETUNREACH', 'ECONNRESET'];
+    const networkErrorMessages = ['timeout', 'network', 'connection', 'refused', 'unreachable'];
+    
+    // エラーコードをチェック
+    if (error.code && networkErrorCodes.includes(error.code)) {
+        return true;
+    }
+    
+    // AggregateErrorの場合は内部エラーもチェック
+    if (error.errors && Array.isArray(error.errors)) {
+        return error.errors.some(err => 
+            err.code && networkErrorCodes.includes(err.code)
+        );
+    }
+    
+    // エラーメッセージをチェック
+    const errorMessage = error.message ? error.message.toLowerCase() : '';
+    return networkErrorMessages.some(msg => errorMessage.includes(msg));
+}
+
+// エラー分析
+function analyzeError(error) {
+    if (isNetworkError(error)) {
+        return {
+            type: 'network',
+            message: 'ネットワーク接続エラーが発生しました',
+            suggestion: 'インターネット接続とWordPressサイトの状態をご確認ください。しばらく時間をおいてから再度お試しください。'
+        };
+    }
+    
+    if (error.message && error.message.includes('Unauthorized')) {
+        return {
+            type: 'auth',
+            message: '認証エラーが発生しました',
+            suggestion: 'WordPressの認証情報を確認してください。'
+        };
+    }
+    
+    if (error.message && error.message.includes('rate limit')) {
+        return {
+            type: 'rate_limit',
+            message: 'API制限に達しました',
+            suggestion: 'しばらく時間をおいてから再度お試しください。'
+        };
+    }
+    
+    return {
+        type: 'unknown',
+        message: error.message || '予期しないエラーが発生しました',
+        suggestion: 'エラーが継続する場合は、サポートにお問い合わせください。'
+    };
+}
+
+// リトライ機能付きの操作実行
+async function retryOperation(operation, maxRetries = 3, delayMs = 1000) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            console.log(`[リトライ] 試行 ${attempt}/${maxRetries}`);
+            return await operation();
+        } catch (error) {
+            lastError = error;
+            console.log(`[リトライ] 試行 ${attempt} 失敗:`, error.message);
+            
+            // 最後の試行でない場合は待機
+            if (attempt < maxRetries) {
+                console.log(`[リトライ] ${delayMs}ms待機後に再試行`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+                delayMs *= 2; // 指数バックオフ
+            }
+        }
+    }
+    
+    console.log(`[リトライ] 全ての試行が失敗しました`);
+    throw lastError;
 }
 
 module.exports = router;
