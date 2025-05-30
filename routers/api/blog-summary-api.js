@@ -555,13 +555,12 @@ async function processPostSummary(blogId, postId, blog, userId, userIdString, po
                     message: '記事データを取得しました'
                 });
             } catch (error) {
-                console.error(`[処理] WordPress APIからの記事取得失敗: ${postId}`, error);
+                console.log(`[処理] WordPress APIからの記事取得失敗: ${postId}`, error);
                 sendNotificationToUser(userIdString, 'blog-summary-progress', {
                     blogId,
                     progress: 100,
                     message: `エラー: 記事の取得に失敗しました`
                 });
-                throw new Error(`記事ID ${postId} の取得に失敗しました: ${error.message}`);
             }
         }
 
@@ -771,7 +770,6 @@ ${cleanContent}
                 progress: 100,
                 message: `エラー: 記事の更新に失敗しました`
             });
-            throw new Error(`記事の更新に失敗しました: ${updateError.message}`);
         }
 
         sendNotificationToUser(userIdString, 'blog-summary-progress', {
