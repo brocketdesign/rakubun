@@ -20,7 +20,7 @@ async function scheduleCronJob(blogId, frequency, blogData) {
         // 既存のジョブがある場合はキャンセル
         if (activeCronJobs.has(blogId)) {
             console.log(`[Cron] 既存ジョブをキャンセル: ${blogId}`);
-            activeCronJobs.get(blogId).destroy();
+            activeCronJobs.get(blogId).stop();
             activeCronJobs.delete(blogId);
         }
 
@@ -116,7 +116,7 @@ async function cancelCronJob(blogId) {
         
         // アクティブなジョブをキャンセル
         if (activeCronJobs.has(blogId)) {
-            activeCronJobs.get(blogId).destroy();
+            activeCronJobs.get(blogId).stop();
             activeCronJobs.delete(blogId);
             console.log(`[Cron] アクティブジョブをキャンセル: ${blogId}`);
         }
