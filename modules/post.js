@@ -147,10 +147,17 @@ async function post(title, slug, content, categories, tags, image, postStatus, c
 }
 
 async function fetchBlogPosts(blogInfo, limit = 20, order = 'desc') {
+  console.log(`[WordPress] 記事一覧取得開始: limit=${limit}, order=${order}`);
+  console.log(`[WordPress] 接続先:`, {
+    url: blogInfo.blogUrl,
+    username: blogInfo.blogUsername ? '***' : 'undefined'
+  });
+
   const client = wordpress.createClient({
     username: blogInfo.blogUsername,
     url: blogInfo.blogUrl,
-    password: blogInfo.blogPassword
+    password: blogInfo.blogPassword,
+    timeout: 15000 // 15 seconds timeout
   });
 
   return new Promise((resolve, reject) => {
@@ -160,14 +167,64 @@ async function fetchBlogPosts(blogInfo, limit = 20, order = 'desc') {
       order: order // 'asc' for oldest first, 'desc' for newest first
     };
     
+    console.log(`[WordPress] 記事取得オプション:`, options);
+    
+    // Set a timeout for the request
+    const timeoutId = setTimeout(() => {
+      console.error(`[WordPress] 記事取得タイムアウト (15秒)`);
+      reject(new Error('WordPress API request timeout after 15 seconds'));
+    }, 15000);
+    
     client.getPosts(options, (err, posts) => {
+      clearTimeout(timeoutId);
+      
       if (err) {
+        console.error(`[WordPress] 記事取得エラー:`, err);
         return reject(err);
       }
+      
       if (!Array.isArray(posts)) {
+        console.error(`[WordPress] 無効なレスポンス: posts is not an array`);
         return reject(new Error('Invalid response: posts is not an array.'));
       }
+      
+      console.log(`[WordPress] 記事取得成功: ${posts.length}件`);
       resolve(posts);
+    });
+  });
+}
+
+async function fetchSingleBlogPost(blogInfo, postId) {
+  console.log(`[WordPress] 単一記事取得開始: postId=${postId}`);
+  console.log(`[WordPress] 接続先:`, {
+    url: blogInfo.blogUrl,
+    username: blogInfo.blogUsername ? '***' : 'undefined'
+  });
+
+  const client = wordpress.createClient({
+    username: blogInfo.blogUsername,
+    url: blogInfo.blogUrl,
+    password: blogInfo.blogPassword,
+    timeout: 15000 // 15 seconds timeout
+  });
+
+  return new Promise((resolve, reject) => {
+    // Set a timeout for the request
+    const timeoutId = setTimeout(() => {
+      console.error(`[WordPress] 単一記事取得タイムアウト (15秒)`);
+      reject(new Error('WordPress API request timeout after 15 seconds'));
+    }, 15000);
+
+    client.getPost(postId, (err, post) => {
+      clearTimeout(timeoutId);
+      
+      if (err) {
+        console.error(`[WordPress] 単一記事取得エラー:`, err);
+        return reject(err);
+      }
+      
+      console.log(`[WordPress] 単一記事取得成功: ${post.title}`);
+      resolve(post);
     });
   });
 }
@@ -182,13 +239,21 @@ async function updatePostContent(blogInfo, postId, content) {
   const client = wordpress.createClient({
     username: blogInfo.blogUsername,
     url: blogInfo.blogUrl,
-    password: blogInfo.blogPassword
+    password: blogInfo.blogPassword,
+    timeout: 20000 // 20 seconds timeout for update operations
   });
 
   // Check if post exists and user can edit
   try {
     const existingPost = await new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        console.error(`[WordPress] 記事存在確認タイムアウト (15秒)`);
+        reject(new Error('WordPress API request timeout after 15 seconds'));
+      }, 15000);
+
       client.getPost(postId, (err, post) => {
+        clearTimeout(timeoutId);
+        
         if (err) {
           console.error(`[WordPress] 記事取得エラー: ${err.message}`);
           return reject(new Error('Post not found or access denied.'));
@@ -208,7 +273,14 @@ async function updatePostContent(blogInfo, postId, content) {
   return new Promise((resolve, reject) => {
     console.log(`[WordPress] 記事更新実行中...`);
     
+    const timeoutId = setTimeout(() => {
+      console.error(`[WordPress] 記事更新タイムアウト (20秒)`);
+      reject(new Error('WordPress API update timeout after 20 seconds'));
+    }, 20000);
+    
     client.editPost(postId, { content: content }, (err, result) => {
+      clearTimeout(timeoutId);
+      
       if (err) {
         console.error(`[WordPress] 記事更新エラー:`, err);
         return reject(err);

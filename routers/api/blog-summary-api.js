@@ -333,18 +333,20 @@ async function processSingleBlogSummary(blogId, blog, userId, userIdString) {
 
         let posts;
         try {
-            posts = await fetchBlogPosts(blog, 50, 'asc');
+            // WordPress記事取得にリトライ機能を追加
+            posts = await retryOperation(() => fetchBlogPosts(blog, 50, 'asc'), 3, 2000);
             console.log(`[処理] ${posts.length}件の記事を取得`);
         } catch (fetchError) {
             console.error(`[処理] 記事一覧取得エラー: ${blogId}`, fetchError);
             
-            if (isNetworkError(fetchError)) {
-                const errorMessage = 'ネットワーク接続エラー: WordPressサイトに接続できません';
+            // ネットワークエラーまたはタイムアウトエラーの判定
+            if (isNetworkError(fetchError) || fetchError.message.includes('timeout')) {
+                const errorMessage = 'WordPress接続エラー: サイトに接続できません';
                 sendNotificationToUser(userIdString, 'blog-summary-error', {
                     blogId,
                     error: errorMessage,
                     errorType: 'network',
-                    suggestion: 'しばらく時間をおいてから再度お試しください。問題が続く場合は、WordPressサイトが正常に動作しているかご確認ください。'
+                    suggestion: 'WordPressサイトが正常に動作しているか確認してください。サーバーが一時的に応答しない可能性があります。しばらく時間をおいてから再度お試しください。'
                 });
                 return;
             }
@@ -438,13 +440,14 @@ async function processSingleBlogSummary(blogId, blog, userId, userIdString) {
         } catch (error) {
             console.error(`[処理] 記事${targetPost.id}の処理エラー:`, error);
             
-            if (isNetworkError(error)) {
-                const errorMessage = 'ネットワーク接続エラー: WordPressサイトとの通信中に問題が発生しました';
+            // ネットワークエラーまたはタイムアウトエラーの場合は特別な処理
+            if (isNetworkError(error) || error.message.includes('timeout')) {
+                const errorMessage = 'WordPress接続エラー: 記事の処理中に通信問題が発生しました';
                 sendNotificationToUser(userIdString, 'blog-summary-error', {
                     blogId,
                     error: errorMessage,
                     errorType: 'network',
-                    suggestion: 'しばらく時間をおいてから再度お試しください。'
+                    suggestion: 'WordPressサイトとの通信が不安定です。しばらく時間をおいてから再度お試しください。'
                 });
                 return;
             }
@@ -489,18 +492,19 @@ async function processPostSummary(blogId, postId, blog, userId, userIdString, po
         // 記事データが提供されていない場合は直接WordPressから取得
         if (!postData) {
             try {
-                postData = await retryOperation(() => fetchSingleBlogPost(blog, postId), 3);
+                // より長い間隔でのリトライ
+                postData = await retryOperation(() => fetchSingleBlogPost(blog, postId), 3, 3000);
                 console.log(`[処理] WordPress APIから記事を取得成功: ${postId}`);
             } catch (error) {
                 console.log(`[処理] WordPress APIからの記事取得失敗: ${postId}`, error);
                 
-                if (isNetworkError(error)) {
-                    const errorMessage = 'ネットワーク接続エラー: 記事の取得に失敗しました';
+                if (isNetworkError(error) || error.message.includes('timeout')) {
+                    const errorMessage = 'WordPress接続エラー: 記事の取得に失敗しました';
                     sendNotificationToUser(userIdString, 'blog-summary-error', {
                         blogId,
                         error: errorMessage,
                         errorType: 'network',
-                        suggestion: 'WordPressサイトの接続状況をご確認ください。'
+                        suggestion: 'WordPressサイトとの接続に問題があります。サイトが正常に動作しているか確認し、しばらく時間をおいてから再度お試しください。'
                     });
                     return;
                 }
@@ -622,21 +626,21 @@ ${cleanContent}
         }
 
         try {
-            // WordPress記事を更新（リトライ機能付き）
+            // WordPress記事を更新（より長い間隔でのリトライ）
             console.log(`[処理] WordPress記事更新開始: ${postId}`);
-            const updateResult = await retryOperation(() => updatePostContent(blog, postId, updatedContent), 3);
+            const updateResult = await retryOperation(() => updatePostContent(blog, postId, updatedContent), 3, 5000);
             console.log(`[処理] WordPress記事更新完了: ${postId}`, updateResult);
             
         } catch (updateError) {
             console.error(`[処理] WordPress記事更新エラー: ${postId}`, updateError);
             
-            if (isNetworkError(updateError)) {
-                const errorMessage = 'ネットワーク接続エラー: 記事の更新に失敗しました';
+            if (isNetworkError(updateError) || updateError.message.includes('timeout')) {
+                const errorMessage = 'WordPress接続エラー: 記事の更新に失敗しました';
                 sendNotificationToUser(userIdString, 'blog-summary-error', {
                     blogId,
                     error: errorMessage,
                     errorType: 'network',
-                    suggestion: 'しばらく時間をおいてから再度お試しください。要約は生成されましたが、WordPressへの反映に失敗しました。'
+                    suggestion: '要約は正常に生成されましたが、WordPressサイトへの反映に失敗しました。WordPressサイトとの接続状況を確認し、後で再度お試しください。'
                 });
                 return;
             }
@@ -688,12 +692,12 @@ ${cleanContent}
     }
 }
 
-// ネットワークエラーの判定
+// ネットワークエラーの判定（改善版）
 function isNetworkError(error) {
     if (!error) return false;
     
-    const networkErrorCodes = ['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ENETUNREACH', 'ECONNRESET'];
-    const networkErrorMessages = ['timeout', 'network', 'connection', 'refused', 'unreachable'];
+    const networkErrorCodes = ['ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ENETUNREACH', 'ECONNRESET', 'EHOSTUNREACH'];
+    const networkErrorMessages = ['timeout', 'network', 'connection', 'refused', 'unreachable', 'host', 'dns'];
     
     // エラーコードをチェック
     if (error.code && networkErrorCodes.includes(error.code)) {
@@ -703,7 +707,8 @@ function isNetworkError(error) {
     // AggregateErrorの場合は内部エラーもチェック
     if (error.errors && Array.isArray(error.errors)) {
         return error.errors.some(err => 
-            err.code && networkErrorCodes.includes(err.code)
+            (err.code && networkErrorCodes.includes(err.code)) ||
+            (err.message && networkErrorMessages.some(msg => err.message.toLowerCase().includes(msg)))
         );
     }
     
@@ -712,21 +717,21 @@ function isNetworkError(error) {
     return networkErrorMessages.some(msg => errorMessage.includes(msg));
 }
 
-// エラー分析
+// エラー分析（改善版）
 function analyzeError(error) {
-    if (isNetworkError(error)) {
+    if (isNetworkError(error) || (error.message && error.message.includes('timeout'))) {
         return {
             type: 'network',
-            message: 'ネットワーク接続エラーが発生しました',
-            suggestion: 'インターネット接続とWordPressサイトの状態をご確認ください。しばらく時間をおいてから再度お試しください。'
+            message: 'WordPress接続エラーが発生しました',
+            suggestion: 'WordPressサイトとの接続に問題があります。以下をご確認ください：\n• WordPressサイトが正常に動作しているか\n• インターネット接続が安定しているか\n• WordPressサイトのサーバーが応答しているか\n\nしばらく時間をおいてから再度お試しください。'
         };
     }
     
     if (error.message && error.message.includes('Unauthorized')) {
         return {
             type: 'auth',
-            message: '認証エラーが発生しました',
-            suggestion: 'WordPressの認証情報を確認してください。'
+            message: 'WordPress認証エラーが発生しました',
+            suggestion: 'WordPressのユーザー名・パスワードが正しいか確認してください。'
         };
     }
     
@@ -734,39 +739,41 @@ function analyzeError(error) {
         return {
             type: 'rate_limit',
             message: 'API制限に達しました',
-            suggestion: 'しばらく時間をおいてから再度お試しください。'
+            suggestion: 'アクセス頻度が高すぎます。しばらく時間をおいてから再度お試しください。'
         };
     }
     
     return {
         type: 'unknown',
         message: error.message || '予期しないエラーが発生しました',
-        suggestion: 'エラーが継続する場合は、サポートにお問い合わせください。'
+        suggestion: 'エラーが継続する場合は、WordPressサイトの状況を確認するか、サポートにお問い合わせください。'
     };
 }
 
-// リトライ機能付きの操作実行
+// リトライ機能付きの操作実行（改善版）
 async function retryOperation(operation, maxRetries = 3, delayMs = 1000) {
     let lastError;
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
             console.log(`[リトライ] 試行 ${attempt}/${maxRetries}`);
-            return await operation();
+            const result = await operation();
+            console.log(`[リトライ] 試行 ${attempt} 成功`);
+            return result;
         } catch (error) {
             lastError = error;
-            console.log(`[リトライ] 試行 ${attempt} 失敗:`, error.message);
+            console.log(`[リトライ] 試行 ${attempt} 失敗: ${error.message || 'Unknown error'}`);
             
             // 最後の試行でない場合は待機
             if (attempt < maxRetries) {
                 console.log(`[リトライ] ${delayMs}ms待機後に再試行`);
                 await new Promise(resolve => setTimeout(resolve, delayMs));
-                delayMs *= 2; // 指数バックオフ
+                delayMs = Math.min(delayMs * 1.5, 10000); // Cap at 10 seconds
             }
         }
     }
     
-    console.log(`[リトライ] 全ての試行が失敗しました`);
+    console.log(`[リトライ] 全ての試行が失敗しました: ${lastError.message || 'Unknown error'}`);
     throw lastError;
 }
 
