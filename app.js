@@ -134,12 +134,19 @@ function startServer() {
       const blogeditor = require('./routers/api/blogeditor');
       const trendautoblog = require('./routers/api/trendautoblog'); // Added for trend auto blog API
       
-      // External dashboard routers
-      const externalDashboard = require('./routers/dashboard/external');
-      const externalApi = require('./routers/api/external');
-      const externalAdminApi = require('./routers/api/external-admin');
-      const seedApi = require('./routers/api/seed');
-
+      // Load external dashboard routes with error handling
+      let externalDashboard, externalApi, externalAdminApi, seedApi;
+      try {
+        externalDashboard = require('./routers/dashboard/external');
+        externalApi = require('./routers/api/external');
+        externalAdminApi = require('./routers/api/external-admin');
+        seedApi = require('./routers/api/seed');
+        console.log('✓ External dashboard modules loaded successfully');
+      } catch (error) {
+        console.error('❌ Error loading external dashboard modules:', error.message);
+        console.log('External dashboard will be disabled');
+      }
+      
       // Make MODE available in all routes
       app.use((req, res, next) => {
         res.locals.MODE = process.env.MODE;
@@ -164,12 +171,17 @@ function startServer() {
       app.use('/admin', admin);
       app.use('/api/trendautoblog', trendautoblog); // Added for trend auto blog API
       app.use('/api/blog-summary', require('./routers/api/blog-summary-api')); // Added for blog summary API
-      
-      // External dashboard routes
-      app.use('/dashboard/external', externalDashboard);
-      app.use('/api/v1', externalApi);
-      app.use('/api/v1/admin', externalAdminApi);
-      app.use('/api/v1/admin/seed', seedApi);
+
+      // Mount external dashboard routes if they loaded successfully
+      if (externalDashboard && externalApi && externalAdminApi && seedApi) {
+        app.use('/dashboard/external', externalDashboard);
+        app.use('/api/v1', externalApi);
+        app.use('/api/v1/admin', externalAdminApi);
+        app.use('/api/v1/admin/seed', seedApi);
+        console.log('✓ External dashboard routes mounted successfully');
+      } else {
+        console.log('⚠️ External dashboard routes not mounted due to loading errors');
+      }
 
       // Initialize WebSocket server with translations
       setupWebSocketServer(server);

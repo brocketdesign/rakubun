@@ -20,9 +20,9 @@ class CreditPackage {
     const db = global.db;
     const collection = db.collection('credit_packages');
     
-    const package = new CreditPackage(packageData);
-    const result = await collection.insertOne(package);
-    return { ...package, _id: result.insertedId };
+    const packageObj = new CreditPackage(packageData);
+    const result = await collection.insertOne(packageObj);
+    return { ...packageObj, _id: result.insertedId };
   }
 
   static async findAll() {

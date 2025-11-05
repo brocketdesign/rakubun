@@ -447,11 +447,11 @@ router.post('/packages', async (req, res) => {
       });
     }
 
-    const package = await CreditPackage.create(packageData);
+    const packageObj = await CreditPackage.create(packageData);
 
     res.json({
       success: true,
-      package
+      package: packageObj
     });
 
   } catch (error) {
