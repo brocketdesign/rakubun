@@ -1,8 +1,36 @@
 extends base
 
 block mainContent
-    section.my-2
-        .row.row-cols-1.row-cols-md-3.row-cols-md-4
+    // External Dashboard Section
+    section.mb-5
+        .d-flex.align-items-center.justify-content-between.mb-3
+            h3.text-dark.fw-bold
+                i.fas.fa-external-link-alt.me-2
+                | 外部サイト管理
+            .badge.bg-primary.px-3.py-2 特別機能
+        .row.row-cols-1.row-cols-md-2.row-cols-lg-3
+            .col.mb-3
+                a.card.btn-outline-primary.text-primary.shadow.border-primary.px-2(href='/dashboard/external')
+                    .card-body.row.justify-start.items-start.px-2
+                        div.col.d-flex.align-items-center.justify-content-center.mb-3
+                            i.fas.fa-globe.mx-3.display-5
+                            i.fa.fa-arrow-right
+                            i.fas.fa-cog.mx-3.display-5
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-success(style="top: 10px; right: 10px;") NEW
+                        div.col-12.d-flex.align-items-center.flex-column
+                            span.card-text.text-primary.text-center.fw-bold.w-100
+                                | 外部サイト管理
+                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
+                                | 複数サイトを一元管理します。
+
+    // Content Creation Tools Section
+    section.mb-5
+        .d-flex.align-items-center.justify-content-between.mb-3
+            h3.text-dark.fw-bold
+                i.fas.fa-edit.me-2
+                | コンテンツ作成ツール
+            .badge.bg-success.px-3.py-2 利用可能
+        .row.row-cols-1.row-cols-md-3.row-cols-lg-4
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href='/dashboard/app/blog-summary')
                     .card-body.row.justify-start.items-start.px-2
@@ -10,7 +38,7 @@ block mainContent
                             i.fa.fa-file-alt.mx-3.display-6
                             i.fa.fa-arrow-right
                             i.fab.fa-wordpress.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") NEW
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-info(style="top: 10px; right: 10px;") NEW
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | ブログ要約
@@ -28,7 +56,6 @@ block mainContent
                                 | 記事作成
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | ブログ記事を自動で作成します。
-
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/autoblog`)
                     .card-body.row.justify-start.items-start.px-2
@@ -42,6 +69,14 @@ block mainContent
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | ブログ記事を自動で作成します。
 
+    // Trend Analysis Tools Section
+    section.mb-5
+        .d-flex.align-items-center.justify-content-between.mb-3
+            h3.text-dark.fw-bold
+                i.fas.fa-chart-line.me-2
+                | トレンド分析ツール
+            .badge.bg-success.px-3.py-2 利用可能
+        .row.row-cols-1.row-cols-md-3.row-cols-lg-4
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/trend-tracker`)
                     .card-body.row.justify-start.items-start.px-2
@@ -54,7 +89,6 @@ block mainContent
                                 | トレンド記事作成
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | Googleトレンドに基づき記事を自動生成します。
-
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/trendblog`)
                     .card-body.row.justify-start.items-start.px-2
@@ -67,7 +101,6 @@ block mainContent
                                 | トレンドブログ
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | トレンドに基づいて記事を自動生成します。
-
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/trend-autoblog`)
                     .card-body.row.justify-start.items-start.px-2
@@ -81,6 +114,14 @@ block mainContent
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | トレンドに基づいて記事を自動作成します。
 
+    // Media & Communication Tools Section
+    section.mb-5
+        .d-flex.align-items-center.justify-content-between.mb-3
+            h3.text-dark.fw-bold
+                i.fas.fa-tools.me-2
+                | メディア・コミュニケーションツール
+            .badge.bg-success.px-3.py-2 利用可能
+        .row.row-cols-1.row-cols-md-3.row-cols-lg-4
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/transcription`)
                     .card-body.row.justify-start.items-start.px-2
@@ -93,7 +134,6 @@ block mainContent
                                 | 議事録
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | 音声をテキストに変換します。
-
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/mailgen`)
                     .card-body.row.justify-start.items-start.px-2
@@ -106,7 +146,6 @@ block mainContent
                                 | メール作成
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | メールを自動で作成します。
-
             .col.mb-3
                 a.card.btn-outline-light.text-primary.shadow.border.px-2(href=`/dashboard/app/pdfsummary`)
                     .card-body.row.justify-start.items-start.px-2
@@ -132,126 +171,113 @@ block mainContent
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | テキストを画像に変換します。
 
+    // Upcoming Features Section
+    section.mb-5
+        .d-flex.align-items-center.justify-content-between.mb-3
+            h3.text-dark.fw-bold
+                i.fas.fa-clock.me-2
+                | 近日公開予定
+            .badge.bg-warning.text-dark.px-3.py-2 開発中
+        .row.row-cols-1.row-cols-md-3.row-cols-lg-4
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.position-relative.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-chart-line.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-chart-bar.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-chart-line.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-chart-bar.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | データ分析
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | データを分析しインサイトを提供します。
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.position-relative.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-user-tie.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-comments.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-user-tie.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-comments.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | カスタマーサポート
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | 顧客対応の自動化を支援します。
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.position-relative.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-bullhorn.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-ad.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-bullhorn.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-ad.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | マーケティング支援
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | ターゲット広告や分析の自動化。
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.position-relative.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-lightbulb.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-cogs.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-lightbulb.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-cogs.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | アイデア生成
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | ビジネスのアイデアを自動生成します。
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-chart-line.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-poll-h.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
-                        div.col-12.d-flex.align-items-center.flex-column
-                            span.card-text.text-muted.text-center.fw-bold.w-100
-                                | データ分析
-                            span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
-                                | データセットの分析とインサイト生成
-
-            .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.px-2(href="#")
-                    .card-body.row.justify-start.items-start.px-2
-                        div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-comments.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-robot.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-comments.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-robot.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | チャットボット
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | 自動応答用のチャットボット生成
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-language.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-globe.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-language.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-globe.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | 翻訳
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | 多言語翻訳サービス
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-chart-pie.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-chart-area.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-chart-pie.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-chart-area.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | トレンド予測
                             span.card-text.text-muted.text-center.w-100(style="font-size:12px;")
                                 | AIでビジネストレンドを予測
-
             .col.mb-3
-                a.card.btn-outline-light.text-primary.shadow.border.px-2(href="#")
+                a.card.btn-outline-light.text-muted.shadow.border.position-relative.px-2(href="#", disabled)
                     .card-body.row.justify-start.items-start.px-2
                         div.col.d-flex.align-items-center.justify-content-center.mb-3
-                            i.fa.fa-clipboard.mx-3.display-6
-                            i.fa.fa-arrow-right
-                            i.fa.fa-sticky-note.mx-3.display-6
-                            span.position-absolute.badge.py-1.px-2.text-white.coming-soon(style="top: 10px; right: 10px;") 近日公開
+                            i.fa.fa-clipboard.mx-3.display-6.text-muted
+                            i.fa.fa-arrow-right.text-muted
+                            i.fa.fa-sticky-note.mx-3.display-6.text-muted
+                            span.position-absolute.badge.py-1.px-2.text-white.bg-warning(style="top: 10px; right: 10px;") 近日公開
                         div.col-12.d-flex.align-items-center.flex-column
                             span.card-text.text-muted.text-center.fw-bold.w-100
                                 | コンテンツ要約
