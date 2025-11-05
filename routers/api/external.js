@@ -63,7 +63,8 @@ router.post('/plugins/register', async (req, res) => {
         success: false,
         error: 'Site already registered',
         api_token: existingSite.api_token,
-        instance_id: existingSite.instance_id
+        instance_id: existingSite.instance_id,
+        webhook_secret: existingSite.webhook_secret
       });
     }
 
@@ -92,6 +93,7 @@ router.post('/plugins/register', async (req, res) => {
       success: true,
       api_token: site.api_token,
       instance_id: site.instance_id,
+      webhook_secret: site.webhook_secret,
       status: 'registered',
       message: 'Plugin registered successfully'
     });
@@ -447,6 +449,245 @@ router.put('/instances/:instance_id', authenticatePlugin, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Create Payment Intent
+ * POST /api/v1/payments/create-intent
+ */
+router.post('/payments/create-intent', authenticatePlugin, async (req, res) => {
+  try {
+    const {
+      user_id,
+      user_email,
+      credit_type,
+      package_id,
+      amount,
+      currency
+    } = req.body;
+
+    // Validate required fields
+    if (!user_id || !user_email || !credit_type || !package_id || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: user_id, user_email, credit_type, package_id, amount'
+      });
+    }
+
+    // Validate credit type
+    if (!['article', 'image', 'rewrite'].includes(credit_type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid credit_type. Must be: article, image, or rewrite'
+      });
+    }
+
+    // Get Stripe key from environment
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Payment processing not configured'
+      });
+    }
+
+    const stripe = require('stripe')(stripeKey);
+
+    // Create Stripe PaymentIntent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: (currency || 'jpy').toLowerCase(),
+      metadata: {
+        site_id: req.site._id.toString(),
+        instance_id: req.site.instance_id,
+        user_id: user_id.toString(),
+        user_email: user_email,
+        package_id: package_id,
+        credit_type: credit_type
+      },
+      description: `Purchase ${package_id} - ${credit_type} credits`
+    });
+
+    // Store payment intent in database for later verification
+    const db = global.db;
+    const paymentsCollection = db.collection('stripe_payment_intents');
+    
+    await paymentsCollection.insertOne({
+      site_id: req.site._id,
+      user_id: parseInt(user_id),
+      user_email: user_email,
+      payment_intent_id: paymentIntent.id,
+      package_id: package_id,
+      credit_type: credit_type,
+      amount: amount,
+      currency: currency || 'JPY',
+      status: 'created',
+      created_at: new Date(),
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hour expiry
+    });
+
+    res.json({
+      success: true,
+      payment_intent_id: paymentIntent.id,
+      client_secret: paymentIntent.client_secret,
+      amount: amount,
+      currency: currency || 'JPY'
+    });
+
+  } catch (error) {
+    console.error('Create payment intent error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create payment intent',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Confirm Payment
+ * POST /api/v1/payments/confirm
+ */
+router.post('/payments/confirm', authenticatePlugin, async (req, res) => {
+  try {
+    const {
+      payment_intent_id,
+      user_id,
+      user_email,
+      credit_type
+    } = req.body;
+
+    // Validate required fields
+    if (!payment_intent_id || !user_id || !user_email || !credit_type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: payment_intent_id, user_id, user_email, credit_type'
+      });
+    }
+
+    // Get Stripe key from environment
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      return res.status(500).json({
+        success: false,
+        error: 'Payment processing not configured'
+      });
+    }
+
+    const stripe = require('stripe')(stripeKey);
+
+    // Verify payment intent with Stripe
+    const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
+
+    if (!paymentIntent) {
+      return res.status(404).json({
+        success: false,
+        error: 'Payment intent not found'
+      });
+    }
+
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(402).json({
+        success: false,
+        error: 'Payment not confirmed',
+        payment_status: paymentIntent.status
+      });
+    }
+
+    // Get payment intent details from database
+    const db = global.db;
+    const paymentsCollection = db.collection('stripe_payment_intents');
+    
+    const paymentRecord = await paymentsCollection.findOne({
+      payment_intent_id: payment_intent_id,
+      site_id: req.site._id
+    });
+
+    if (!paymentRecord) {
+      return res.status(400).json({
+        success: false,
+        error: 'Payment record not found'
+      });
+    }
+
+    // Get or create user
+    const user = await ExternalUser.getOrCreateUser(
+      req.site._id,
+      parseInt(user_id),
+      user_email
+    );
+
+    // Get package info
+    const CreditPackage = require('../../models/CreditPackage');
+    const pkg = await CreditPackage.findByPackageId(paymentRecord.package_id);
+
+    if (!pkg) {
+      return res.status(404).json({
+        success: false,
+        error: 'Package not found'
+      });
+    }
+
+    // Add credits to user
+    const creditsAdded = pkg.credits;
+    await ExternalUser.updateCredits(
+      req.site._id,
+      parseInt(user_id),
+      credit_type,
+      creditsAdded
+    );
+
+    // Get updated credits
+    const updatedUser = await ExternalUser.getOrCreateUser(
+      req.site._id,
+      parseInt(user_id),
+      user_email
+    );
+
+    // Log transaction
+    const crypto = require('crypto');
+    const transactionId = 'txn_' + crypto.randomBytes(8).toString('hex');
+
+    await CreditTransaction.logPurchase(
+      req.site._id,
+      parseInt(user_id),
+      credit_type,
+      creditsAdded,
+      updatedUser[`${credit_type}_credits`],
+      payment_intent_id
+    );
+
+    // Update payment record
+    await paymentsCollection.updateOne(
+      { payment_intent_id: payment_intent_id },
+      {
+        $set: {
+          status: 'confirmed',
+          transaction_id: transactionId,
+          confirmed_at: new Date()
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      credits_added: creditsAdded,
+      transaction_id: transactionId,
+      remaining_credits: {
+        article_credits: updatedUser.article_credits,
+        image_credits: updatedUser.image_credits,
+        rewrite_credits: updatedUser.rewrite_credits
+      }
+    });
+
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to confirm payment',
+      message: error.message
     });
   }
 });

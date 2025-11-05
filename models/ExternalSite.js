@@ -4,6 +4,7 @@ class Site {
   constructor(siteData) {
     this.instance_id = siteData.instance_id;
     this.api_token = siteData.api_token;
+    this.webhook_secret = siteData.webhook_secret;
     this.site_url = siteData.site_url;
     this.site_title = siteData.site_title;
     this.admin_email = siteData.admin_email;
@@ -29,9 +30,12 @@ class Site {
     const db = global.db;
     const collection = db.collection('external_sites');
     
-    // Generate API token
+    // Generate API token (256+ bits)
     const crypto = require('crypto');
     siteData.api_token = crypto.randomBytes(32).toString('hex');
+    
+    // Generate webhook secret for HMAC-SHA256 signing
+    siteData.webhook_secret = crypto.randomBytes(32).toString('hex');
     
     const site = new Site(siteData);
     const result = await collection.insertOne(site);
