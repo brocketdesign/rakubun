@@ -250,11 +250,10 @@ router.get('/config/openai', authenticatePlugin, async (req, res) => {
 });
 
 /**
- * Get Available Packages
+ * Get Available Packages (Public Endpoint - No Auth Required)
  * GET /api/v1/packages
  */
-
-router.get('/packages', authenticatePlugin, async (req, res) => {
+router.get('/packages', async (req, res) => {
   try {
     const packages = await CreditPackage.getPackagesGrouped();
 
