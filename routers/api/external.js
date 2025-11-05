@@ -253,11 +253,26 @@ router.get('/config/openai', authenticatePlugin, async (req, res) => {
  * Get Available Packages
  * GET /api/v1/packages
  */
+
 router.get('/packages', authenticatePlugin, async (req, res) => {
   try {
     const packages = await CreditPackage.getPackagesGrouped();
 
+    // Check if any packages exist
+    const hasPackages = packages.articles?.length > 0 || 
+                       packages.images?.length > 0 || 
+                       packages.rewrites?.length > 0;
+
+    if (!hasPackages) {
+      return res.status(404).json({
+        success: false,
+        error: 'no_packages',
+        message: 'No packages available'
+      });
+    }
+
     res.json({
+      success: true,
       packages
     });
 
@@ -265,7 +280,8 @@ router.get('/packages', authenticatePlugin, async (req, res) => {
     console.error('Get packages error:', error);
     res.status(500).json({
       success: false,
-      error: 'Internal server error'
+      error: 'server_error',
+      message: error.message
     });
   }
 });
