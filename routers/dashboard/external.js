@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const ensureAuthenticated = require('../../middleware/authMiddleware');
-const { authenticateAdmin } = require('../../middleware/externalApiMiddleware');
+const { authenticateWebAdmin } = require('../../middleware/externalApiMiddleware');
 
 // Dashboard route
-router.get('/', ensureAuthenticated, authenticateAdmin, async (req, res) => {
+router.get('/', ensureAuthenticated, authenticateWebAdmin, async (req, res) => {
   try {
     res.render('dashboard/external/index', {
       user: req.user,

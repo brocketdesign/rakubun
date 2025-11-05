@@ -79,7 +79,7 @@ const authenticatePlugin = async (req, res, next) => {
 };
 
 /**
- * Middleware to authenticate dashboard admin users
+ * Middleware to authenticate dashboard admin users (for API routes)
  */
 const authenticateAdmin = (req, res, next) => {
   // Check if user is authenticated and is admin
@@ -97,6 +97,26 @@ const authenticateAdmin = (req, res, next) => {
       success: false,
       error: 'Admin access required'
     });
+  }
+
+  next();
+};
+
+/**
+ * Middleware to authenticate dashboard admin users (for web routes)
+ */
+const authenticateWebAdmin = (req, res, next) => {
+  // Check if user is authenticated and is admin
+  if (!req.user) {
+    req.flash('error', 'Please log in to access this page');
+    return res.redirect('/');
+  }
+
+  // Check if user is admin (you may want to implement proper admin role checking)
+  const adminEmails = ['japanclassicstore@gmail.com']; // Add your admin emails
+  if (!adminEmails.includes(req.user.email)) {
+    req.flash('error', 'Access denied - Admin privileges required');
+    return res.redirect('/dashboard');
   }
 
   next();
@@ -179,6 +199,7 @@ const apiErrorHandler = (err, req, res, next) => {
 module.exports = {
   authenticatePlugin,
   authenticateAdmin,
+  authenticateWebAdmin,
   rateLimit,
   apiErrorHandler
 };

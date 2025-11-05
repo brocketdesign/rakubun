@@ -6,6 +6,7 @@ const OpenAI = require('mongodb');
 const { premiumPlan} = require('../../modules/products')
 const ensureAuthenticated = require('../../middleware/authMiddleware');
 const ensureMembership = require('../../middleware/ensureMembership');
+const { authenticateWebAdmin } = require('../../middleware/externalApiMiddleware');
 const {sendEmail} = require('../../services/email')
 const path = require('path');
 const { ObjectId } = require('mongodb');
@@ -297,14 +298,8 @@ router.get('/app/trendtracker', ensureAuthenticated, ensureMembership, async (re
 });
 
 // External Dashboard Route (Admin only)
-router.get('/external', ensureAuthenticated, async (req, res) => {
+router.get('/external', ensureAuthenticated, authenticateWebAdmin, async (req, res) => {
   try {
-    // Check if user is admin
-    const adminEmails = ['japanclassicstore@gmail.com']; // Add your admin emails
-    if (!adminEmails.includes(req.user.email)) {
-      return res.status(403).send('Access Denied - Admin Only');
-    }
-
     res.redirect('/dashboard/external/');
   } catch (error) {
     console.error('Error redirecting to external dashboard:', error);
