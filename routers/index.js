@@ -94,8 +94,11 @@ router.use('/api/image-generator', imageGeneratorRoutes);
 router.use('/api/trendautoblog', trendAutoBlogRoutes); // Added this line
 
 // landing-page routes rakubun-wordpress-plugin
-const rakubunWordpressPluginRoutes = require('../public/landing-page/rakubun-wordpress-plugin');
-router.use('/landing-page/rakubun-wordpress-plugin', rakubunWordpressPluginRoutes);
+const path = require('path');
+
+router.get('/landing-page/rakubun-wordpress-plugin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/landing-page/rakubun-wordpress-plugin/index.html'));
+});
 
 // Export the router
 module.exports = router;
