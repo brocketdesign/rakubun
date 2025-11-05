@@ -93,5 +93,9 @@ router.get('/active-connections', (req, res) => {
 router.use('/api/image-generator', imageGeneratorRoutes);
 router.use('/api/trendautoblog', trendAutoBlogRoutes); // Added this line
 
+// landing-page routes rakubun-wordpress-plugin
+const rakubunWordpressPluginRoutes = require('./landing-page/rakubun-wordpress-plugin');
+router.use('/landing-page/rakubun-wordpress-plugin', rakubunWordpressPluginRoutes);
+
 // Export the router
 module.exports = router;
