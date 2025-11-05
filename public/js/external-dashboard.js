@@ -48,12 +48,15 @@ class ExternalDashboard {
     document.getElementById('packageForm').addEventListener('submit', (e) => this.savePackage(e));
     document.getElementById('userCreditsForm').addEventListener('submit', (e) => this.updateUserCredits(e));
     document.getElementById('openaiConfigForm').addEventListener('submit', (e) => this.saveOpenAIConfig(e));
+    document.getElementById('stripeConfigForm').addEventListener('submit', (e) => this.saveStripeConfig(e));
 
     // Seed data
     document.getElementById('executeSeed').addEventListener('click', () => this.seedData());
 
     // Test config
     document.getElementById('testConfig').addEventListener('click', () => this.testOpenAIConfig());
+    document.getElementById('testStripeConnection').addEventListener('click', () => this.testStripeConnection());
+    document.getElementById('viewStripeWebhooks').addEventListener('click', () => this.viewStripeWebhooks());
   }
 
   loadCurrentTab(tab = null) {
@@ -235,6 +238,7 @@ class ExternalDashboard {
 
   async loadConfig() {
     try {
+      // Load OpenAI config
       const response = await fetch('/api/v1/admin/config/openai');
       const data = await response.json();
 
@@ -246,6 +250,19 @@ class ExternalDashboard {
           document.getElementById('maxTokens').value = globalConfig.max_tokens || 2000;
           document.getElementById('temperature').value = globalConfig.temperature || 0.7;
         }
+      }
+
+      // Load Stripe config
+      const stripeResponse = await fetch('/api/v1/admin/config/stripe');
+      const stripeData = await stripeResponse.json();
+
+      if (stripeData.success && stripeData.config) {
+        document.getElementById('stripePublishableKey').value = stripeData.config.publishable_key || '';
+        document.getElementById('stripeSecretKey').value = stripeData.config.secret_key || '';
+        document.getElementById('stripeWebhookSecret').value = stripeData.config.webhook_secret || '';
+        document.getElementById('defaultCurrency').value = stripeData.config.default_currency || 'jpy';
+        document.getElementById('stripeMode').value = stripeData.config.mode || 'test';
+        document.getElementById('stripeFeePercentage').value = stripeData.config.fee_percentage || 0;
       }
     } catch (error) {
       console.error('Error loading config:', error);
@@ -418,6 +435,96 @@ class ExternalDashboard {
       }
     } catch (error) {
       this.showAlert('Error saving configuration', 'danger');
+    }
+  }
+
+  async saveStripeConfig(e) {
+    e.preventDefault();
+    
+    const configData = {
+      publishable_key: document.getElementById('stripePublishableKey').value,
+      secret_key: document.getElementById('stripeSecretKey').value,
+      webhook_secret: document.getElementById('stripeWebhookSecret').value,
+      default_currency: document.getElementById('defaultCurrency').value,
+      mode: document.getElementById('stripeMode').value,
+      fee_percentage: parseFloat(document.getElementById('stripeFeePercentage').value) || 0
+    };
+    
+    // Validate required fields
+    if (!configData.publishable_key || !configData.secret_key || !configData.webhook_secret) {
+      this.showAlert('All Stripe keys are required', 'warning');
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/v1/admin/config/stripe', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configData)
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        this.showAlert('Stripe configuration saved successfully', 'success');
+        // Reload config to confirm changes
+        setTimeout(() => this.loadConfig(), 1000);
+      } else {
+        this.showAlert(data.error || 'Error saving Stripe configuration', 'danger');
+      }
+    } catch (error) {
+      console.error('Error saving Stripe config:', error);
+      this.showAlert('Error saving Stripe configuration', 'danger');
+    }
+  }
+
+  async testStripeConnection() {
+    try {
+      const response = await fetch('/api/v1/admin/config/stripe/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        this.showAlert('✓ Stripe connection successful!', 'success');
+      } else {
+        this.showAlert('✗ Stripe connection failed: ' + (data.error || 'Unknown error'), 'danger');
+      }
+    } catch (error) {
+      console.error('Error testing Stripe connection:', error);
+      this.showAlert('Error testing Stripe connection', 'danger');
+    }
+  }
+
+  async viewStripeWebhooks() {
+    try {
+      const response = await fetch('/api/v1/admin/config/stripe/webhooks', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Show webhooks in a modal or alert
+        const webhooks = data.webhooks || [];
+        if (webhooks.length === 0) {
+          this.showAlert('No Stripe webhooks configured', 'info');
+        } else {
+          let webhookList = 'Configured Stripe Webhooks:\n\n';
+          webhooks.forEach((webhook, index) => {
+            webhookList += `${index + 1}. ${webhook.url}\n   Events: ${webhook.events?.join(', ') || 'N/A'}\n   Status: ${webhook.enabled_events ? 'Active' : 'Inactive'}\n\n`;
+          });
+          alert(webhookList);
+        }
+      } else {
+        this.showAlert('Error fetching webhooks: ' + (data.error || 'Unknown error'), 'danger');
+      }
+    } catch (error) {
+      console.error('Error fetching webhooks:', error);
+      this.showAlert('Error fetching Stripe webhooks', 'danger');
     }
   }
 

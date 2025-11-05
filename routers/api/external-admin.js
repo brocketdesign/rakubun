@@ -6,6 +6,7 @@ const CreditPackage = require('../../models/CreditPackage');
 const CreditTransaction = require('../../models/CreditTransaction');
 const GenerationLog = require('../../models/GenerationLog');
 const OpenAIConfig = require('../../models/OpenAIConfig');
+const StripeConfig = require('../../models/StripeConfig');
 const { authenticateAdmin } = require('../../middleware/externalApiMiddleware');
 const ensureAuthenticated = require('../../middleware/authMiddleware');
 
@@ -549,6 +550,239 @@ router.put('/config/openai/global', async (req, res) => {
 
   } catch (error) {
     console.error('Update global OpenAI config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Get Stripe Configuration
+ * GET /api/v1/admin/config/stripe
+ */
+router.get('/config/stripe', async (req, res) => {
+  try {
+    const config = await StripeConfig.getConfig();
+    
+    if (!config) {
+      return res.json({
+        success: true,
+        config: {
+          publishable_key: '',
+          secret_key: '',
+          webhook_secret: '',
+          default_currency: 'jpy',
+          mode: 'test',
+          fee_percentage: 0
+        }
+      });
+    }
+
+    // Don't return full secret keys for security (show masked)
+    res.json({
+      success: true,
+      config: {
+        publishable_key: config.publishable_key ? config.publishable_key.substring(0, 20) + '...' : '',
+        publishable_key_full: config.publishable_key || '',
+        secret_key: config.secret_key ? '••••••••' + config.secret_key.slice(-4) : '',
+        webhook_secret: config.webhook_secret ? '••••••••' + config.webhook_secret.slice(-4) : '',
+        default_currency: config.default_currency,
+        mode: config.mode,
+        fee_percentage: config.fee_percentage,
+        updated_at: config.updated_at
+      }
+    });
+
+  } catch (error) {
+    console.error('Get Stripe config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Update Stripe Configuration
+ * PUT /api/v1/admin/config/stripe
+ */
+router.put('/config/stripe', async (req, res) => {
+  try {
+    const { publishable_key, secret_key, webhook_secret, default_currency, mode, fee_percentage } = req.body;
+
+    // Validate required fields
+    if (!publishable_key || !secret_key || !webhook_secret) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: publishable_key, secret_key, webhook_secret'
+      });
+    }
+
+    // Validate key formats
+    const validation = await StripeConfig.validateKeys(publishable_key, secret_key);
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: validation.error
+      });
+    }
+
+    // Update configuration
+    const configData = {
+      publishable_key,
+      secret_key,
+      webhook_secret,
+      default_currency: default_currency || 'jpy',
+      mode: mode || 'test',
+      fee_percentage: fee_percentage || 0,
+      updated_by: req.user.email
+    };
+
+    const updatedConfig = await StripeConfig.updateConfig(configData);
+
+    res.json({
+      success: true,
+      message: 'Stripe configuration updated successfully',
+      config: {
+        publishable_key: updatedConfig.publishable_key.substring(0, 20) + '...',
+        default_currency: updatedConfig.default_currency,
+        mode: updatedConfig.mode,
+        fee_percentage: updatedConfig.fee_percentage
+      }
+    });
+
+  } catch (error) {
+    console.error('Update Stripe config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Test Stripe Connection
+ * POST /api/v1/admin/config/stripe/test
+ */
+router.post('/config/stripe/test', async (req, res) => {
+  try {
+    const config = await StripeConfig.getConfig();
+
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        error: 'Stripe configuration not found'
+      });
+    }
+
+    const result = await StripeConfig.verifyConnection(
+      config.publishable_key,
+      config.secret_key
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Stripe connection successful',
+        account: {
+          id: result.account_id,
+          email: result.account_email,
+          country: result.country
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+  } catch (error) {
+    console.error('Test Stripe connection error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Get Stripe Webhooks
+ * GET /api/v1/admin/config/stripe/webhooks
+ */
+router.get('/config/stripe/webhooks', async (req, res) => {
+  try {
+    const config = await StripeConfig.getConfig();
+
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        error: 'Stripe configuration not found'
+      });
+    }
+
+    const result = await StripeConfig.getWebhooks(config.secret_key);
+
+    res.json(result);
+
+  } catch (error) {
+    console.error('Get webhooks error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Create Stripe Webhook
+ * POST /api/v1/admin/config/stripe/webhooks
+ */
+router.post('/config/stripe/webhooks', async (req, res) => {
+  try {
+    const { webhook_url, events } = req.body;
+
+    if (!webhook_url || !events || !Array.isArray(events)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: webhook_url, events (array)'
+      });
+    }
+
+    const config = await StripeConfig.getConfig();
+    if (!config) {
+      return res.status(400).json({
+        success: false,
+        error: 'Stripe configuration not found'
+      });
+    }
+
+    const result = await StripeConfig.createWebhook(
+      config.secret_key,
+      webhook_url,
+      events
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Webhook created successfully',
+        webhook: {
+          id: result.webhook_id,
+          secret: result.secret,
+          url: result.url
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+  } catch (error) {
+    console.error('Create webhook error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'

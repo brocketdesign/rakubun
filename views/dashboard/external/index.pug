@@ -160,7 +160,8 @@ block content
 
       // Configuration Tab
       .tab-pane.fade#config
-        .card
+        // OpenAI Configuration Card
+        .card.mb-4
           .card-header
             h5.mb-0 OpenAI Configuration
           .card-body
@@ -198,6 +199,84 @@ block content
                 button.btn.btn-outline-secondary(type="button")#testConfig
                   i.fas.fa-vial.me-2
                   | Test Configuration
+
+        // Stripe Configuration Card
+        .card
+          .card-header
+            h5.mb-0 Stripe Payment Configuration
+          .card-body
+            form#stripeConfigForm
+              .alert.alert-info
+                i.fas.fa-info-circle.me-2
+                | Stripe keys are required for payment processing. Get your keys from 
+                a(href="https://dashboard.stripe.com/apikeys" target="_blank") Stripe Dashboard
+              
+              .row
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="stripePublishableKey")
+                      | Publishable Key
+                      span.text-danger *
+                    input.form-control(type="text" id="stripePublishableKey" placeholder="pk_live_..." required)
+                    small.form-text.text-muted
+                      | Used for frontend Stripe.js checkout
+
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="stripeSecretKey")
+                      | Secret Key
+                      span.text-danger *
+                    input.form-control(type="password" id="stripeSecretKey" placeholder="sk_live_..." required)
+                    small.form-text.text-muted
+                      | Used for backend payment processing
+
+              .row
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="stripeWebhookSecret")
+                      | Webhook Secret
+                      span.text-danger *
+                    input.form-control(type="password" id="stripeWebhookSecret" placeholder="whsec_..." required)
+                    small.form-text.text-muted
+                      | Used to verify Stripe webhook events
+
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="defaultCurrency") Default Currency
+                    select.form-select#defaultCurrency
+                      option(value="jpy") JPY (Japanese Yen)
+                      option(value="usd") USD (US Dollar)
+                      option(value="eur") EUR (Euro)
+                      option(value="gbp") GBP (British Pound)
+
+              .row
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="stripeMode") Operating Mode
+                    select.form-select#stripeMode
+                      option(value="test") Test Mode (Testing with test cards)
+                      option(value="live") Live Mode (Real transactions)
+                    small.form-text.text-warning.d-block.mt-2
+                      i.fas.fa-exclamation-triangle.me-1
+                      | Be careful when switching to Live Mode
+
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="stripeFeePercentage") Platform Fee (%)
+                    input.form-control(type="number" id="stripeFeePercentage" min="0" max="100" step="0.1" value="0" placeholder="0-100")
+                    small.form-text.text-muted
+                      | Percentage fee to add to each transaction
+
+              .d-flex.gap-2
+                button.btn.btn-primary(type="submit")
+                  i.fas.fa-save.me-2
+                  | Save Stripe Configuration
+                button.btn.btn-outline-secondary(type="button")#testStripeConnection
+                  i.fas.fa-vial.me-2
+                  | Test Connection
+                button.btn.btn-outline-info(type="button")#viewStripeWebhooks
+                  i.fas.fa-webhook.me-2
+                  | View Webhooks
 
       // Analytics Tab
       .tab-pane.fade#analytics

@@ -692,4 +692,193 @@ router.post('/payments/confirm', authenticatePlugin, async (req, res) => {
   }
 });
 
+/**
+ * Article Configuration
+ * GET /api/v1/config/article
+ */
+router.get('/config/article', authenticatePlugin, async (req, res) => {
+  try {
+    // Get configuration for the external site
+    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+
+    if (!config || !config.api_key) {
+      return res.status(404).json({
+        success: false,
+        error: 'no_openai_key',
+        message: 'OpenAI API key not configured for this instance'
+      });
+    }
+
+    // Get available models (could be extended to fetch from OpenAI API)
+    const availableModels = [
+      'gpt-4-turbo',
+      'gpt-4',
+      'gpt-3.5-turbo'
+    ];
+
+    // Get system prompt or use default
+    const systemPrompt = config.system_prompt || 
+      'You are a professional content writer specialized in SEO-optimized articles. Create engaging, well-structured content that ranks well in search engines.';
+
+    res.json({
+      success: true,
+      config: {
+        api_key: config.api_key.substring(0, 8) + '...',
+        model: config.model_article || 'gpt-4-turbo',
+        temperature: config.temperature || 0.7,
+        max_tokens: config.max_tokens || 2000,
+        system_prompt: systemPrompt
+      },
+      models: availableModels
+    });
+
+  } catch (error) {
+    console.error('Get article config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'server_error',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Image Configuration
+ * GET /api/v1/config/image
+ */
+router.get('/config/image', authenticatePlugin, async (req, res) => {
+  try {
+    // Get configuration for the external site
+    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+
+    if (!config || !config.api_key) {
+      return res.status(404).json({
+        success: false,
+        error: 'no_openai_key',
+        message: 'OpenAI API key not configured for image generation'
+      });
+    }
+
+    // Available image models and sizes
+    const availableModels = [
+      'dall-e-3',
+      'dall-e-2'
+    ];
+
+    const availableSizes = [
+      '1024x1024',
+      '1024x1792',
+      '1792x1024'
+    ];
+
+    res.json({
+      success: true,
+      config: {
+        api_key: config.api_key.substring(0, 8) + '...',
+        model: config.model_image || 'dall-e-3',
+        quality: config.image_quality || 'hd'
+      },
+      models: availableModels,
+      sizes: availableSizes
+    });
+
+  } catch (error) {
+    console.error('Get image config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'server_error',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Rewrite Configuration
+ * GET /api/v1/config/rewrite
+ */
+router.get('/config/rewrite', authenticatePlugin, async (req, res) => {
+  try {
+    // Get configuration for the external site
+    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+
+    if (!config || !config.api_key) {
+      return res.status(404).json({
+        success: false,
+        error: 'no_openai_key',
+        message: 'OpenAI API key not configured for content rewriting'
+      });
+    }
+
+    // Available models for rewriting
+    const availableModels = [
+      'gpt-4-turbo',
+      'gpt-4',
+      'gpt-3.5-turbo'
+    ];
+
+    // Available rewrite strategies
+    const strategies = [
+      'improve_seo',
+      'simplify',
+      'expand',
+      'formal_to_casual'
+    ];
+
+    res.json({
+      success: true,
+      config: {
+        api_key: config.api_key.substring(0, 8) + '...',
+        model: config.model_article || 'gpt-4-turbo',
+        temperature: config.temperature || 0.6,
+        strategies: strategies
+      },
+      models: availableModels
+    });
+
+  } catch (error) {
+    console.error('Get rewrite config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'server_error',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Stripe Configuration
+ * GET /api/v1/config/stripe
+ */
+router.get('/config/stripe', authenticatePlugin, async (req, res) => {
+  try {
+    // Get Stripe configuration
+    const StripeConfig = require('../../models/StripeConfig');
+    const stripeConfig = await StripeConfig.getConfig();
+
+    if (!stripeConfig || !stripeConfig.publishable_key) {
+      return res.status(404).json({
+        success: false,
+        error: 'no_stripe_key',
+        message: 'Stripe public key not configured'
+      });
+    }
+
+    res.json({
+      success: true,
+      public_key: stripeConfig.publishable_key,
+      currency: stripeConfig.default_currency || 'jpy',
+      test_mode: stripeConfig.mode === 'test',
+      webhooks_enabled: true
+    });
+
+  } catch (error) {
+    console.error('Get stripe config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'server_error',
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
