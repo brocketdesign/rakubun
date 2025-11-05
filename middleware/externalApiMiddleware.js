@@ -106,8 +106,11 @@ const authenticateAdmin = (req, res, next) => {
  * Middleware to authenticate dashboard admin users (for web routes)
  */
 const authenticateWebAdmin = (req, res, next) => {
+  console.log(`[authenticateWebAdmin] Request URL: ${req.url}, User: ${req.user ? req.user.email : 'Not authenticated'}`);
+  
   // Check if user is authenticated and is admin
   if (!req.user) {
+    console.log('[authenticateWebAdmin] User not authenticated, redirecting to /');
     req.flash('error', 'Please log in to access this page');
     return res.redirect('/');
   }
@@ -115,10 +118,12 @@ const authenticateWebAdmin = (req, res, next) => {
   // Check if user is admin (you may want to implement proper admin role checking)
   const adminEmails = ['japanclassicstore@gmail.com']; // Add your admin emails
   if (!adminEmails.includes(req.user.email)) {
+    console.log(`[authenticateWebAdmin] User ${req.user.email} is not admin, redirecting to /dashboard`);
     req.flash('error', 'Access denied - Admin privileges required');
     return res.redirect('/dashboard');
   }
 
+  console.log(`[authenticateWebAdmin] Admin user ${req.user.email} authenticated, proceeding`);
   next();
 };
 

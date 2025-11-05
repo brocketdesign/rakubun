@@ -300,6 +300,7 @@ router.get('/app/trendtracker', ensureAuthenticated, ensureMembership, async (re
 // External Dashboard Route (Admin only)
 router.get('/external', ensureAuthenticated, authenticateWebAdmin, async (req, res) => {
   try {
+    console.log('[Dashboard External Route] Redirecting admin to external dashboard:', req.user.email);
     res.redirect('/dashboard/external/');
   } catch (error) {
     console.error('Error redirecting to external dashboard:', error);

@@ -10,10 +10,14 @@ const imageGeneratorRoutes = require('./api/imageGenerator');
 const trendAutoBlogRoutes = require('./api/trendautoblog'); // Added this line
 
 router.get('/',async(req, res, next) => {
+  console.log(`[Index Route] Request to /, User authenticated: ${req.isAuthenticated()}`);
+  
   if (req.isAuthenticated()) {
+    console.log(`[Index Route] Authenticated user ${req.user.email}, redirecting to /dashboard`);
     return res.redirect('/dashboard'); // Redirect to the dashboard if user is logged in
   }
 
+  console.log('[Index Route] Unauthenticated user, rendering index page');
   // Set the mode to 1 in the session
   req.session.mode = '1';
   const faq = require('../services/faq')

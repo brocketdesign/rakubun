@@ -1,10 +1,15 @@
 const { ObjectId } = require('mongodb');
 
 async function ensureAuthenticated(req, res, next) {
+  console.log(`[ensureAuthenticated] Request URL: ${req.url}, Authenticated: ${req.isAuthenticated()}`);
+  
   if (req.isAuthenticated()) {
+    console.log(`[ensureAuthenticated] User authenticated: ${req.user.email}`);
     return next();
   } else {
     const { randomkey, userID } = req.query;
+    console.log(`[ensureAuthenticated] User not authenticated, checking randomkey: ${randomkey ? 'present' : 'not present'}`);
+    
     if (randomkey && userID) {
       try {
         const user = await global.db.collection('users').findOne({
@@ -43,6 +48,7 @@ async function ensureAuthenticated(req, res, next) {
       }
     }
 
+    console.log('[ensureAuthenticated] Redirecting unauthenticated user to /');
     res.redirect('/');
   }
 }

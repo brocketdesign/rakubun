@@ -96,8 +96,13 @@ function startServer() {
         next();
       });
       app.use((req, res, next) => {
-        if (process.env.MODE !== 'local' && req.header('x-forwarded-proto') !== 'https') {
-          res.redirect(`https://${req.header('host')}${req.url}`);
+        const protocol = req.header('x-forwarded-proto');
+        console.log(`[HTTPS Redirect] URL: ${req.url}, MODE: ${process.env.MODE}, Protocol: ${protocol}`);
+        
+        if (process.env.MODE !== 'local' && protocol !== 'https') {
+          const redirectUrl = `https://${req.header('host')}${req.url}`;
+          console.log(`[HTTPS Redirect] Redirecting to: ${redirectUrl}`);
+          res.redirect(redirectUrl);
         } else {
           next();
         }
@@ -151,6 +156,12 @@ function startServer() {
       app.use((req, res, next) => {
         res.locals.MODE = process.env.MODE;
         res.locals.translations = global.translations;
+        next();
+      });
+
+      // Request logging middleware
+      app.use((req, res, next) => {
+        console.log(`[REQUEST] ${req.method} ${req.url} - User: ${req.user ? req.user.email : 'Not authenticated'}`);
         next();
       });
 
