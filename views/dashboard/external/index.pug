@@ -1,0 +1,232 @@
+extends ../base
+
+block content
+  .container-fluid
+    // Header
+    .row.mb-4
+      .col-12
+        .d-flex.justify-content-between.align-items-center
+          h1.h3.mb-0 External Dashboard - WordPress Plugin Management
+          .d-flex.gap-2
+            button.btn.btn-primary#refreshData
+              i.fas.fa-sync-alt.me-2
+              | Refresh
+            button.btn.btn-success(data-bs-toggle="modal" data-bs-target="#seedDataModal")
+              i.fas.fa-database.me-2
+              | Seed Data
+
+    // Stats Cards
+    .row.mb-4#statsRow
+      .col-md-3
+        .card.bg-primary.text-white
+          .card-body
+            .d-flex.justify-content-between
+              div
+                h6.card-title Total Sites
+                h2.mb-0#totalSites 0
+              .align-self-center
+                i.fas.fa-globe.fa-2x.opacity-75
+      .col-md-3
+        .card.bg-success.text-white
+          .card-body
+            .d-flex.justify-content-between
+              div
+                h6.card-title Total Users
+                h2.mb-0#totalUsers 0
+              .align-self-center
+                i.fas.fa-users.fa-2x.opacity-75
+      .col-md-3
+        .card.bg-info.text-white
+          .card-body
+            .d-flex.justify-content-between
+              div
+                h6.card-title Generations Today
+                h2.mb-0#generationsToday 0
+              .align-self-center
+                i.fas.fa-robot.fa-2x.opacity-75
+      .col-md-3
+        .card.bg-warning.text-white
+          .card-body
+            .d-flex.justify-content-between
+              div
+                h6.card-title Credits Used Today
+                h2.mb-0#creditsToday 0
+              .align-self-center
+                i.fas.fa-coins.fa-2x.opacity-75
+
+    // Navigation Tabs
+    .row.mb-4
+      .col-12
+        ul.nav.nav-tabs#dashboardTabs
+          li.nav-item
+            a.nav-link.active(href="#sites" data-bs-toggle="tab") 
+              i.fas.fa-globe.me-2
+              | Sites
+          li.nav-item
+            a.nav-link(href="#users" data-bs-toggle="tab")
+              i.fas.fa-users.me-2
+              | Users
+          li.nav-item
+            a.nav-link(href="#packages" data-bs-toggle="tab")
+              i.fas.fa-box.me-2
+              | Packages
+          li.nav-item
+            a.nav-link(href="#config" data-bs-toggle="tab")
+              i.fas.fa-cog.me-2
+              | Configuration
+          li.nav-item
+            a.nav-link(href="#analytics" data-bs-toggle="tab")
+              i.fas.fa-chart-line.me-2
+              | Analytics
+
+    // Tab Content
+    .tab-content
+      // Sites Tab
+      .tab-pane.fade.show.active#sites
+        .card
+          .card-header.d-flex.justify-content-between.align-items-center
+            h5.mb-0 WordPress Sites
+            .d-flex.gap-2
+              input.form-control(type="text" placeholder="Search sites..." style="width: 250px")#siteSearch
+              button.btn.btn-outline-primary#searchSites
+                i.fas.fa-search
+          .card-body
+            .table-responsive
+              table.table.table-hover#sitesTable
+                thead
+                  tr
+                    th Site Title
+                    th URL
+                    th Admin Email
+                    th Users
+                    th Status
+                    th Last Activity
+                    th Actions
+                tbody
+                  tr
+                    td(colspan="7").text-center Loading...
+
+      // Users Tab
+      .tab-pane.fade#users
+        .card
+          .card-header.d-flex.justify-content-between.align-items-center
+            h5.mb-0 WordPress Users
+            .d-flex.gap-2
+              select.form-select(style="width: 200px")#siteFilter
+                option(value="") All Sites
+              input.form-control(type="text" placeholder="Search users..." style="width: 250px")#userSearch
+              button.btn.btn-outline-primary#searchUsers
+                i.fas.fa-search
+          .card-body
+            .table-responsive
+              table.table.table-hover#usersTable
+                thead
+                  tr
+                    th User Email
+                    th Site
+                    th Article Credits
+                    th Image Credits
+                    th Rewrite Credits
+                    th Total Generations
+                    th Actions
+                tbody
+                  tr
+                    td(colspan="7").text-center Loading...
+
+      // Packages Tab
+      .tab-pane.fade#packages
+        .card
+          .card-header.d-flex.justify-content-between.align-items-center
+            h5.mb-0 Credit Packages
+            button.btn.btn-primary(data-bs-toggle="modal" data-bs-target="#packageModal")
+              i.fas.fa-plus.me-2
+              | Add Package
+          .card-body
+            .table-responsive
+              table.table.table-hover#packagesTable
+                thead
+                  tr
+                    th Package ID
+                    th Name
+                    th Type
+                    th Credits
+                    th Price
+                    th Popular
+                    th Status
+                    th Actions
+                tbody
+                  tr
+                    td(colspan="8").text-center Loading...
+
+      // Configuration Tab
+      .tab-pane.fade#config
+        .card
+          .card-header
+            h5.mb-0 OpenAI Configuration
+          .card-body
+            form#openaiConfigForm
+              .row
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="apiKey") API Key
+                    input.form-control(type="password" id="apiKey" placeholder="sk-...")
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="modelArticle") Article Model
+                    select.form-select#modelArticle
+                      option(value="gpt-4") GPT-4
+                      option(value="gpt-3.5-turbo") GPT-3.5 Turbo
+                      option(value="gpt-4-turbo") GPT-4 Turbo
+                .col-md-4
+                  .mb-3
+                    label.form-label(for="modelImage") Image Model
+                    select.form-select#modelImage
+                      option(value="dall-e-3") DALL-E 3
+                      option(value="dall-e-2") DALL-E 2
+                .col-md-4
+                  .mb-3
+                    label.form-label(for="maxTokens") Max Tokens
+                    input.form-control(type="number" id="maxTokens" value="2000")
+                .col-md-4
+                  .mb-3
+                    label.form-label(for="temperature") Temperature
+                    input.form-control(type="number" id="temperature" min="0" max="2" step="0.1" value="0.7")
+              .d-flex.gap-2
+                button.btn.btn-primary(type="submit")
+                  i.fas.fa-save.me-2
+                  | Save Configuration
+                button.btn.btn-outline-secondary(type="button")#testConfig
+                  i.fas.fa-vial.me-2
+                  | Test Configuration
+
+      // Analytics Tab
+      .tab-pane.fade#analytics
+        .row
+          .col-md-6
+            .card
+              .card-header
+                h6.mb-0 Recent Activity
+              .card-body#recentActivity
+                p.text-center Loading...
+          .col-md-6
+            .card
+              .card-header
+                h6.mb-0 Top Sites (Last 7 Days)
+              .card-body#topSites
+                p.text-center Loading...
+        .row.mt-4
+          .col-12
+            .card
+              .card-header
+                h6.mb-0 Generation Trends
+              .card-body
+                canvas#generationChart(height="100")
+
+  // Modals
+  include modals/package-modal
+  include modals/user-credits-modal
+  include modals/site-details-modal
+  include modals/seed-data-modal
+
+  // JavaScript
+  script(src="/js/external-dashboard.js")

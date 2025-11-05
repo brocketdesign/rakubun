@@ -133,6 +133,12 @@ function startServer() {
       const imageGenerator = require('./routers/api/imageGenerator');
       const blogeditor = require('./routers/api/blogeditor');
       const trendautoblog = require('./routers/api/trendautoblog'); // Added for trend auto blog API
+      
+      // External dashboard routers
+      const externalDashboard = require('./routers/dashboard/external');
+      const externalApi = require('./routers/api/external');
+      const externalAdminApi = require('./routers/api/external-admin');
+      const seedApi = require('./routers/api/seed');
 
       // Make MODE available in all routes
       app.use((req, res, next) => {
@@ -158,6 +164,12 @@ function startServer() {
       app.use('/admin', admin);
       app.use('/api/trendautoblog', trendautoblog); // Added for trend auto blog API
       app.use('/api/blog-summary', require('./routers/api/blog-summary-api')); // Added for blog summary API
+      
+      // External dashboard routes
+      app.use('/dashboard/external', externalDashboard);
+      app.use('/api/v1', externalApi);
+      app.use('/api/v1/admin', externalAdminApi);
+      app.use('/api/v1/admin/seed', seedApi);
 
       // Initialize WebSocket server with translations
       setupWebSocketServer(server);

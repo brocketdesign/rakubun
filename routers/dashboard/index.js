@@ -296,4 +296,20 @@ router.get('/app/trendtracker', ensureAuthenticated, ensureMembership, async (re
   }
 });
 
+// External Dashboard Route (Admin only)
+router.get('/external', ensureAuthenticated, async (req, res) => {
+  try {
+    // Check if user is admin
+    const adminEmails = ['japanclassicstore@gmail.com']; // Add your admin emails
+    if (!adminEmails.includes(req.user.email)) {
+      return res.status(403).send('Access Denied - Admin Only');
+    }
+
+    res.redirect('/dashboard/external/');
+  } catch (error) {
+    console.error('Error redirecting to external dashboard:', error);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
 module.exports = router;

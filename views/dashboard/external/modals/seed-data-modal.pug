@@ -1,0 +1,32 @@
+// Seed Data Modal
+.modal.fade#seedDataModal(tabindex="-1")
+  .modal-dialog
+    .modal-content
+      .modal-header
+        h5.modal-title Seed Default Data
+        button.btn-close(type="button" data-bs-dismiss="modal")
+      .modal-body
+        .alert.alert-info
+          i.fas.fa-info-circle.me-2
+          | This will create default packages and OpenAI configuration if they don't exist.
+        .mb-3
+          h6 What will be created:
+          ul
+            li Default credit packages (Article, Image, Rewrite)
+            li Global OpenAI configuration
+            li Sample webhook configurations
+        .mb-3
+          .form-check
+            input.form-check-input(type="checkbox" id="seedPackages" checked)
+            label.form-check-label(for="seedPackages") Create default packages
+          .form-check
+            input.form-check-input(type="checkbox" id="seedConfig" checked)
+            label.form-check-label(for="seedConfig") Create OpenAI configuration
+        .alert.alert-warning
+          i.fas.fa-exclamation-triangle.me-2
+          | This action will not overwrite existing data.
+      .modal-footer
+        button.btn.btn-secondary(type="button" data-bs-dismiss="modal") Cancel
+        button.btn.btn-primary#executeSeed
+          i.fas.fa-database.me-2
+          | Seed Data
