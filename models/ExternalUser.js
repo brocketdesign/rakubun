@@ -52,13 +52,15 @@ class ExternalUser {
     const db = global.db;
     const collection = db.collection('external_users');
     
-    const updateField = {};
-    updateField[`${creditType}_credits`] = amount;
-    updateField.updated_at = new Date();
+    const incField = {};
+    incField[`${creditType}_credits`] = amount;
     
     return await collection.updateOne(
       { site_id: new ObjectId(siteId), user_id: userId },
-      { $inc: updateField }
+      { 
+        $inc: incField,
+        $set: { updated_at: new Date() }
+      }
     );
   }
 
