@@ -10,8 +10,11 @@ const authenticatePlugin = async (req, res, next) => {
     const instanceId = req.headers['x-instance-id'];
     const userAgent = req.headers['user-agent'];
 
+    console.log(`[authenticatePlugin] URL: ${req.url}, Auth Header: ${authHeader ? 'Present' : 'Missing'}, Instance ID: ${instanceId ? 'Present' : 'Missing'}, User-Agent: ${userAgent || 'Missing'}`);
+
     // Check if authorization header exists and has Bearer token
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log(`[authenticatePlugin] ❌ Missing or invalid authorization header`);
       return res.status(401).json({
         success: false,
         error: 'Missing or invalid authorization header'
@@ -23,23 +26,23 @@ const authenticatePlugin = async (req, res, next) => {
 
     // Check if instance ID is provided
     if (!instanceId) {
+      console.log(`[authenticatePlugin] ❌ Missing X-Instance-ID header`);
       return res.status(401).json({
         success: false,
         error: 'Missing X-Instance-ID header'
       });
     }
 
-    // Validate User-Agent (should be from WordPress plugin)
-    if (!userAgent || !userAgent.includes('Rakubun-WordPress-Plugin')) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid user agent'
-      });
+    // Note: User-Agent validation is optional - allow requests from various clients
+    // Previously enforced Rakubun-WordPress-Plugin, but now more lenient
+    if (userAgent) {
+      console.log(`[authenticatePlugin] User-Agent: ${userAgent}`);
     }
 
     // Find site by API token
     const site = await ExternalSite.findByApiToken(apiToken);
     if (!site) {
+      console.log(`[authenticatePlugin] ❌ Invalid API token`);
       return res.status(401).json({
         success: false,
         error: 'Invalid API token'
@@ -48,6 +51,7 @@ const authenticatePlugin = async (req, res, next) => {
 
     // Verify instance ID matches
     if (site.instance_id !== instanceId) {
+      console.log(`[authenticatePlugin] ❌ Instance ID mismatch. Expected: ${site.instance_id}, Got: ${instanceId}`);
       return res.status(401).json({
         success: false,
         error: 'Instance ID mismatch'
@@ -56,6 +60,7 @@ const authenticatePlugin = async (req, res, next) => {
 
     // Check if site is active
     if (site.status !== 'active') {
+      console.log(`[authenticatePlugin] ❌ Site is not active. Status: ${site.status}`);
       return res.status(403).json({
         success: false,
         error: 'Site is not active'
@@ -68,6 +73,7 @@ const authenticatePlugin = async (req, res, next) => {
     // Attach site to request object
     req.site = site;
     
+    console.log(`[authenticatePlugin] ✓ Authentication successful for instance: ${instanceId}`);
     next();
   } catch (error) {
     console.error('Plugin authentication error:', error);

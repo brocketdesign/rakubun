@@ -23,6 +23,60 @@ router.get('/health', (req, res) => {
 });
 
 /**
+ * Authentication Diagnostic
+ * GET /api/v1/auth/debug
+ * Public endpoint to check if headers are being sent correctly
+ */
+router.get('/auth/debug', (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const instanceId = req.headers['x-instance-id'];
+    const userAgent = req.headers['user-agent'];
+
+    // Check what headers are present
+    const debug = {
+      timestamp: new Date().toISOString(),
+      headers_received: {
+        authorization: authHeader ? {
+          present: true,
+          starts_with_bearer: authHeader.startsWith('Bearer '),
+          token_length: authHeader.substring(7).length,
+          token_preview: authHeader.substring(7, 20) + '...'
+        } : { present: false },
+        'x-instance-id': instanceId ? {
+          present: true,
+          value: instanceId
+        } : { present: false },
+        'user-agent': userAgent ? {
+          present: true,
+          value: userAgent
+        } : { present: false }
+      },
+      all_headers: req.headers
+    };
+
+    // Try to verify if token exists (optional logging)
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      console.log(`[Debug] Authorization header present, token: ${token.substring(0, 20)}...`);
+    }
+
+    res.json({
+      success: true,
+      debug,
+      note: 'This endpoint shows what headers your client is sending. Use this to debug authentication issues.'
+    });
+
+  } catch (error) {
+    console.error('Auth debug error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
  * Plugin Registration
  * POST /api/v1/plugins/register
  */
