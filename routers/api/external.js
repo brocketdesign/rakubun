@@ -572,6 +572,35 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
 
     const stripe = require('stripe')(stripeConfig.secret_key);
 
+    // Build redirect URLs
+    // Default to WordPress admin page for handling payment response
+    // Plugin must create /wp-admin/admin.php?page=rakubun-ai-purchase page
+    let successUrl, cancelUrl;
+    
+    if (return_url && return_url.includes('/wp-admin/')) {
+      // Use provided admin URL with session_id parameter
+      successUrl = return_url + (return_url.includes('?') ? '&' : '?') + 'session_id={CHECKOUT_SESSION_ID}&status=success';
+    } else if (return_url) {
+      // Use provided frontend URL with session_id
+      successUrl = return_url + (return_url.includes('?') ? '&' : '?') + 'session_id={CHECKOUT_SESSION_ID}';
+    } else {
+      // Default to WordPress admin page
+      successUrl = req.site.site_url + '/wp-admin/admin.php?page=rakubun-ai-purchase&session_id={CHECKOUT_SESSION_ID}&status=success';
+    }
+    
+    if (cancel_url && cancel_url.includes('/wp-admin/')) {
+      // Use provided admin URL with cancel status
+      cancelUrl = cancel_url + (cancel_url.includes('?') ? '&' : '?') + 'status=cancelled';
+    } else if (cancel_url) {
+      // Use provided frontend URL
+      cancelUrl = cancel_url;
+    } else {
+      // Default to WordPress admin page
+      cancelUrl = req.site.site_url + '/wp-admin/admin.php?page=rakubun-ai-purchase&status=cancelled';
+    }
+
+    console.log(`[Checkout] Site: ${req.site.site_url}, Success URL: ${successUrl}, Cancel URL: ${cancelUrl}`);
+
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -589,8 +618,8 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
         }
       ],
       mode: 'payment',
-      success_url: return_url || `${process.env.DASHBOARD_URL || 'https://app.rakubun.com'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${process.env.DASHBOARD_URL || 'https://app.rakubun.com'}/payment/cancel`,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
       metadata: {
         site_id: req.site._id.toString(),
         instance_id: req.site.instance_id,
