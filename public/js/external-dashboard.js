@@ -346,17 +346,25 @@ class ExternalDashboard {
   async savePackage(e) {
     e.preventDefault();
     
+    // Get form data
     const formData = new FormData(e.target);
     const packageData = Object.fromEntries(formData);
     
-    // Convert checkboxes
+    // Handle checkbox values (FormData doesn't include unchecked checkboxes)
     packageData.is_popular = document.getElementById('isPopular').checked;
     packageData.is_active = document.getElementById('isActive').checked;
     
+    // Convert string numbers to actual numbers
+    packageData.credits = parseInt(packageData.credits);
+    packageData.price = parseFloat(packageData.price);
+    
     try {
-      const isEdit = document.getElementById('packageId').value;
-      const url = isEdit ? `/api/v1/admin/packages/${isEdit}` : '/api/v1/admin/packages';
-      const method = isEdit ? 'PUT' : 'POST';
+      const packageId = document.getElementById('packageId').value;
+      const url = packageId ? `/api/v1/admin/packages/${packageId}` : '/api/v1/admin/packages';
+      const method = packageId ? 'PUT' : 'POST';
+      
+      // Remove the packageId field from the data (it's in the URL)
+      delete packageData.packageId;
       
       const response = await fetch(url, {
         method,
@@ -368,13 +376,17 @@ class ExternalDashboard {
       
       if (data.success) {
         bootstrap.Modal.getInstance(document.getElementById('packageModal')).hide();
+        // Clear the form
+        document.getElementById('packageForm').reset();
+        document.getElementById('packageId').value = '';
         this.loadPackages();
         this.showAlert('Package saved successfully', 'success');
       } else {
-        this.showAlert(data.error, 'danger');
+        this.showAlert(data.error || 'Failed to save package', 'danger');
       }
     } catch (error) {
-      this.showAlert('Error saving package', 'danger');
+      console.error('Error saving package:', error);
+      this.showAlert('Error saving package: ' + error.message, 'danger');
     }
   }
 
