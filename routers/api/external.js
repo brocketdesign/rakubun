@@ -176,8 +176,50 @@ router.get('/users/credits', authenticatePlugin, async (req, res) => {
       });
     }
 
+    console.log(`[Users/Credits] Request received:`);
+    console.log(`  site_id: ${req.site._id}`);
+    console.log(`  user_id: ${user_id}`);
+    console.log(`  user_email: ${user_email}`);
+    console.log(`  site_url: ${site_url}`);
+
+    // Try to find existing user first
+    const db = global.db;
+    const usersCollection = db.collection('external_users');
+    
+    const existingUser = await usersCollection.findOne({
+      site_id: req.site._id,
+      user_id: parseInt(user_id)
+    });
+
+    console.log(`[Users/Credits] Searching for user with site_id=${req.site._id} and user_id=${user_id}`);
+    if (existingUser) {
+      console.log(`[Users/Credits] Found existing user:`, {
+        user_id: existingUser.user_id,
+        user_email: existingUser.user_email,
+        article_credits: existingUser.article_credits,
+        image_credits: existingUser.image_credits,
+        rewrite_credits: existingUser.rewrite_credits
+      });
+    } else {
+      console.log(`[Users/Credits] No existing user found. Checking all users for this site:`);
+      const allUsers = await usersCollection.find({ site_id: req.site._id }).toArray();
+      console.log(`[Users/Credits] All users for this site:`, allUsers.map(u => ({
+        user_id: u.user_id,
+        user_email: u.user_email,
+        article_credits: u.article_credits
+      })));
+    }
+
     // Get or create user
     const user = await ExternalUser.getOrCreateUser(req.site._id, parseInt(user_id), user_email);
+
+    console.log(`[Users/Credits] Returning user:`, {
+      user_id: user.user_id,
+      user_email: user.user_email,
+      article_credits: user.article_credits,
+      image_credits: user.image_credits,
+      rewrite_credits: user.rewrite_credits
+    });
 
     res.json({
       success: true,
@@ -653,7 +695,7 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
     const db = global.db;
     const checkoutCollection = db.collection('stripe_checkout_sessions');
     
-    await checkoutCollection.insertOne({
+    const sessionData = {
       site_id: req.site._id,
       user_id: parseInt(user_id),
       user_email: user_email,
@@ -665,7 +707,11 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
       status: 'pending',
       created_at: new Date(),
       expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hour expiry
-    });
+    };
+
+    console.log('[Checkout] Storing session in database:', sessionData);
+    await checkoutCollection.insertOne(sessionData);
+    console.log('[Checkout] Session stored successfully. ID:', session.id);
 
     res.json({
       success: true,
@@ -741,12 +787,22 @@ router.post('/checkout/verify', authenticatePlugin, async (req, res) => {
     const db = global.db;
     const checkoutCollection = db.collection('stripe_checkout_sessions');
     
+    console.log(`[Checkout Verify] Looking for session: ${session_id}, site_id: ${req.site._id}`);
+    
     const sessionRecord = await checkoutCollection.findOne({
       session_id: session_id,
       site_id: req.site._id
     });
 
     if (!sessionRecord) {
+      console.log(`[Checkout Verify] Session not found in database. Checking if it exists at all...`);
+      // Check if session exists but belongs to different site (for debugging)
+      const anySession = await checkoutCollection.findOne({ session_id: session_id });
+      if (anySession) {
+        console.log(`[Checkout Verify] Session exists but belongs to different site:`, anySession.site_id);
+      } else {
+        console.log(`[Checkout Verify] Session does not exist in database at all`);
+      }
       return res.status(400).json({
         success: false,
         error: 'session_record_not_found',
@@ -787,33 +843,63 @@ router.post('/checkout/verify', authenticatePlugin, async (req, res) => {
     const creditsAdded = pkg.credits;
     const creditType = sessionRecord.credit_type;
 
-    await ExternalUser.updateCredits(
-      req.site._id,
-      sessionRecord.user_id,
-      creditType,
-      creditsAdded
-    );
+    try {
+      console.log(`[Checkout Verify] Updating credits for user ${sessionRecord.user_id}, type: ${creditType}, amount: ${creditsAdded}`);
+      
+      await ExternalUser.updateCredits(
+        req.site._id,
+        sessionRecord.user_id,
+        creditType,
+        creditsAdded
+      );
+
+      console.log(`[Checkout Verify] Credits updated successfully`);
+    } catch (creditsError) {
+      console.error(`[Checkout Verify] Error updating credits:`, creditsError.message);
+      console.error(`[Checkout Verify] Error details:`, creditsError);
+      throw creditsError;
+    }
 
     // Get updated user to return remaining credits
-    const updatedUser = await ExternalUser.getOrCreateUser(
-      req.site._id,
-      sessionRecord.user_id,
-      sessionRecord.user_email
-    );
+    let updatedUser;
+    try {
+      console.log(`[Checkout Verify] Fetching updated user data`);
+      updatedUser = await ExternalUser.getOrCreateUser(
+        req.site._id,
+        sessionRecord.user_id,
+        sessionRecord.user_email
+      );
+      console.log(`[Checkout Verify] Updated user fetched:`, {
+        user_id: updatedUser.user_id,
+        article_credits: updatedUser.article_credits,
+        image_credits: updatedUser.image_credits,
+        rewrite_credits: updatedUser.rewrite_credits
+      });
+    } catch (userError) {
+      console.error(`[Checkout Verify] Error fetching updated user:`, userError.message);
+      throw userError;
+    }
 
     // Log transaction
     const crypto = require('crypto');
     const transactionId = 'txn_' + crypto.randomBytes(8).toString('hex');
 
-    await CreditTransaction.logPurchase(
-      req.site._id,
-      sessionRecord.user_id,
-      creditType,
-      creditsAdded,
-      updatedUser[`${creditType}_credits`],
-      session_id,
-      'stripe_checkout'
-    );
+    try {
+      console.log(`[Checkout Verify] Logging transaction: ${transactionId}`);
+      await CreditTransaction.logPurchase(
+        req.site._id,
+        sessionRecord.user_id,
+        creditType,
+        creditsAdded,
+        updatedUser[`${creditType}_credits`],
+        session_id,
+        'stripe_checkout'
+      );
+      console.log(`[Checkout Verify] Transaction logged successfully`);
+    } catch (logError) {
+      console.error(`[Checkout Verify] Error logging transaction:`, logError.message);
+      throw logError;
+    }
 
     // Update checkout session status in database
     await checkoutCollection.updateOne(
