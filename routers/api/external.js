@@ -469,6 +469,122 @@ router.put('/instances/:instance_id', authenticatePlugin, async (req, res) => {
 });
 
 /**
+ * Create Checkout Session (WordPress Plugin Payment)
+ * POST /api/v1/checkout/sessions
+ * Used by WordPress plugin for checkout
+ */
+router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
+  try {
+    const {
+      user_id,
+      user_email,
+      credit_type,
+      package_id,
+      amount,
+      currency,
+      return_url,
+      cancel_url
+    } = req.body;
+
+    // Validate required fields
+    if (!user_id || !user_email || !credit_type || !package_id || !amount) {
+      return res.status(400).json({
+        success: false,
+        error: 'invalid_request',
+        message: 'Missing required fields: user_id, user_email, credit_type, package_id, amount'
+      });
+    }
+
+    // Validate credit type
+    if (!['article', 'image', 'rewrite'].includes(credit_type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'invalid_credit_type',
+        message: 'Invalid credit_type. Must be: article, image, or rewrite'
+      });
+    }
+
+    // Get Stripe configuration from database
+    const StripeConfig = require('../../models/StripeConfig');
+    const stripeConfig = await StripeConfig.getConfig();
+    
+    if (!stripeConfig || !stripeConfig.secret_key) {
+      return res.status(500).json({
+        success: false,
+        error: 'payment_not_configured',
+        message: 'Stripe payment processing not configured in dashboard'
+      });
+    }
+
+    const stripe = require('stripe')(stripeConfig.secret_key);
+
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: (currency || stripeConfig.default_currency || 'jpy').toLowerCase(),
+            product_data: {
+              name: `${package_id} - ${credit_type} credits`,
+              description: `Purchase ${amount} ${(currency || stripeConfig.default_currency || 'jpy').toUpperCase()} worth of ${credit_type} credits`
+            },
+            unit_amount: Math.round(amount * 100) // Stripe expects cents
+          },
+          quantity: 1
+        }
+      ],
+      mode: 'payment',
+      success_url: return_url || `${process.env.DASHBOARD_URL || 'https://app.rakubun.com'}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancel_url || `${process.env.DASHBOARD_URL || 'https://app.rakubun.com'}/payment/cancel`,
+      metadata: {
+        site_id: req.site._id.toString(),
+        instance_id: req.site.instance_id,
+        user_id: user_id.toString(),
+        user_email: user_email,
+        package_id: package_id,
+        credit_type: credit_type
+      },
+      customer_email: user_email
+    });
+
+    // Store checkout session in database for later verification
+    const db = global.db;
+    const checkoutCollection = db.collection('stripe_checkout_sessions');
+    
+    await checkoutCollection.insertOne({
+      site_id: req.site._id,
+      user_id: parseInt(user_id),
+      user_email: user_email,
+      session_id: session.id,
+      package_id: package_id,
+      credit_type: credit_type,
+      amount: amount,
+      currency: currency || 'JPY',
+      status: 'pending',
+      created_at: new Date(),
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hour expiry
+    });
+
+    res.json({
+      success: true,
+      session_id: session.id,
+      url: session.url,
+      amount: amount,
+      currency: currency || 'JPY'
+    });
+
+  } catch (error) {
+    console.error('Create checkout session error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'session_creation_failed',
+      message: error.message
+    });
+  }
+});
+
+/**
  * Create Payment Intent
  * POST /api/v1/payments/create-intent
  */
@@ -499,21 +615,23 @@ router.post('/payments/create-intent', authenticatePlugin, async (req, res) => {
       });
     }
 
-    // Get Stripe key from environment
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey) {
+    // Get Stripe configuration from database
+    const StripeConfig = require('../../models/StripeConfig');
+    const stripeConfig = await StripeConfig.getConfig();
+    
+    if (!stripeConfig || !stripeConfig.secret_key) {
       return res.status(500).json({
         success: false,
         error: 'Payment processing not configured'
       });
     }
 
-    const stripe = require('stripe')(stripeKey);
+    const stripe = require('stripe')(stripeConfig.secret_key);
 
     // Create Stripe PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Convert to cents
-      currency: (currency || 'jpy').toLowerCase(),
+      currency: (currency || stripeConfig.default_currency || 'jpy').toLowerCase(),
       metadata: {
         site_id: req.site._id.toString(),
         instance_id: req.site.instance_id,
@@ -582,16 +700,18 @@ router.post('/payments/confirm', authenticatePlugin, async (req, res) => {
       });
     }
 
-    // Get Stripe key from environment
-    const stripeKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeKey) {
+    // Get Stripe configuration from database
+    const StripeConfig = require('../../models/StripeConfig');
+    const stripeConfig = await StripeConfig.getConfig();
+    
+    if (!stripeConfig || !stripeConfig.secret_key) {
       return res.status(500).json({
         success: false,
         error: 'Payment processing not configured'
       });
     }
 
-    const stripe = require('stripe')(stripeKey);
+    const stripe = require('stripe')(stripeConfig.secret_key);
 
     // Verify payment intent with Stripe
     const paymentIntent = await stripe.paymentIntents.retrieve(payment_intent_id);
