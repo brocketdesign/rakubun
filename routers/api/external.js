@@ -1124,7 +1124,7 @@ router.get('/config/article', authenticatePlugin, async (req, res) => {
     res.json({
       success: true,
       config: {
-        api_key: config.api_key.substring(0, 8) + '...',
+        api_key: config.api_key,
         model: config.model_article || 'gpt-4-turbo',
         temperature: config.temperature || 0.7,
         max_tokens: config.max_tokens || 2000,
@@ -1175,7 +1175,7 @@ router.get('/config/image', authenticatePlugin, async (req, res) => {
     res.json({
       success: true,
       config: {
-        api_key: config.api_key.substring(0, 8) + '...',
+        api_key: config.api_key,
         model: config.model_image || 'dall-e-3',
         quality: config.image_quality || 'hd'
       },
@@ -1228,7 +1228,7 @@ router.get('/config/rewrite', authenticatePlugin, async (req, res) => {
     res.json({
       success: true,
       config: {
-        api_key: config.api_key.substring(0, 8) + '...',
+        api_key: config.api_key,
         model: config.model_article || 'gpt-4-turbo',
         temperature: config.temperature || 0.6,
         strategies: strategies
