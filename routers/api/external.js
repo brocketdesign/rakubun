@@ -572,14 +572,29 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
 
     const stripe = require('stripe')(stripeConfig.secret_key);
 
+    // Helper function to convert amount to Stripe format
+    // Stripe expects the amount in the smallest currency unit
+    // JPY: no decimal places, so amount is already correct
+    // USD/EUR/etc: 2 decimal places, so multiply by 100
+    const convertAmountToStripe = (amount, currencyCode) => {
+      const noDecimalCurrencies = ['jpy', 'krw', 'vnd', 'idr', 'php', 'thb'];
+      if (noDecimalCurrencies.includes(currencyCode.toLowerCase())) {
+        return Math.round(amount);
+      }
+      return Math.round(amount * 100);
+    };
+
     // Build redirect URLs
     // Default to WordPress admin page for handling payment response
     // Plugin must create /wp-admin/admin.php?page=rakubun-ai-purchase page
     let successUrl, cancelUrl;
     
     if (return_url && return_url.includes('/wp-admin/')) {
+      // Update old page name to new page name
+      let cleanUrl = return_url.replace('rakubun-purchase', 'rakubun-ai-purchase');
       // Use provided admin URL with session_id parameter
-      successUrl = return_url + (return_url.includes('?') ? '&' : '?') + 'session_id={CHECKOUT_SESSION_ID}&status=success';
+      successUrl = cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'session_id={CHECKOUT_SESSION_ID}&status=success';
+      console.log(`[Checkout] Converting old URL: ${return_url} → ${cleanUrl}`);
     } else if (return_url) {
       // Use provided frontend URL with session_id
       successUrl = return_url + (return_url.includes('?') ? '&' : '?') + 'session_id={CHECKOUT_SESSION_ID}';
@@ -589,8 +604,11 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
     }
     
     if (cancel_url && cancel_url.includes('/wp-admin/')) {
+      // Update old page name to new page name
+      let cleanUrl = cancel_url.replace('rakubun-purchase', 'rakubun-ai-purchase');
       // Use provided admin URL with cancel status
-      cancelUrl = cancel_url + (cancel_url.includes('?') ? '&' : '?') + 'status=cancelled';
+      cancelUrl = cleanUrl + (cleanUrl.includes('?') ? '&' : '?') + 'status=cancelled';
+      console.log(`[Checkout] Converting old cancel URL: ${cancel_url} → ${cleanUrl}`);
     } else if (cancel_url) {
       // Use provided frontend URL
       cancelUrl = cancel_url;
@@ -612,7 +630,7 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
               name: `${package_id} - ${credit_type} credits`,
               description: `Purchase ${amount} ${(currency || stripeConfig.default_currency || 'jpy').toUpperCase()} worth of ${credit_type} credits`
             },
-            unit_amount: Math.round(amount * 100) // Stripe expects cents
+            unit_amount: convertAmountToStripe(amount, currency || stripeConfig.default_currency || 'jpy')
           },
           quantity: 1
         }
@@ -878,7 +896,7 @@ router.post('/payments/create-intent', authenticatePlugin, async (req, res) => {
 
     // Create Stripe PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
+      amount: convertAmountToStripe(amount, currency || stripeConfig.default_currency || 'jpy'),
       currency: (currency || stripeConfig.default_currency || 'jpy').toLowerCase(),
       metadata: {
         site_id: req.site._id.toString(),
