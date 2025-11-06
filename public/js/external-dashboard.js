@@ -554,6 +554,96 @@ class ExternalDashboard {
     }
   }
 
+  viewSiteDetails(siteId) {
+    // Open site details modal
+    document.getElementById('siteIdInput').value = siteId;
+    const modal = new bootstrap.Modal(document.getElementById('siteDetailsModal'));
+    modal.show();
+  }
+
+  editSite(siteId) {
+    // Load site data for editing
+    this.showAlert('Edit site functionality - loading site data...', 'info');
+    // TODO: Implement site editing with API call
+  }
+
+  async deleteSite(siteId) {
+    if (!confirm('Are you sure you want to delete this site? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/admin/sites/${siteId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.showAlert('Site deleted successfully', 'success');
+        this.loadSites();
+      } else {
+        this.showAlert(data.error || 'Error deleting site', 'danger');
+      }
+    } catch (error) {
+      console.error('Error deleting site:', error);
+      this.showAlert('Error deleting site', 'danger');
+    }
+  }
+
+  editPackage(packageId) {
+    // Load package data for editing
+    document.getElementById('packageId').value = packageId;
+    
+    try {
+      fetch(`/api/v1/admin/packages/${packageId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.package) {
+            const pkg = data.package;
+            document.getElementById('packageName').value = pkg.name;
+            document.getElementById('creditType').value = pkg.credit_type;
+            document.getElementById('credits').value = pkg.credits;
+            document.getElementById('price').value = pkg.price;
+            document.getElementById('isPopular').checked = pkg.is_popular;
+            document.getElementById('isActive').checked = pkg.is_active;
+            
+            const modal = new bootstrap.Modal(document.getElementById('packageModal'));
+            modal.show();
+          }
+        });
+    } catch (error) {
+      console.error('Error loading package:', error);
+      this.showAlert('Error loading package data', 'danger');
+    }
+  }
+
+  async deletePackage(packageId) {
+    if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v1/admin/packages/${packageId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.showAlert('Package deleted successfully', 'success');
+        this.loadPackages();
+      } else {
+        this.showAlert(data.error || 'Error deleting package', 'danger');
+      }
+    } catch (error) {
+      console.error('Error deleting package:', error);
+      this.showAlert('Error deleting package', 'danger');
+    }
+  }
+
   manageUserCredits(siteId, userId, userEmail, siteTitle) {
     document.getElementById('userSiteId').value = siteId;
     document.getElementById('userIdInput').value = userId;
