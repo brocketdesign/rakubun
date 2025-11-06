@@ -99,76 +99,77 @@ class CreditPackage {
     const defaultPackages = [
       // Article packages
       {
-        package_id: 'article_starter',
-        name: 'Article Starter Pack',
-        credit_type: 'article',
-        credits: 10,
-        price: 750,
-        currency: 'JPY',
-        description: 'Perfect for small blogs'
+      package_id: 'article_starter',
+      name: '記事スターターパック',
+      credit_type: 'article',
+      credits: 10,
+      price: 750,
+      currency: 'JPY',
+      description: '小さなブログに最適'
       },
       {
-        package_id: 'article_pro',
-        name: 'Article Pro Pack',
-        credit_type: 'article',
-        credits: 50,
-        price: 3000,
-        currency: 'JPY',
-        description: 'For content creators',
-        is_popular: true
+      package_id: 'article_pro',
+      name: '記事プロパック',
+      credit_type: 'article',
+      credits: 50,
+      price: 3000,
+      currency: 'JPY',
+      description: 'コンテンツクリエイター向け',
+      is_popular: true
       },
       {
-        package_id: 'article_business',
-        name: 'Article Business Pack',
-        credit_type: 'article',
-        credits: 100,
-        price: 5500,
-        currency: 'JPY',
-        description: 'For large websites'
+      package_id: 'article_business',
+      name: '記事ビジネスパック',
+      credit_type: 'article',
+      credits: 100,
+      price: 5500,
+      currency: 'JPY',
+      description: '大規模ウェブサイト向け'
       },
       
       // Image packages
       {
-        package_id: 'image_starter',
-        name: 'Image Starter Pack',
-        credit_type: 'image',
-        credits: 20,
-        price: 300,
-        currency: 'JPY',
-        description: 'Great for visual content'
+      package_id: 'image_starter',
+      name: '画像スターターパック',
+      credit_type: 'image',
+      credits: 20,
+      price: 300,
+      currency: 'JPY',
+      description: 'ビジュアルコンテンツに最適'
       },
       {
-        package_id: 'image_pro',
-        name: 'Image Pro Pack',
-        credit_type: 'image',
-        credits: 100,
-        price: 1200,
-        currency: 'JPY',
-        description: 'For visual storytellers',
-        is_popular: true
+      package_id: 'image_pro',
+      name: '画像プロパック',
+      credit_type: 'image',
+      credits: 100,
+      price: 1200,
+      currency: 'JPY',
+      description: 'ビジュアルストーリーテラー向け',
+      is_popular: true
       },
       
       // Rewrite packages
       {
-        package_id: 'rewrite_starter',
-        name: 'Rewrite Starter Pack',
-        credit_type: 'rewrite',
-        credits: 50,
-        price: 3000,
-        currency: 'JPY',
-        description: 'Optimize existing content',
-        discount: '17% off'
+      package_id: 'rewrite_starter',
+      name: 'リライトスターターパック',
+      credit_type: 'rewrite',
+      credits: 50,
+      price: 3000,
+      currency: 'JPY',
+      description: '既存コンテンツを最適化',
+      discount: '17% off'
       },
       {
-        package_id: 'rewrite_pro',
-        name: 'Rewrite Pro Pack',
-        credit_type: 'rewrite',
-        credits: 150,
-        price: 8000,
-        currency: 'JPY',
-        description: 'For content optimization'
+      package_id: 'rewrite_pro',
+      name: 'リライトプロパック',
+      credit_type: 'rewrite',
+      credits: 150,
+      price: 8000,
+      currency: 'JPY',
+      description: 'コンテンツ最適化向け'
       }
     ];
+
 
     for (const packageData of defaultPackages) {
       await this.create(packageData);
