@@ -592,30 +592,36 @@ class ExternalDashboard {
     }
   }
 
-  editPackage(packageId) {
+  async editPackage(packageId) {
     // Load package data for editing
     document.getElementById('packageId').value = packageId;
     
     try {
-      fetch(`/api/v1/admin/packages/${packageId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.package) {
-            const pkg = data.package;
-            document.getElementById('packageName').value = pkg.name;
-            document.getElementById('creditType').value = pkg.credit_type;
-            document.getElementById('credits').value = pkg.credits;
-            document.getElementById('price').value = pkg.price;
-            document.getElementById('isPopular').checked = pkg.is_popular;
-            document.getElementById('isActive').checked = pkg.is_active;
-            
-            const modal = new bootstrap.Modal(document.getElementById('packageModal'));
-            modal.show();
-          }
-        });
+      const response = await fetch(`/api/v1/admin/packages/${packageId}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.package) {
+        const pkg = data.package;
+        document.getElementById('packageName').value = pkg.name;
+        document.getElementById('creditType').value = pkg.credit_type;
+        document.getElementById('credits').value = pkg.credits;
+        document.getElementById('price').value = pkg.price;
+        document.getElementById('isPopular').checked = pkg.is_popular;
+        document.getElementById('isActive').checked = pkg.is_active;
+        
+        const modal = new bootstrap.Modal(document.getElementById('packageModal'));
+        modal.show();
+      } else {
+        this.showAlert(data.error || 'Failed to load package data', 'danger');
+      }
     } catch (error) {
       console.error('Error loading package:', error);
-      this.showAlert('Error loading package data', 'danger');
+      this.showAlert('Error loading package data: ' + error.message, 'danger');
     }
   }
 

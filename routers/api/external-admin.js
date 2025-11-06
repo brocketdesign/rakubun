@@ -434,6 +434,35 @@ router.get('/packages', async (req, res) => {
 });
 
 /**
+ * Get Single Package by ID
+ * GET /api/v1/admin/packages/:id
+ */
+router.get('/packages/:id', async (req, res) => {
+  try {
+    const pkg = await CreditPackage.findById(req.params.id);
+
+    if (!pkg) {
+      return res.status(404).json({
+        success: false,
+        error: 'Package not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      package: pkg
+    });
+
+  } catch (error) {
+    console.error('Get package error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
  * Create Package
  * POST /api/v1/admin/packages
  */
