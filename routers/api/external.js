@@ -585,6 +585,171 @@ router.post('/checkout/sessions', authenticatePlugin, async (req, res) => {
 });
 
 /**
+ * Verify Checkout Session
+ * POST /api/v1/checkout/verify
+ * Verifies Stripe Checkout Session payment status and adds credits to user
+ */
+router.post('/checkout/verify', authenticatePlugin, async (req, res) => {
+  try {
+    const { session_id } = req.body;
+
+    if (!session_id) {
+      return res.status(400).json({
+        success: false,
+        error: 'invalid_request',
+        message: 'Missing required field: session_id'
+      });
+    }
+
+    // Get Stripe configuration from database
+    const StripeConfig = require('../../models/StripeConfig');
+    const stripeConfig = await StripeConfig.getConfig();
+    
+    if (!stripeConfig || !stripeConfig.secret_key) {
+      return res.status(500).json({
+        success: false,
+        error: 'payment_not_configured',
+        message: 'Stripe payment processing not configured in dashboard'
+      });
+    }
+
+    const stripe = require('stripe')(stripeConfig.secret_key);
+
+    // Retrieve session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'session_not_found',
+        message: 'Checkout session not found in Stripe'
+      });
+    }
+
+    // Check if payment is completed
+    if (session.payment_status !== 'paid') {
+      return res.status(402).json({
+        success: false,
+        error: 'payment_not_completed',
+        message: 'Payment not completed',
+        payment_status: session.payment_status
+      });
+    }
+
+    // Get session details from database
+    const db = global.db;
+    const checkoutCollection = db.collection('stripe_checkout_sessions');
+    
+    const sessionRecord = await checkoutCollection.findOne({
+      session_id: session_id,
+      site_id: req.site._id
+    });
+
+    if (!sessionRecord) {
+      return res.status(400).json({
+        success: false,
+        error: 'session_record_not_found',
+        message: 'Session record not found in database'
+      });
+    }
+
+    // Check if already processed to prevent duplicates
+    if (sessionRecord.status === 'completed') {
+      return res.json({
+        success: true,
+        message: 'Session already processed',
+        status: 'already_completed',
+        credits_added: sessionRecord.credits_added || 0,
+        credit_type: sessionRecord.credit_type
+      });
+    }
+
+    // Get or create user
+    const user = await ExternalUser.getOrCreateUser(
+      req.site._id,
+      sessionRecord.user_id,
+      sessionRecord.user_email
+    );
+
+    // Get package info
+    const pkg = await CreditPackage.findByPackageId(sessionRecord.package_id);
+
+    if (!pkg) {
+      return res.status(404).json({
+        success: false,
+        error: 'package_not_found',
+        message: 'Package not found'
+      });
+    }
+
+    // Add credits to user
+    const creditsAdded = pkg.credits;
+    const creditType = sessionRecord.credit_type;
+
+    await ExternalUser.updateCredits(
+      req.site._id,
+      sessionRecord.user_id,
+      creditType,
+      creditsAdded
+    );
+
+    // Get updated user to return remaining credits
+    const updatedUser = await ExternalUser.getOrCreateUser(
+      req.site._id,
+      sessionRecord.user_id,
+      sessionRecord.user_email
+    );
+
+    // Log transaction
+    const crypto = require('crypto');
+    const transactionId = 'txn_' + crypto.randomBytes(8).toString('hex');
+
+    await CreditTransaction.logPurchase(
+      req.site._id,
+      sessionRecord.user_id,
+      creditType,
+      creditsAdded,
+      updatedUser[`${creditType}_credits`],
+      session_id,
+      'stripe_checkout'
+    );
+
+    // Update checkout session status in database
+    await checkoutCollection.updateOne(
+      { session_id: session_id },
+      {
+        $set: {
+          status: 'completed',
+          completed_at: new Date(),
+          credits_added: creditsAdded,
+          transaction_id: transactionId
+        }
+      }
+    );
+
+    // Log success
+    console.log(`Checkout verified and credits added: ${session_id}, user: ${sessionRecord.user_id}, credits: ${creditsAdded}`);
+
+    res.json({
+      success: true,
+      message: 'Credits added successfully',
+      credits_added: creditsAdded,
+      remaining_credits: updatedUser[`${creditType}_credits`],
+      credit_type: creditType,
+      transaction_id: transactionId
+    });
+
+  } catch (error) {
+    console.error('Verify checkout session error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'verification_failed',
+      message: error.message
+    });
+  }
+});
+
+/**
  * Create Payment Intent
  * POST /api/v1/payments/create-intent
  */
