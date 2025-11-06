@@ -90,11 +90,16 @@ class CreditPackage {
     const db = global.db;
     const collection = db.collection('credit_packages');
     
-    // Check if packages already exist
-    const existingCount = await collection.countDocuments();
-    if (existingCount > 0) {
-      return; // Packages already seeded
-    }
+    // Delete existing default packages to allow re-seeding with updates
+    await collection.deleteMany({ 
+      package_id: { 
+        $in: [
+          'article_starter', 'article_pro', 'article_business',
+          'image_starter', 'image_pro',
+          'rewrite_starter', 'rewrite_pro'
+        ] 
+      } 
+    });
 
     const defaultPackages = [
       // Article packages
