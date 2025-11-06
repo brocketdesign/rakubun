@@ -1621,7 +1621,367 @@ body {
     .features-grid,
     .testimonials-grid,
     .pricing-grid,
-    .steps-container {
+    .steps-container,
+    .copy-grid {
         grid-template-columns: 1fr;
     }
+    
+    .savings-grid {
+        flex-direction: column;
+    }
+    
+    .impact-values {
+        flex-wrap: wrap;
+    }
+    
+    .comparison-table {
+        font-size: 0.9rem;
+    }
+}
+
+/* Cost Analysis Section */
+.cost-analysis {
+    padding: 6rem 0;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    position: relative;
+}
+
+.analysis-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-subtitle {
+    font-size: 1.125rem;
+    color: #666;
+    margin-top: 1rem;
+}
+
+.analysis-section {
+    margin-bottom: 4rem;
+    background: white;
+    padding: 3rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.subsection-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Current Operation */
+.current-operation {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+}
+
+.operation-item {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+    text-align: center;
+}
+
+.operation-item.highlight {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-left-color: #764ba2;
+}
+
+.operation-item .label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.operation-item.highlight .label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.operation-item .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.operation-item.highlight .value {
+    color: white;
+}
+
+.operation-item .note {
+    font-size: 0.85rem;
+    color: #999;
+    margin-top: 0.5rem;
+}
+
+.operation-item.highlight .note {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Tables */
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 2rem;
+}
+
+.comparison-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.comparison-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.comparison-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border: none;
+}
+
+.comparison-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.comparison-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.comparison-table .label-cell {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.comparison-table .total-row {
+    background: #f0f2f5;
+    font-weight: 600;
+}
+
+.comparison-table .total-row td {
+    border-bottom: 2px solid #667eea;
+    border-top: 2px solid #667eea;
+}
+
+.comparison-table.with-ai .highlight-cell {
+    color: #00b894;
+    font-weight: 700;
+}
+
+/* Insight Box */
+.insight-box {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.insight-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.insight-text {
+    font-size: 1.5rem;
+    line-height: 1.6;
+}
+
+.insight-text strong {
+    font-size: 1.75rem;
+}
+
+.insight-text .note {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    display: block;
+    margin-top: 0.5rem;
+}
+
+/* Savings Summary */
+.savings-summary {
+    background: white;
+    padding: 3rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    margin-bottom: 4rem;
+}
+
+.savings-grid {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-bottom: 3rem;
+}
+
+.savings-card {
+    flex: 1;
+    max-width: 300px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.2);
+}
+
+.savings-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.savings-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+/* Annual Impact */
+.annual-impact {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 15px;
+    text-align: center;
+    border-left: 4px solid #667eea;
+}
+
+.annual-impact h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+}
+
+.impact-values {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.impact-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.impact-item .icon {
+    font-size: 2rem;
+}
+
+.impact-item .value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.separator {
+    font-size: 1.5rem;
+    color: #667eea;
+    font-weight: 600;
+}
+
+.impact-subtitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Killer Message */
+.killer-message {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem;
+    border-radius: 20px;
+    margin-bottom: 4rem;
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.2);
+}
+
+.message-box {
+    text-align: center;
+    color: white;
+}
+
+.main-message {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 1.5rem;
+}
+
+.main-message strong {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    display: inline-block;
+}
+
+.sub-message {
+    font-size: 1.5rem;
+    font-weight: 500;
+    opacity: 0.95;
+    line-height: 1.6;
+}
+
+/* Marketing Copy */
+.marketing-copy {
+    background: white;
+    padding: 3rem;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.copy-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.copy-card {
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+}
+
+.copy-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.15);
+}
+
+.copy-card h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.copy-card p {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #555;
+}
+
+.copy-card strong {
+    color: #667eea;
+    font-weight: 700;
 }
