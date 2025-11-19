@@ -819,4 +819,273 @@ router.post('/config/stripe/webhooks', async (req, res) => {
   }
 });
 
+/**
+ * Get Provider Configuration (Admin)
+ * GET /api/v1/admin/config/provider?provider=openai
+ * Returns configuration for specified provider, or currently active if not specified
+ */
+router.get('/config/provider', async (req, res) => {
+  try {
+    const ProviderConfig = require('../../models/ProviderConfig');
+    const requestedProvider = req.query.provider;
+    let config;
+
+    if (requestedProvider) {
+      config = await ProviderConfig.getConfigByProvider(requestedProvider);
+    } else {
+      config = await ProviderConfig.getActiveConfig();
+    }
+    
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: 'Provider configuration not found'
+      });
+    }
+
+    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    
+    res.json({
+      success: true,
+      provider: config.provider,
+      provider_name: providerInfo?.name || 'Unknown',
+      api_key: config.api_key,
+      model_article: config.model_article,
+      model_image: config.model_image,
+      max_tokens: config.max_tokens,
+      temperature: config.temperature,
+      base_url: providerInfo?.base_url
+    });
+
+  } catch (error) {
+    console.error('Get provider config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Update Provider Configuration (Admin)
+ * PUT /api/v1/admin/config/provider
+ * Updates the active provider configuration globally
+ */
+router.put('/config/provider', async (req, res) => {
+  try {
+    const ProviderConfig = require('../../models/ProviderConfig');
+    const {
+      provider,
+      api_key,
+      model_article,
+      model_image,
+      max_tokens,
+      temperature
+    } = req.body;
+
+    if (!provider) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provider is required'
+      });
+    }
+
+    if (!ProviderConfig.getProviderInfo(provider)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid provider'
+      });
+    }
+
+    const updateData = {
+      provider,
+      ...(api_key && { api_key }),
+      ...(model_article && { model_article }),
+      ...(model_image && { model_image }),
+      ...(max_tokens && { max_tokens }),
+      ...(temperature !== undefined && { temperature })
+    };
+
+    // Validate configuration
+    const validation = ProviderConfig.validateConfig({
+      provider,
+      api_key: api_key || 'placeholder',
+      model_article,
+      model_image,
+      max_tokens,
+      temperature
+    });
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid configuration',
+        errors: validation.errors
+      });
+    }
+
+    // Update global config (no site_id for admin update)
+    await ProviderConfig.updateGlobalConfig(updateData);
+
+    res.json({
+      success: true,
+      message: 'Provider configuration updated successfully',
+      provider: provider,
+      provider_name: ProviderConfig.getProviderInfo(provider).name
+    });
+
+  } catch (error) {
+    console.error('Update provider config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Get All Available Providers (Admin)
+ * GET /api/v1/admin/config/providers
+ * Returns list of all available providers and their configurations
+ */
+router.get('/config/providers', async (req, res) => {
+  try {
+    const ProviderConfig = require('../../models/ProviderConfig');
+    const providers = ProviderConfig.getAllProviderOptions();
+    const activeConfig = await ProviderConfig.getActiveConfig();
+    
+    res.json({
+      success: true,
+      all_providers: providers,
+      active_providers: providers.filter(p => p.provider === activeConfig?.provider),
+      current_provider: activeConfig?.provider || 'openai',
+      message: 'Returns available providers and active configuration'
+    });
+
+  } catch (error) {
+    console.error('Get providers error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Test Article Generation (Admin)
+ * POST /api/v1/admin/config/test/article
+ */
+router.post('/config/test/article', async (req, res) => {
+  try {
+    const ProviderConfig = require('../../models/ProviderConfig');
+    const requestedProvider = req.query.provider;
+    
+    // Get configuration
+    let config;
+    if (requestedProvider) {
+      config = await ProviderConfig.getConfigByProvider(requestedProvider);
+    } else {
+      config = await ProviderConfig.getActiveConfig();
+    }
+
+    if (!config || !config.api_key) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provider configuration not found or API key not set'
+      });
+    }
+
+    // Get provider info
+    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    const openaiModule = require('../../modules/openai');
+
+    // Test article generation
+    const result = await openaiModule.generateArticle(
+      'Test Article Generation',
+      'Write a short test article',
+      config
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Article generation test successful',
+        model: config.model_article,
+        provider: config.provider,
+        test_result: result.content ? result.content.substring(0, 200) + '...' : 'Generated'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Article generation test failed'
+      });
+    }
+
+  } catch (error) {
+    console.error('Test article generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Article generation test failed: ' + error.message
+    });
+  }
+});
+
+/**
+ * Test Image Generation (Admin)
+ * POST /api/v1/admin/config/test/image
+ */
+router.post('/config/test/image', async (req, res) => {
+  try {
+    const ProviderConfig = require('../../models/ProviderConfig');
+    const requestedProvider = req.query.provider;
+    
+    // Get configuration
+    let config;
+    if (requestedProvider) {
+      config = await ProviderConfig.getConfigByProvider(requestedProvider);
+    } else {
+      config = await ProviderConfig.getActiveConfig();
+    }
+
+    if (!config || !config.api_key) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provider configuration not found or API key not set'
+      });
+    }
+
+    // Get provider info
+    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    const sdapiModule = require('../../modules/sdapi');
+
+    // Test image generation
+    const result = await sdapiModule.generateImage(
+      'Test image generation',
+      config
+    );
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Image generation test successful',
+        model: config.model_image,
+        provider: config.provider,
+        url: result.url || 'Image generated'
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error || 'Image generation test failed'
+      });
+    }
+
+  } catch (error) {
+    console.error('Test image generation error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Image generation test failed: ' + error.message
+    });
+  }
+});
+
 module.exports = router;

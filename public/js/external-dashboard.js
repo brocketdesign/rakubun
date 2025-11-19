@@ -310,8 +310,8 @@ class ExternalDashboard {
 
   async initializeProviderUI() {
     try {
-      // Fetch current configuration
-      const response = await fetch('/api/v1/config/provider');
+      // Fetch current configuration (use admin endpoint)
+      const response = await fetch('/api/v1/admin/config/provider');
       const data = await response.json();
 
       if (data.success) {
@@ -366,8 +366,8 @@ class ExternalDashboard {
 
   async loadProviderConfigForProvider(provider) {
     try {
-      // Fetch configuration for specific provider
-      const response = await fetch(`/api/v1/config/provider?provider=${provider}`);
+      // Fetch configuration for specific provider (use admin endpoint)
+      const response = await fetch(`/api/v1/admin/config/provider?provider=${provider}`);
       const data = await response.json();
 
       if (data.success) {
@@ -415,7 +415,7 @@ class ExternalDashboard {
 
   async loadActiveProviders() {
     try {
-      const response = await fetch('/api/v1/config/providers');
+      const response = await fetch('/api/v1/admin/config/providers');
       const data = await response.json();
 
       if (data.success && data.active_providers) {
@@ -583,7 +583,7 @@ class ExternalDashboard {
     };
     
     try {
-      const response = await fetch('/api/v1/config/provider', {
+      const response = await fetch('/api/v1/admin/config/provider', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configData)
@@ -618,7 +618,7 @@ class ExternalDashboard {
     try {
       this.showAlert('Testing ' + provider + ' connection...', 'info');
       
-      const response = await fetch(`/api/v1/config/provider?provider=${provider}`);
+      const response = await fetch(`/api/v1/admin/config/provider?provider=${provider}`);
       const data = await response.json();
 
       if (data.success) {
@@ -796,8 +796,8 @@ class ExternalDashboard {
     try {
       this.showAlert('Testing article generation with ' + provider + '...', 'info');
       
-      // Call the article generation test endpoint
-      const response = await fetch(`/api/v1/config/test/article?provider=${provider}`, {
+      // Call the article generation test endpoint (use admin endpoint)
+      const response = await fetch(`/api/v1/admin/config/test/article?provider=${provider}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -826,8 +826,8 @@ class ExternalDashboard {
     try {
       this.showAlert('Testing image generation with ' + provider + '...', 'info');
       
-      // Call the image generation test endpoint
-      const response = await fetch(`/api/v1/config/test/image?provider=${provider}`, {
+      // Call the image generation test endpoint (use admin endpoint)
+      const response = await fetch(`/api/v1/admin/config/test/image?provider=${provider}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
