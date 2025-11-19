@@ -831,9 +831,9 @@ router.get('/config/provider', async (req, res) => {
     let config;
 
     if (requestedProvider) {
-      config = await ProviderConfig.getConfigByProvider(requestedProvider);
+      config = await ProviderConfig.getConfigForSite(null, requestedProvider);
     } else {
-      config = await ProviderConfig.getActiveConfig();
+      config = await ProviderConfig.getConfigForSite(null);
     }
     
     if (!config) {
@@ -906,26 +906,24 @@ router.put('/config/provider', async (req, res) => {
       ...(temperature !== undefined && { temperature })
     };
 
-    // Validate configuration
-    const validation = ProviderConfig.validateConfig({
-      provider,
-      api_key: api_key || 'placeholder',
-      model_article,
-      model_image,
-      max_tokens,
-      temperature
-    });
-
-    if (!validation.valid) {
+    // Basic validation
+    const providerInfo = ProviderConfig.getProviderInfo(provider);
+    if (!providerInfo) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid configuration',
-        errors: validation.errors
+        error: 'Invalid provider'
+      });
+    }
+
+    if (api_key && api_key.length < 10) {
+      return res.status(400).json({
+        success: false,
+        error: 'API key is invalid or too short'
       });
     }
 
     // Update global config (no site_id for admin update)
-    await ProviderConfig.updateGlobalConfig(updateData);
+    await ProviderConfig.updateGlobalConfig(provider, updateData);
 
     res.json({
       success: true,
@@ -952,7 +950,7 @@ router.get('/config/providers', async (req, res) => {
   try {
     const ProviderConfig = require('../../models/ProviderConfig');
     const providers = ProviderConfig.getAllProviderOptions();
-    const activeConfig = await ProviderConfig.getActiveConfig();
+    const activeConfig = await ProviderConfig.findGlobalConfig();
     
     res.json({
       success: true,
@@ -983,9 +981,9 @@ router.post('/config/test/article', async (req, res) => {
     // Get configuration
     let config;
     if (requestedProvider) {
-      config = await ProviderConfig.getConfigByProvider(requestedProvider);
+      config = await ProviderConfig.getConfigForSite(null, requestedProvider);
     } else {
-      config = await ProviderConfig.getActiveConfig();
+      config = await ProviderConfig.getConfigForSite(null);
     }
 
     if (!config || !config.api_key) {
@@ -999,25 +997,26 @@ router.post('/config/test/article', async (req, res) => {
     const providerInfo = ProviderConfig.getProviderInfo(config.provider);
     const openaiModule = require('../../modules/openai');
 
-    // Test article generation
-    const result = await openaiModule.generateArticle(
-      'Test Article Generation',
-      'Write a short test article',
-      config
-    );
+    // Test article generation using generateCompletion
+    const messages = [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: 'Write a short test article about AI in 50 words.' }
+    ];
+    
+    const result = await openaiModule.generateCompletion(messages, config.max_tokens);
 
-    if (result.success) {
+    if (result) {
       res.json({
         success: true,
         message: 'Article generation test successful',
         model: config.model_article,
         provider: config.provider,
-        test_result: result.content ? result.content.substring(0, 200) + '...' : 'Generated'
+        test_result: result.substring(0, 200) + '...'
       });
     } else {
       res.status(400).json({
         success: false,
-        error: result.error || 'Article generation test failed'
+        error: 'Article generation test failed'
       });
     }
 
@@ -1042,9 +1041,9 @@ router.post('/config/test/image', async (req, res) => {
     // Get configuration
     let config;
     if (requestedProvider) {
-      config = await ProviderConfig.getConfigByProvider(requestedProvider);
+      config = await ProviderConfig.getConfigForSite(null, requestedProvider);
     } else {
-      config = await ProviderConfig.getActiveConfig();
+      config = await ProviderConfig.getConfigForSite(null);
     }
 
     if (!config || !config.api_key) {
@@ -1056,7 +1055,17 @@ router.post('/config/test/image', async (req, res) => {
 
     // Get provider info
     const providerInfo = ProviderConfig.getProviderInfo(config.provider);
-    const sdapiModule = require('../../modules/sdapi');
+    
+    // Check if sdapi module exists
+    let sdapiModule;
+    try {
+      sdapiModule = require('../../modules/sdapi');
+    } catch (moduleError) {
+      return res.status(500).json({
+        success: false,
+        error: 'Image generation module not available'
+      });
+    }
 
     // Test image generation
     const result = await sdapiModule.generateImage(
@@ -1064,7 +1073,7 @@ router.post('/config/test/image', async (req, res) => {
       config
     );
 
-    if (result.success) {
+    if (result && result.success) {
       res.json({
         success: true,
         message: 'Image generation test successful',
@@ -1075,7 +1084,7 @@ router.post('/config/test/image', async (req, res) => {
     } else {
       res.status(400).json({
         success: false,
-        error: result.error || 'Image generation test failed'
+        error: result?.error || 'Image generation test failed'
       });
     }
 

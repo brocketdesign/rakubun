@@ -18,7 +18,7 @@ class ExternalDashboard {
         { value: 'deepseek/deepseek-r1', label: 'DeepSeek R1' },
         { value: 'deepseek/deepseek-v2.5', label: 'DeepSeek V2.5' },
         { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat' },
-        { value: 'meta-llama/llama-2-7b-chat', label: 'Llama 2 7B Chat' },
+        { value: 'meta-llama/llama-3-70b-instruct', label: 'Llama 3 70B Instruct' },
         { value: 'mistralai/Mistral-7B-Instruct-v0.2', label: 'Mistral 7B' }
       ],
       image: [
