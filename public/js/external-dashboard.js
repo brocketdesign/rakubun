@@ -1,5 +1,32 @@
 // External Dashboard JavaScript
 class ExternalDashboard {
+  // Provider models configuration
+  static PROVIDER_MODELS = {
+    openai: {
+      article: [
+        { value: 'gpt-4', label: 'GPT-4' },
+        { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+        { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' }
+      ],
+      image: [
+        { value: 'dall-e-3', label: 'DALL-E 3' },
+        { value: 'dall-e-2', label: 'DALL-E 2' }
+      ]
+    },
+    novita: {
+      article: [
+        { value: 'deepseek/deepseek-r1', label: 'DeepSeek R1' },
+        { value: 'deepseek/deepseek-v2.5', label: 'DeepSeek V2.5' },
+        { value: 'deepseek/deepseek-chat', label: 'DeepSeek Chat' },
+        { value: 'meta-llama/llama-2-7b-chat', label: 'Llama 2 7B Chat' },
+        { value: 'mistralai/Mistral-7B-Instruct-v0.2', label: 'Mistral 7B' }
+      ],
+      image: [
+        { value: 'dall-e-3', label: 'DALL-E 3' }
+      ]
+    }
+  };
+
   constructor() {
     this.currentPage = {
       sites: 1,
@@ -310,7 +337,7 @@ class ExternalDashboard {
     this.currentProvider = provider;
     
     // Load models for selected provider FIRST (so dropdowns are populated)
-    await this.loadProviderModels(provider);
+    this.loadProviderModels(provider);
     
     // Load configuration for selected provider (now that models are loaded)
     await this.loadProviderConfigForProvider(provider);
@@ -423,50 +450,32 @@ class ExternalDashboard {
     }
   }
 
-  async loadProviderModels(provider) {
-    try {
-      // Load article models
-      const articleResponse = await fetch(`/api/v1/config/article?provider=${provider}`);
-      const articleData = await articleResponse.json();
+  loadProviderModels(provider) {
+    // Get models from local configuration
+    const models = ExternalDashboard.PROVIDER_MODELS[provider] || ExternalDashboard.PROVIDER_MODELS.openai;
+    
+    // Load article models
+    const articleModels = models.article || [];
+    const modelArticle = document.getElementById('modelArticle');
+    if (articleModels.length > 0) {
+      modelArticle.innerHTML = `
+        <option value="">Select article model...</option>
+        ${articleModels.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
+      `;
+    } else {
+      modelArticle.innerHTML = `<option value="">No models available</option>`;
+    }
 
-      if (articleData.success && articleData.models && articleData.models.length > 0) {
-        const modelArticle = document.getElementById('modelArticle');
-        modelArticle.innerHTML = `
-          <option value="">Select article model...</option>
-          ${articleData.models.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
-        `;
-      } else {
-        console.warn(`No article models available for provider: ${provider}`);
-        const modelArticle = document.getElementById('modelArticle');
-        modelArticle.innerHTML = `<option value="">No models available</option>`;
-      }
-
-      // Load image models
-      const imageResponse = await fetch(`/api/v1/config/image?provider=${provider}`);
-      const imageData = await imageResponse.json();
-
-      if (imageData.success && imageData.models && imageData.models.length > 0) {
-        const modelImage = document.getElementById('modelImage');
-        modelImage.innerHTML = `
-          <option value="">Select image model...</option>
-          ${imageData.models.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
-        `;
-      } else {
-        console.warn(`No image models available for provider: ${provider}`);
-        const modelImage = document.getElementById('modelImage');
-        modelImage.innerHTML = `<option value="">No models available</option>`;
-      }
-    } catch (error) {
-      console.error(`Error loading models for ${provider}:`, error);
-      // Show error state in dropdowns
-      const modelArticle = document.getElementById('modelArticle');
-      const modelImage = document.getElementById('modelImage');
-      if (modelArticle) {
-        modelArticle.innerHTML = `<option value="">Error loading models</option>`;
-      }
-      if (modelImage) {
-        modelImage.innerHTML = `<option value="">Error loading models</option>`;
-      }
+    // Load image models
+    const imageModels = models.image || [];
+    const modelImage = document.getElementById('modelImage');
+    if (imageModels.length > 0) {
+      modelImage.innerHTML = `
+        <option value="">Select image model...</option>
+        ${imageModels.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
+      `;
+    } else {
+      modelImage.innerHTML = `<option value="">No models available</option>`;
     }
   }
 
