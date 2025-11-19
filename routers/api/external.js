@@ -1341,40 +1341,35 @@ router.get('/config/article', authenticatePlugin, async (req, res) => {
   try {
     const requestedProvider = req.query.provider;
     let config;
+    let provider;
 
     if (requestedProvider) {
       // Get configuration for specific provider
       config = await ProviderConfig.getConfigForSite(req.site._id, requestedProvider);
+      provider = requestedProvider;
     } else {
       // Get currently active provider configuration
       config = await ProviderConfig.getConfigForSite(req.site._id);
+      provider = config?.provider || 'openai'; // Default to openai if no config
     }
 
-    if (!config || !config.api_key) {
-      return res.status(404).json({
-        success: false,
-        error: 'no_provider_key',
-        message: 'Provider API key not configured for this instance'
-      });
-    }
-
-    // Get available models for this provider
-    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    // Get available models for this provider (even if no API key configured yet)
+    const providerInfo = ProviderConfig.getProviderInfo(provider);
     const availableModels = providerInfo?.models?.article || [];
 
     // Get system prompt or use default
-    const systemPrompt = config.system_prompt || 
+    const systemPrompt = config?.system_prompt || 
       'You are a professional content writer specialized in SEO-optimized articles. Create engaging, well-structured content that ranks well in search engines.';
 
     res.json({
       success: true,
-      provider: config.provider,
+      provider: provider,
       provider_name: providerInfo?.name,
       config: {
-        api_key: config.api_key,
-        model: config.model_article || providerInfo?.default_models?.article,
-        temperature: config.temperature || 0.7,
-        max_tokens: config.max_tokens || 2000,
+        api_key: config?.api_key || '',
+        model: config?.model_article || providerInfo?.default_models?.article,
+        temperature: config?.temperature || 0.7,
+        max_tokens: config?.max_tokens || 2000,
         system_prompt: systemPrompt,
         base_url: providerInfo?.base_url
       },
@@ -1400,25 +1395,20 @@ router.get('/config/image', authenticatePlugin, async (req, res) => {
   try {
     const requestedProvider = req.query.provider;
     let config;
+    let provider;
 
     if (requestedProvider) {
       // Get configuration for specific provider
       config = await ProviderConfig.getConfigForSite(req.site._id, requestedProvider);
+      provider = requestedProvider;
     } else {
       // Get currently active provider configuration
       config = await ProviderConfig.getConfigForSite(req.site._id);
+      provider = config?.provider || 'openai'; // Default to openai if no config
     }
 
-    if (!config || !config.api_key) {
-      return res.status(404).json({
-        success: false,
-        error: 'no_provider_key',
-        message: 'Provider API key not configured for image generation'
-      });
-    }
-
-    // Get available models for this provider
-    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    // Get available models for this provider (even if no API key configured yet)
+    const providerInfo = ProviderConfig.getProviderInfo(provider);
     const availableModels = providerInfo?.models?.image || [];
 
     // Available image sizes (provider-dependent, shown as reference)
@@ -1430,12 +1420,12 @@ router.get('/config/image', authenticatePlugin, async (req, res) => {
 
     res.json({
       success: true,
-      provider: config.provider,
+      provider: provider,
       provider_name: providerInfo?.name,
       config: {
-        api_key: config.api_key,
-        model: config.model_image || providerInfo?.default_models?.image,
-        quality: config.image_quality || 'hd',
+        api_key: config?.api_key || '',
+        model: config?.model_image || providerInfo?.default_models?.image,
+        quality: config?.image_quality || 'hd',
         base_url: providerInfo?.base_url
       },
       models: availableModels,
