@@ -357,6 +357,49 @@ class ProviderConfig {
   }
 
   /**
+   * Get list of all available providers
+   */
+  static getProviderList() {
+    return Object.keys(this.PROVIDERS);
+  }
+
+  /**
+   * Get article models for a provider
+   */
+  static getArticleModels(provider) {
+    return this.getModelOptions(provider, 'article');
+  }
+
+  /**
+   * Get image models for a provider
+   */
+  static getImageModels(provider) {
+    return this.getModelOptions(provider, 'image');
+  }
+
+  /**
+   * Check if a provider is valid
+   */
+  static isValidProvider(provider) {
+    return this.PROVIDERS.hasOwnProperty(provider);
+  }
+
+  /**
+   * Get default provider (first available)
+   */
+  static getDefaultProvider() {
+    return 'openai';
+  }
+
+  /**
+   * Get base URL for a provider
+   */
+  static getProviderBaseUrl(provider) {
+    const providerInfo = this.PROVIDERS[provider];
+    return providerInfo ? providerInfo.base_url : null;
+  }
+
+  /**
    * Seed default configurations for all providers
    */
   static async seedDefaultConfigs() {

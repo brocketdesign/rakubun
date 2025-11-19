@@ -309,11 +309,11 @@ class ExternalDashboard {
     // Store current provider selection
     this.currentProvider = provider;
     
-    // Load configuration for selected provider
-    await this.loadProviderConfigForProvider(provider);
-    
-    // Load models for selected provider
+    // Load models for selected provider FIRST (so dropdowns are populated)
     await this.loadProviderModels(provider);
+    
+    // Load configuration for selected provider (now that models are loaded)
+    await this.loadProviderConfigForProvider(provider);
     
     // Update provider info display
     this.updateProviderInfo(provider);
@@ -346,11 +346,32 @@ class ExternalDashboard {
       if (data.success) {
         // Populate form fields with provider configuration
         document.getElementById('providerApiKey').value = data.api_key || '';
-        document.getElementById('modelArticle').value = data.model_article || '';
-        document.getElementById('modelImage').value = data.model_image || '';
         document.getElementById('maxTokens').value = data.max_tokens || 2000;
         document.getElementById('temperature').value = data.temperature || 0.7;
         document.getElementById('temperatureValue').textContent = data.temperature || 0.7;
+        
+        // Set model values AFTER models have been loaded into the dropdowns
+        // Use setTimeout to ensure options are available
+        setTimeout(() => {
+          const modelArticleSelect = document.getElementById('modelArticle');
+          const modelImageSelect = document.getElementById('modelImage');
+          
+          if (data.model_article && modelArticleSelect) {
+            modelArticleSelect.value = data.model_article;
+            // Verify the value was set (option exists)
+            if (!modelArticleSelect.value && modelArticleSelect.options.length > 1) {
+              console.warn(`Model value "${data.model_article}" not found in article models dropdown`);
+            }
+          }
+          
+          if (data.model_image && modelImageSelect) {
+            modelImageSelect.value = data.model_image;
+            // Verify the value was set (option exists)
+            if (!modelImageSelect.value && modelImageSelect.options.length > 1) {
+              console.warn(`Model value "${data.model_image}" not found in image models dropdown`);
+            }
+          }
+        }, 0);
       } else {
         // Clear form if no config found for this provider
         document.getElementById('providerApiKey').value = '';
@@ -374,20 +395,28 @@ class ExternalDashboard {
         const list = document.getElementById('activeProvidersList');
         
         if (data.active_providers.length === 0) {
-          list.innerHTML = '<p class="text-muted">No active providers configured</p>';
+          list.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i>No providers configured yet. Configure one above to get started.</div>';
           return;
         }
 
-        list.innerHTML = data.active_providers.map(provider => `
-          <a href="#" class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-              <h6 class="mb-1">${provider.name}</h6>
-              <span class="badge bg-success">Active</span>
+        list.innerHTML = '<div class="row gap-3">' + data.active_providers.map(provider => `
+          <div class="col-md-6">
+            <div class="card border-success">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <h6 class="card-title mb-0">${provider.name}</h6>
+                  <span class="badge bg-success">Configured</span>
+                </div>
+                <p class="mb-2 small text-muted">
+                  <strong>Base URL:</strong> <code class="small">${provider.base_url || 'N/A'}</code>
+                </p>
+                <p class="mb-0 small text-muted">
+                  <strong>Models:</strong> ${provider.model_article || 'N/A'}
+                </p>
+              </div>
             </div>
-            <p class="mb-1"><small>Base URL: ${provider.base_url || 'N/A'}</small></p>
-            <p class="mb-0"><small class="text-muted">Models: ${provider.model_article || 'N/A'}</small></p>
-          </a>
-        `).join('');
+          </div>
+        `).join('') + '</div>';
       }
     } catch (error) {
       console.error('Error loading active providers:', error);
@@ -400,27 +429,44 @@ class ExternalDashboard {
       const articleResponse = await fetch(`/api/v1/config/article?provider=${provider}`);
       const articleData = await articleResponse.json();
 
-      if (articleData.success && articleData.models) {
+      if (articleData.success && articleData.models && articleData.models.length > 0) {
         const modelArticle = document.getElementById('modelArticle');
         modelArticle.innerHTML = `
           <option value="">Select article model...</option>
           ${articleData.models.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
         `;
+      } else {
+        console.warn(`No article models available for provider: ${provider}`);
+        const modelArticle = document.getElementById('modelArticle');
+        modelArticle.innerHTML = `<option value="">No models available</option>`;
       }
 
       // Load image models
       const imageResponse = await fetch(`/api/v1/config/image?provider=${provider}`);
       const imageData = await imageResponse.json();
 
-      if (imageData.success && imageData.models) {
+      if (imageData.success && imageData.models && imageData.models.length > 0) {
         const modelImage = document.getElementById('modelImage');
         modelImage.innerHTML = `
           <option value="">Select image model...</option>
           ${imageData.models.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
         `;
+      } else {
+        console.warn(`No image models available for provider: ${provider}`);
+        const modelImage = document.getElementById('modelImage');
+        modelImage.innerHTML = `<option value="">No models available</option>`;
       }
     } catch (error) {
       console.error(`Error loading models for ${provider}:`, error);
+      // Show error state in dropdowns
+      const modelArticle = document.getElementById('modelArticle');
+      const modelImage = document.getElementById('modelImage');
+      if (modelArticle) {
+        modelArticle.innerHTML = `<option value="">Error loading models</option>`;
+      }
+      if (modelImage) {
+        modelImage.innerHTML = `<option value="">Error loading models</option>`;
+      }
     }
   }
 
@@ -470,18 +516,110 @@ class ExternalDashboard {
     `;
   }
 
-  onProviderChanged(e) {
-    const provider = e.target.value;
-    if (provider) {
-      this.updateProviderInfo(provider);
-      this.loadProviderModels(provider);
+  toggleApiKeyVisibility() {
+    const apiKeyInput = document.getElementById('providerApiKey');
+    const toggleBtn = document.getElementById('toggleApiKeyVisibility');
+    
+    if (apiKeyInput.type === 'password') {
+      apiKeyInput.type = 'text';
+      toggleBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    } else {
+      apiKeyInput.type = 'password';
+      toggleBtn.innerHTML = '<i class="fas fa-eye"></i>';
+    }
+  }
+
+  updateTemperatureDisplay(e) {
+    const value = e.target.value;
+    document.getElementById('temperatureValue').textContent = value;
+  }
+
+  getSelectedProvider() {
+    return this.currentProvider || 'openai';
+  }
+
+  async saveCurrentProviderConfig(e) {
+    e.preventDefault();
+    
+    const provider = this.getSelectedProvider();
+    const apiKey = document.getElementById('providerApiKey').value;
+    const modelArticle = document.getElementById('modelArticle').value;
+    const modelImage = document.getElementById('modelImage').value;
+    const maxTokens = parseInt(document.getElementById('maxTokens').value);
+    const temperature = parseFloat(document.getElementById('temperature').value);
+
+    // Validation
+    if (!provider) {
+      this.showAlert('Please select a provider', 'warning');
+      return;
+    }
+
+    if (!apiKey) {
+      this.showAlert('API key is required', 'warning');
+      return;
+    }
+
+    if (!modelArticle || !modelImage) {
+      this.showAlert('Both article and image models must be selected', 'warning');
+      return;
+    }
+
+    const configData = {
+      provider,
+      api_key: apiKey,
+      model_article: modelArticle,
+      model_image: modelImage,
+      max_tokens: maxTokens,
+      temperature: temperature
+    };
+    
+    try {
+      const response = await fetch('/api/v1/config/provider', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configData)
+      });
       
-      // Update base URL
-      const baseUrls = {
-        openai: 'https://api.openai.com/v1',
-        novita: 'https://api.novita.ai/openai/v1'
-      };
-      document.getElementById('baseUrl').value = baseUrls[provider] || '';
+      const data = await response.json();
+      
+      if (data.success) {
+        this.showAlert(`✓ ${data.provider_name} configuration saved successfully`, 'success');
+        // Reload configuration and active providers list
+        setTimeout(() => {
+          this.loadActiveProviders();
+        }, 1000);
+      } else {
+        const errorMsg = data.errors ? data.errors.join(', ') : data.error || 'Error saving provider configuration';
+        this.showAlert(errorMsg, 'danger');
+      }
+    } catch (error) {
+      console.error('Error saving provider config:', error);
+      this.showAlert('Error saving provider configuration: ' + error.message, 'danger');
+    }
+  }
+
+  async testCurrentProviderConfig() {
+    const provider = this.getSelectedProvider();
+    
+    if (!provider) {
+      this.showAlert('Please select a provider first', 'warning');
+      return;
+    }
+
+    try {
+      this.showAlert('Testing ' + provider + ' connection...', 'info');
+      
+      const response = await fetch(`/api/v1/config/provider?provider=${provider}`);
+      const data = await response.json();
+
+      if (data.success) {
+        this.showAlert(`✓ ${data.provider_name} connection is valid!`, 'success');
+      } else {
+        this.showAlert('Provider is not configured or API key is invalid', 'danger');
+      }
+    } catch (error) {
+      console.error('Error testing provider config:', error);
+      this.showAlert('Error testing provider configuration', 'danger');
     }
   }
 
@@ -636,88 +774,10 @@ class ExternalDashboard {
     }
   }
 
-  async saveProviderConfig(e) {
-    e.preventDefault();
-    
-    const provider = document.getElementById('providerSelect').value;
-    const apiKey = document.getElementById('providerApiKey').value;
-    const modelArticle = document.getElementById('modelArticle').value;
-    const modelImage = document.getElementById('modelImage').value;
-    const maxTokens = parseInt(document.getElementById('maxTokens').value);
-    const temperature = parseFloat(document.getElementById('temperature').value);
 
-    // Validation
-    if (!provider) {
-      this.showAlert('Please select a provider', 'warning');
-      return;
-    }
-
-    if (!apiKey) {
-      this.showAlert('API key is required', 'warning');
-      return;
-    }
-
-    if (!modelArticle || !modelImage) {
-      this.showAlert('Both article and image models must be selected', 'warning');
-      return;
-    }
-
-    const configData = {
-      provider,
-      api_key: apiKey,
-      model_article: modelArticle,
-      model_image: modelImage,
-      max_tokens: maxTokens,
-      temperature: temperature
-    };
-    
-    try {
-      const response = await fetch('/api/v1/config/provider', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(configData)
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        this.showAlert(`Provider configuration for ${data.provider_name} saved successfully`, 'success');
-        // Reload configuration to confirm changes
-        setTimeout(() => this.loadProviderConfig(), 1000);
-      } else {
-        this.showAlert(data.error || 'Error saving provider configuration', 'danger');
-      }
-    } catch (error) {
-      console.error('Error saving provider config:', error);
-      this.showAlert('Error saving provider configuration: ' + error.message, 'danger');
-    }
-  }
-
-  async testProviderConfig() {
-    const provider = document.getElementById('providerSelect').value;
-    
-    if (!provider) {
-      this.showAlert('Please select a provider first', 'warning');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/v1/config/provider');
-      const data = await response.json();
-
-      if (data.success && data.config) {
-        this.showAlert(`✓ ${data.config.provider || provider} provider configuration is valid!`, 'success');
-      } else {
-        this.showAlert('Provider configuration is invalid or not set', 'danger');
-      }
-    } catch (error) {
-      console.error('Error testing provider config:', error);
-      this.showAlert('Error testing provider configuration', 'danger');
-    }
-  }
 
   async testArticleGeneration() {
-    const provider = document.getElementById('providerSelect').value;
+    const provider = this.getSelectedProvider();
     
     if (!provider) {
       this.showAlert('Please select a provider first', 'warning');
@@ -728,10 +788,9 @@ class ExternalDashboard {
       this.showAlert('Testing article generation with ' + provider + '...', 'info');
       
       // Call the article generation test endpoint
-      const response = await fetch('/api/v1/config/test/article', {
+      const response = await fetch(`/api/v1/config/test/article?provider=${provider}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider })
+        headers: { 'Content-Type': 'application/json' }
       });
 
       const data = await response.json();
@@ -748,7 +807,7 @@ class ExternalDashboard {
   }
 
   async testImageGeneration() {
-    const provider = document.getElementById('providerSelect').value;
+    const provider = this.getSelectedProvider();
     
     if (!provider) {
       this.showAlert('Please select a provider first', 'warning');
@@ -759,10 +818,9 @@ class ExternalDashboard {
       this.showAlert('Testing image generation with ' + provider + '...', 'info');
       
       // Call the image generation test endpoint
-      const response = await fetch('/api/v1/config/test/image', {
+      const response = await fetch(`/api/v1/config/test/image?provider=${provider}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider })
+        headers: { 'Content-Type': 'application/json' }
       });
 
       const data = await response.json();
