@@ -6,6 +6,7 @@ const CreditPackage = require('../../models/CreditPackage');
 const CreditTransaction = require('../../models/CreditTransaction');
 const GenerationLog = require('../../models/GenerationLog');
 const OpenAIConfig = require('../../models/OpenAIConfig');
+const ProviderConfig = require('../../models/ProviderConfig');
 const { authenticatePlugin, rateLimit } = require('../../middleware/externalApiMiddleware');
 
 // Apply rate limiting to all external API routes
@@ -314,12 +315,50 @@ router.post('/users/deduct-credits', authenticatePlugin, async (req, res) => {
 });
 
 /**
- * Get OpenAI Configuration
+ * Get Current Provider Configuration
+ * GET /api/v1/config/provider
+ * Returns configuration for the currently active provider
+ */
+router.get('/config/provider', authenticatePlugin, async (req, res) => {
+  try {
+    const config = await ProviderConfig.getConfigForSite(req.site._id);
+    
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: 'No provider configuration found'
+      });
+    }
+
+    res.json({
+      success: true,
+      provider: config.provider,
+      provider_name: ProviderConfig.getProviderInfo(config.provider)?.name || 'Unknown',
+      api_key: config.api_key,
+      model_article: config.model_article,
+      model_image: config.model_image,
+      max_tokens: config.max_tokens,
+      temperature: config.temperature,
+      base_url: ProviderConfig.getProviderInfo(config.provider)?.base_url
+    });
+
+  } catch (error) {
+    console.error('Get provider config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Get OpenAI Configuration (Deprecated)
  * GET /api/v1/config/openai
+ * Maintained for backwards compatibility - redirects to provider config
  */
 router.get('/config/openai', authenticatePlugin, async (req, res) => {
   try {
-    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+    const config = await ProviderConfig.getConfigForSite(req.site._id, 'openai');
     
     if (!config) {
       return res.status(404).json({
@@ -329,15 +368,118 @@ router.get('/config/openai', authenticatePlugin, async (req, res) => {
     }
 
     res.json({
+      success: true,
       api_key: config.api_key,
       model_article: config.model_article,
       model_image: config.model_image,
       max_tokens: config.max_tokens,
-      temperature: config.temperature
+      temperature: config.temperature,
+      note: 'This endpoint is deprecated. Use /api/v1/config/provider instead.'
     });
 
   } catch (error) {
     console.error('Get OpenAI config error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Get All Available Providers
+ * GET /api/v1/config/providers
+ * Returns list of all available providers and their configurations for this site
+ */
+router.get('/config/providers', authenticatePlugin, async (req, res) => {
+  try {
+    const providers = ProviderConfig.getAllProviderOptions();
+    const activeSiteProviders = await ProviderConfig.getAllProvidersForSite(req.site._id);
+    
+    res.json({
+      success: true,
+      all_providers: providers,
+      active_providers: activeSiteProviders,
+      message: 'Returns available providers and active configurations for this site'
+    });
+
+  } catch (error) {
+    console.error('Get providers error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+/**
+ * Update Provider Configuration
+ * PUT /api/v1/config/provider
+ * Updates the active provider configuration for this site
+ */
+router.put('/config/provider', authenticatePlugin, async (req, res) => {
+  try {
+    const {
+      provider,
+      api_key,
+      model_article,
+      model_image,
+      max_tokens,
+      temperature
+    } = req.body;
+
+    if (!provider) {
+      return res.status(400).json({
+        success: false,
+        error: 'Provider is required'
+      });
+    }
+
+    if (!ProviderConfig.getProviderInfo(provider)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid provider: ${provider}. Must be one of: ${Object.keys(ProviderConfig.PROVIDERS).join(', ')}`
+      });
+    }
+
+    const updateData = {
+      provider,
+      ...(api_key && { api_key }),
+      ...(model_article && { model_article }),
+      ...(model_image && { model_image }),
+      ...(max_tokens && { max_tokens }),
+      ...(temperature !== undefined && { temperature })
+    };
+
+    // Validate configuration
+    const validation = ProviderConfig.validateConfig({
+      provider,
+      api_key: api_key || 'placeholder',
+      model_article,
+      model_image,
+      max_tokens,
+      temperature
+    });
+
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Configuration validation failed',
+        errors: validation.errors
+      });
+    }
+
+    await ProviderConfig.updateSiteConfig(req.site._id, updateData);
+
+    res.json({
+      success: true,
+      message: 'Provider configuration updated successfully',
+      provider: provider,
+      provider_name: ProviderConfig.getProviderInfo(provider).name
+    });
+
+  } catch (error) {
+    console.error('Update provider config error:', error);
     res.status(500).json({
       success: false,
       error: 'Internal server error'
@@ -1186,22 +1328,19 @@ router.post('/payments/confirm', authenticatePlugin, async (req, res) => {
 router.get('/config/article', authenticatePlugin, async (req, res) => {
   try {
     // Get configuration for the external site
-    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+    const config = await ProviderConfig.getConfigForSite(req.site._id);
 
     if (!config || !config.api_key) {
       return res.status(404).json({
         success: false,
-        error: 'no_openai_key',
-        message: 'OpenAI API key not configured for this instance'
+        error: 'no_provider_key',
+        message: 'Provider API key not configured for this instance'
       });
     }
 
-    // Get available models (could be extended to fetch from OpenAI API)
-    const availableModels = [
-      'gpt-4-turbo',
-      'gpt-4',
-      'gpt-3.5-turbo'
-    ];
+    // Get available models for this provider
+    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    const availableModels = providerInfo?.models?.article || [];
 
     // Get system prompt or use default
     const systemPrompt = config.system_prompt || 
@@ -1209,12 +1348,15 @@ router.get('/config/article', authenticatePlugin, async (req, res) => {
 
     res.json({
       success: true,
+      provider: config.provider,
+      provider_name: providerInfo?.name,
       config: {
         api_key: config.api_key,
-        model: config.model_article || 'gpt-4-turbo',
+        model: config.model_article || providerInfo?.default_models?.article,
         temperature: config.temperature || 0.7,
         max_tokens: config.max_tokens || 2000,
-        system_prompt: systemPrompt
+        system_prompt: systemPrompt,
+        base_url: providerInfo?.base_url
       },
       models: availableModels
     });
@@ -1236,22 +1378,21 @@ router.get('/config/article', authenticatePlugin, async (req, res) => {
 router.get('/config/image', authenticatePlugin, async (req, res) => {
   try {
     // Get configuration for the external site
-    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+    const config = await ProviderConfig.getConfigForSite(req.site._id);
 
     if (!config || !config.api_key) {
       return res.status(404).json({
         success: false,
-        error: 'no_openai_key',
-        message: 'OpenAI API key not configured for image generation'
+        error: 'no_provider_key',
+        message: 'Provider API key not configured for image generation'
       });
     }
 
-    // Available image models and sizes
-    const availableModels = [
-      'dall-e-3',
-      'dall-e-2'
-    ];
+    // Get available models for this provider
+    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    const availableModels = providerInfo?.models?.image || [];
 
+    // Available image sizes (provider-dependent, shown as reference)
     const availableSizes = [
       '1024x1024',
       '1024x1792',
@@ -1260,10 +1401,13 @@ router.get('/config/image', authenticatePlugin, async (req, res) => {
 
     res.json({
       success: true,
+      provider: config.provider,
+      provider_name: providerInfo?.name,
       config: {
         api_key: config.api_key,
-        model: config.model_image || 'dall-e-3',
-        quality: config.image_quality || 'hd'
+        model: config.model_image || providerInfo?.default_models?.image,
+        quality: config.image_quality || 'hd',
+        base_url: providerInfo?.base_url
       },
       models: availableModels,
       sizes: availableSizes
@@ -1286,22 +1430,19 @@ router.get('/config/image', authenticatePlugin, async (req, res) => {
 router.get('/config/rewrite', authenticatePlugin, async (req, res) => {
   try {
     // Get configuration for the external site
-    const config = await OpenAIConfig.getConfigForSite(req.site._id);
+    const config = await ProviderConfig.getConfigForSite(req.site._id);
 
     if (!config || !config.api_key) {
       return res.status(404).json({
         success: false,
-        error: 'no_openai_key',
-        message: 'OpenAI API key not configured for content rewriting'
+        error: 'no_provider_key',
+        message: 'Provider API key not configured for content rewriting'
       });
     }
 
-    // Available models for rewriting
-    const availableModels = [
-      'gpt-4-turbo',
-      'gpt-4',
-      'gpt-3.5-turbo'
-    ];
+    // Get available models for this provider
+    const providerInfo = ProviderConfig.getProviderInfo(config.provider);
+    const availableModels = providerInfo?.models?.article || [];
 
     // Available rewrite strategies
     const strategies = [
@@ -1313,11 +1454,14 @@ router.get('/config/rewrite', authenticatePlugin, async (req, res) => {
 
     res.json({
       success: true,
+      provider: config.provider,
+      provider_name: providerInfo?.name,
       config: {
         api_key: config.api_key,
-        model: config.model_article || 'gpt-4-turbo',
+        model: config.model_article || providerInfo?.default_models?.article,
         temperature: config.temperature || 0.6,
-        strategies: strategies
+        strategies: strategies,
+        base_url: providerInfo?.base_url
       },
       models: availableModels
     });

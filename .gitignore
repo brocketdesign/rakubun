@@ -131,3 +131,10 @@ dist
 public/downloads/
 public/uploads/
 public/output/
+
+# Backup files
+*.bak
+*.old
+*.original
+*.backup    
+*.backup.*

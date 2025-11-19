@@ -47,14 +47,21 @@ class ExternalDashboard {
     // Forms
     document.getElementById('packageForm').addEventListener('submit', (e) => this.savePackage(e));
     document.getElementById('userCreditsForm').addEventListener('submit', (e) => this.updateUserCredits(e));
-    document.getElementById('openaiConfigForm').addEventListener('submit', (e) => this.saveOpenAIConfig(e));
+    document.getElementById('providerConfigForm').addEventListener('submit', (e) => this.saveProviderConfig(e));
     document.getElementById('stripeConfigForm').addEventListener('submit', (e) => this.saveStripeConfig(e));
+
+    // Provider configuration
+    document.getElementById('providerSelect').addEventListener('change', (e) => this.onProviderChanged(e));
+    document.getElementById('saveProviderConfig').addEventListener('click', (e) => this.saveProviderConfig(e));
+    document.getElementById('testProviderConfig').addEventListener('click', () => this.testProviderConfig());
+    document.getElementById('testArticleGeneration').addEventListener('click', () => this.testArticleGeneration());
+    document.getElementById('testImageGeneration').addEventListener('click', () => this.testImageGeneration());
+    document.getElementById('switchProviderBtn').addEventListener('click', () => this.showSwitchProviderGuide());
 
     // Seed data
     document.getElementById('executeSeed').addEventListener('click', () => this.seedData());
 
-    // Test config
-    document.getElementById('testConfig').addEventListener('click', () => this.testOpenAIConfig());
+    // Test Stripe config
     document.getElementById('testStripeConnection').addEventListener('click', () => this.testStripeConnection());
     document.getElementById('viewStripeWebhooks').addEventListener('click', () => this.viewStripeWebhooks());
   }
@@ -238,19 +245,8 @@ class ExternalDashboard {
 
   async loadConfig() {
     try {
-      // Load OpenAI config
-      const response = await fetch('/api/v1/admin/config/openai');
-      const data = await response.json();
-
-      if (data.success && data.configs.length > 0) {
-        const globalConfig = data.configs.find(c => !c.site);
-        if (globalConfig) {
-          document.getElementById('modelArticle').value = globalConfig.model_article || 'gpt-4';
-          document.getElementById('modelImage').value = globalConfig.model_image || 'dall-e-3';
-          document.getElementById('maxTokens').value = globalConfig.max_tokens || 2000;
-          document.getElementById('temperature').value = globalConfig.temperature || 0.7;
-        }
-      }
+      // Load current provider configuration
+      await this.loadProviderConfig();
 
       // Load Stripe config
       const stripeResponse = await fetch('/api/v1/admin/config/stripe');
@@ -266,6 +262,151 @@ class ExternalDashboard {
       }
     } catch (error) {
       console.error('Error loading config:', error);
+    }
+  }
+
+  async loadProviderConfig() {
+    try {
+      // Load current provider configuration
+      const response = await fetch('/api/v1/config/provider');
+      const data = await response.json();
+
+      if (data.success && data.config) {
+        const config = data.config;
+        document.getElementById('providerSelect').value = config.provider || 'openai';
+        document.getElementById('providerApiKey').value = config.api_key || '';
+        document.getElementById('modelArticle').value = config.model_article || '';
+        document.getElementById('modelImage').value = config.model_image || '';
+        document.getElementById('maxTokens').value = config.max_tokens || 2000;
+        document.getElementById('temperature').value = config.temperature || 0.7;
+        document.getElementById('baseUrl').value = config.base_url || '';
+        
+        // Update provider info
+        this.updateProviderInfo(config.provider);
+        
+        // Load provider-specific models
+        await this.loadProviderModels(config.provider);
+        
+        // Load active providers for this site
+        await this.loadActiveProviders();
+      }
+    } catch (error) {
+      console.error('Error loading provider config:', error);
+      this.showAlert('Error loading provider configuration', 'warning');
+    }
+  }
+
+  async loadActiveProviders() {
+    try {
+      const response = await fetch('/api/v1/config/providers');
+      const data = await response.json();
+
+      if (data.success && data.active_providers) {
+        const list = document.getElementById('activeProvidersList');
+        
+        if (data.active_providers.length === 0) {
+          list.innerHTML = '<p class="text-muted">No active providers configured</p>';
+          return;
+        }
+
+        list.innerHTML = data.active_providers.map(provider => `
+          <a href="#" class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">${provider.name}</h6>
+              <span class="badge bg-success">Active</span>
+            </div>
+            <p class="mb-1"><small>Base URL: ${provider.base_url || 'N/A'}</small></p>
+            <p class="mb-0"><small class="text-muted">Models: ${provider.model_article || 'N/A'}</small></p>
+          </a>
+        `).join('');
+      }
+    } catch (error) {
+      console.error('Error loading active providers:', error);
+    }
+  }
+
+  async loadProviderModels(provider) {
+    try {
+      // Load article models
+      const articleResponse = await fetch('/api/v1/config/article');
+      const articleData = await articleResponse.json();
+
+      if (articleData.success && articleData.config) {
+        const modelArticle = document.getElementById('modelArticle');
+        const articleModels = articleData.config.available_models || [];
+        
+        modelArticle.innerHTML = `
+          <option value="">Select article model...</option>
+          ${articleModels.map(model => `<option value="${model}">${model}</option>`).join('')}
+        `;
+        
+        if (articleData.config.model) {
+          modelArticle.value = articleData.config.model;
+        }
+      }
+
+      // Load image models
+      const imageResponse = await fetch('/api/v1/config/image');
+      const imageData = await imageResponse.json();
+
+      if (imageData.success && imageData.config) {
+        const modelImage = document.getElementById('modelImage');
+        const imageModels = imageData.config.available_models || [];
+        
+        modelImage.innerHTML = `
+          <option value="">Select image model...</option>
+          ${imageModels.map(model => `<option value="${model}">${model}</option>`).join('')}
+        `;
+        
+        if (imageData.config.model) {
+          modelImage.value = imageData.config.model;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading provider models:', error);
+    }
+  }
+
+  updateProviderInfo(provider) {
+    const infoDiv = document.getElementById('providerInfo');
+    
+    const providerInfo = {
+      openai: {
+        name: 'OpenAI',
+        description: 'OpenAI provides state-of-the-art models (GPT-4, GPT-3.5) for text generation and DALL-E 3 for image generation.',
+        models: 'GPT-4, GPT-4 Turbo, GPT-3.5 Turbo | DALL-E 3, DALL-E 2',
+        strengths: '✓ Highest quality ✓ Reliable ✓ Premium models'
+      },
+      novita: {
+        name: 'Novita AI',
+        description: 'Novita AI provides cost-effective alternatives with DeepSeek, Llama, and Mistral models.',
+        models: 'DeepSeek, Llama 2 7B, Mistral 7B | DALL-E 3 (compatible)',
+        strengths: '✓ Budget-friendly ✓ Fast ✓ Great variety'
+      }
+    };
+
+    const info = providerInfo[provider] || providerInfo.openai;
+    infoDiv.innerHTML = `
+      <h6 class="mb-2">${info.name}</h6>
+      <p class="mb-2">${info.description}</p>
+      <p class="mb-1"><strong>Available Models:</strong></p>
+      <small class="text-muted">${info.models}</small>
+      <p class="mt-2 mb-0"><small>${info.strengths}</small></p>
+    `;
+  }
+
+  onProviderChanged(e) {
+    const provider = e.target.value;
+    if (provider) {
+      this.updateProviderInfo(provider);
+      this.loadProviderModels(provider);
+      
+      // Update base URL
+      const baseUrls = {
+        openai: 'https://api.openai.com/v1',
+        novita: 'https://api.novita.ai/openai/v1'
+      };
+      document.getElementById('baseUrl').value = baseUrls[provider] || '';
     }
   }
 
@@ -420,19 +561,43 @@ class ExternalDashboard {
     }
   }
 
-  async saveOpenAIConfig(e) {
+  async saveProviderConfig(e) {
     e.preventDefault();
     
+    const provider = document.getElementById('providerSelect').value;
+    const apiKey = document.getElementById('providerApiKey').value;
+    const modelArticle = document.getElementById('modelArticle').value;
+    const modelImage = document.getElementById('modelImage').value;
+    const maxTokens = parseInt(document.getElementById('maxTokens').value);
+    const temperature = parseFloat(document.getElementById('temperature').value);
+
+    // Validation
+    if (!provider) {
+      this.showAlert('Please select a provider', 'warning');
+      return;
+    }
+
+    if (!apiKey) {
+      this.showAlert('API key is required', 'warning');
+      return;
+    }
+
+    if (!modelArticle || !modelImage) {
+      this.showAlert('Both article and image models must be selected', 'warning');
+      return;
+    }
+
     const configData = {
-      api_key: document.getElementById('apiKey').value,
-      model_article: document.getElementById('modelArticle').value,
-      model_image: document.getElementById('modelImage').value,
-      max_tokens: parseInt(document.getElementById('maxTokens').value),
-      temperature: parseFloat(document.getElementById('temperature').value)
+      provider,
+      api_key: apiKey,
+      model_article: modelArticle,
+      model_image: modelImage,
+      max_tokens: maxTokens,
+      temperature: temperature
     };
     
     try {
-      const response = await fetch('/api/v1/admin/config/openai/global', {
+      const response = await fetch('/api/v1/config/provider', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configData)
@@ -441,13 +606,140 @@ class ExternalDashboard {
       const data = await response.json();
       
       if (data.success) {
-        this.showAlert('Configuration saved successfully', 'success');
+        this.showAlert(`Provider configuration for ${data.provider_name} saved successfully`, 'success');
+        // Reload configuration to confirm changes
+        setTimeout(() => this.loadProviderConfig(), 1000);
       } else {
-        this.showAlert(data.error, 'danger');
+        this.showAlert(data.error || 'Error saving provider configuration', 'danger');
       }
     } catch (error) {
-      this.showAlert('Error saving configuration', 'danger');
+      console.error('Error saving provider config:', error);
+      this.showAlert('Error saving provider configuration: ' + error.message, 'danger');
     }
+  }
+
+  async testProviderConfig() {
+    const provider = document.getElementById('providerSelect').value;
+    
+    if (!provider) {
+      this.showAlert('Please select a provider first', 'warning');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/v1/config/provider');
+      const data = await response.json();
+
+      if (data.success && data.config) {
+        this.showAlert(`✓ ${data.config.provider || provider} provider configuration is valid!`, 'success');
+      } else {
+        this.showAlert('Provider configuration is invalid or not set', 'danger');
+      }
+    } catch (error) {
+      console.error('Error testing provider config:', error);
+      this.showAlert('Error testing provider configuration', 'danger');
+    }
+  }
+
+  async testArticleGeneration() {
+    const provider = document.getElementById('providerSelect').value;
+    
+    if (!provider) {
+      this.showAlert('Please select a provider first', 'warning');
+      return;
+    }
+
+    try {
+      this.showAlert('Testing article generation with ' + provider + '...', 'info');
+      
+      // Call the article generation test endpoint
+      const response = await fetch('/api/v1/config/test/article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.showAlert('✓ Article generation test successful! Model: ' + data.model, 'success');
+      } else {
+        this.showAlert('✗ Article generation test failed: ' + (data.error || 'Unknown error'), 'danger');
+      }
+    } catch (error) {
+      console.error('Error testing article generation:', error);
+      this.showAlert('Error testing article generation: ' + error.message, 'danger');
+    }
+  }
+
+  async testImageGeneration() {
+    const provider = document.getElementById('providerSelect').value;
+    
+    if (!provider) {
+      this.showAlert('Please select a provider first', 'warning');
+      return;
+    }
+
+    try {
+      this.showAlert('Testing image generation with ' + provider + '...', 'info');
+      
+      // Call the image generation test endpoint
+      const response = await fetch('/api/v1/config/test/image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        this.showAlert('✓ Image generation test successful! Model: ' + data.model, 'success');
+      } else {
+        this.showAlert('✗ Image generation test failed: ' + (data.error || 'Unknown error'), 'danger');
+      }
+    } catch (error) {
+      console.error('Error testing image generation:', error);
+      this.showAlert('Error testing image generation: ' + error.message, 'danger');
+    }
+  }
+
+  showSwitchProviderGuide() {
+    const guide = `
+PROVIDER SWITCHING GUIDE
+
+1. BEFORE SWITCHING:
+   • Backup your current API key
+   • Note your current model settings
+   • Ensure new provider API key is ready
+
+2. SWITCHING STEPS:
+   a) Get new provider API key
+   b) Change provider in dropdown
+   c) Enter new API key
+   d) Select models specific to new provider
+   e) Click "Test Configuration"
+   f) If successful, click "Save Provider Configuration"
+
+3. TESTING:
+   • Click "Test Configuration" to verify API key
+   • Click "Test Article Generation" to test with real API
+   • Click "Test Image Generation" to test image models
+
+4. ROLLING BACK:
+   • Return to this page
+   • Select previous provider from dropdown
+   • Enter previous API key
+   • Save configuration
+
+5. MIGRATION TIMELINE:
+   • No downtime required
+   • Switch takes effect immediately
+   • Both providers supported simultaneously
+
+Need help? Check EXTERNAL_DASHBOARD_PROVIDER_GUIDE.md for detailed instructions.
+    `;
+    
+    alert(guide);
   }
 
   async saveStripeConfig(e) {

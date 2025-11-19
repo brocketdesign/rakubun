@@ -160,45 +160,144 @@ block content
 
       // Configuration Tab
       .tab-pane.fade#config
-        // OpenAI Configuration Card
+        // Provider Selection Card
         .card.mb-4
           .card-header
-            h5.mb-0 OpenAI Configuration
+            h5.mb-0 AI Provider Selection
           .card-body
-            form#openaiConfigForm
+            .alert.alert-info
+              i.fas.fa-info-circle.me-2
+              | Select and configure your preferred AI provider. You can switch providers at any time without redeploying code.
+            
+            .row
+              .col-md-6
+                .mb-3
+                  label.form-label(for="providerSelect")
+                    | Active Provider
+                    span.text-danger *
+                  select.form-select#providerSelect
+                    option(value="") Select a provider...
+                    option(value="openai") OpenAI
+                    option(value="novita") Novita AI
+              .col-md-6
+                .mb-3
+                  label.form-label Provider Information
+                  .alert.alert-light.mb-0#providerInfo
+                    p.mb-0 Select a provider to see details
+            
+            .row
+              .col-12
+                .mb-3
+                  label.form-label Current Providers on This Site
+                  div.list-group#activeProvidersList
+                    a.list-group-item.list-group-item-action(href="#") Loading...
+
+        // Provider Configuration Card
+        .card.mb-4
+          .card-header
+            h5.mb-0 Provider Configuration
+          .card-body
+            form#providerConfigForm
               .row
                 .col-md-6
                   .mb-3
-                    label.form-label(for="apiKey") API Key
-                    input.form-control(type="password" id="apiKey" placeholder="sk-...")
+                    label.form-label(for="providerApiKey")
+                      | API Key
+                      span.text-danger *
+                    input.form-control(type="password" id="providerApiKey" placeholder="Enter API key for selected provider" required)
+                    small.form-text.text-muted
+                      | Your API key will be encrypted and stored securely
+
                 .col-md-6
                   .mb-3
-                    label.form-label(for="modelArticle") Article Model
-                    select.form-select#modelArticle
-                      option(value="gpt-4") GPT-4
-                      option(value="gpt-3.5-turbo") GPT-3.5 Turbo
-                      option(value="gpt-4-turbo") GPT-4 Turbo
+                    label.form-label(for="modelArticle")
+                      | Article Model
+                      span.text-danger *
+                    select.form-select#modelArticle(required)
+                      option(value="") Select article model...
+                    small.form-text.text-muted#articleModelHelp
+
+              .row
                 .col-md-4
                   .mb-3
-                    label.form-label(for="modelImage") Image Model
-                    select.form-select#modelImage
-                      option(value="dall-e-3") DALL-E 3
-                      option(value="dall-e-2") DALL-E 2
+                    label.form-label(for="modelImage")
+                      | Image Model
+                      span.text-danger *
+                    select.form-select#modelImage(required)
+                      option(value="") Select image model...
+                    small.form-text.text-muted#imageModelHelp
+
                 .col-md-4
                   .mb-3
                     label.form-label(for="maxTokens") Max Tokens
-                    input.form-control(type="number" id="maxTokens" value="2000")
+                    input.form-control(type="number" id="maxTokens" min="100" max="8000" value="2000")
+                    small.form-text.text-muted Provider-specific limits apply
+
                 .col-md-4
                   .mb-3
                     label.form-label(for="temperature") Temperature
                     input.form-control(type="number" id="temperature" min="0" max="2" step="0.1" value="0.7")
+                    small.form-text.text-muted 0 = deterministic, 2 = creative
+
+              .row
+                .col-md-6
+                  .mb-3
+                    label.form-label Base URL
+                    input.form-control(type="text" id="baseUrl" readonly)
+                    small.form-text.text-muted Automatically set based on provider
+
               .d-flex.gap-2
-                button.btn.btn-primary(type="submit")
+                button.btn.btn-primary(type="submit")#saveProviderConfig
                   i.fas.fa-save.me-2
-                  | Save Configuration
-                button.btn.btn-outline-secondary(type="button")#testConfig
+                  | Save Provider Configuration
+                button.btn.btn-outline-secondary(type="button")#testProviderConfig
                   i.fas.fa-vial.me-2
                   | Test Configuration
+                button.btn.btn-outline-info(type="button")#testArticleGeneration
+                  i.fas.fa-file-alt.me-2
+                  | Test Article Generation
+                button.btn.btn-outline-info(type="button")#testImageGeneration
+                  i.fas.fa-image.me-2
+                  | Test Image Generation
+
+        // Migration Guide Card
+        .card.mb-4
+          .card-header
+            h5.mb-0 Provider Comparison & Migration
+          .card-body
+            .table-responsive
+              table.table.table-sm.table-bordered
+                thead.table-light
+                  tr
+                    th Feature
+                    th OpenAI
+                    th Novita AI
+                tbody
+                  tr
+                    td Article Models
+                    td GPT-4, GPT-4 Turbo, GPT-3.5
+                    td DeepSeek, Llama, Mistral
+                  tr
+                    td Image Models
+                    td DALL-E 3, DALL-E 2
+                    td DALL-E 3 (compatible)
+                  tr
+                    td Cost
+                    td Premium
+                    td Budget-friendly
+                  tr
+                    td Speed
+                    td Moderate
+                    td Fast
+                  tr
+                    td Quality
+                    td Highest
+                    td Very Good
+            
+            .mt-3
+              button.btn.btn-sm.btn-outline-primary(type="button")#switchProviderBtn
+                i.fas.fa-exchange-alt.me-2
+                | Switch Provider Guidance
 
         // Stripe Configuration Card
         .card
