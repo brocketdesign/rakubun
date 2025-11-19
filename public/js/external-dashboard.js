@@ -47,13 +47,19 @@ class ExternalDashboard {
     // Forms
     document.getElementById('packageForm').addEventListener('submit', (e) => this.savePackage(e));
     document.getElementById('userCreditsForm').addEventListener('submit', (e) => this.updateUserCredits(e));
-    document.getElementById('providerConfigForm').addEventListener('submit', (e) => this.saveProviderConfig(e));
+    document.getElementById('providerConfigForm').addEventListener('submit', (e) => this.saveCurrentProviderConfig(e));
     document.getElementById('stripeConfigForm').addEventListener('submit', (e) => this.saveStripeConfig(e));
 
-    // Provider configuration
-    document.getElementById('providerSelect').addEventListener('change', (e) => this.onProviderChanged(e));
-    document.getElementById('saveProviderConfig').addEventListener('click', (e) => this.saveProviderConfig(e));
-    document.getElementById('testProviderConfig').addEventListener('click', () => this.testProviderConfig());
+    // Provider configuration - New tab-based selection
+    document.getElementById('providerTabOpenAI')?.addEventListener('click', () => this.switchProviderTab('openai'));
+    document.getElementById('providerTabNovita')?.addEventListener('click', () => this.switchProviderTab('novita'));
+    
+    // Provider form controls
+    document.getElementById('toggleApiKeyVisibility')?.addEventListener('click', () => this.toggleApiKeyVisibility());
+    document.getElementById('temperature')?.addEventListener('input', (e) => this.updateTemperatureDisplay(e));
+    
+    // Provider configuration actions
+    document.getElementById('testProviderConfig').addEventListener('click', () => this.testCurrentProviderConfig());
     document.getElementById('testArticleGeneration').addEventListener('click', () => this.testArticleGeneration());
     document.getElementById('testImageGeneration').addEventListener('click', () => this.testImageGeneration());
     document.getElementById('switchProviderBtn').addEventListener('click', () => this.showSwitchProviderGuide());
@@ -267,32 +273,95 @@ class ExternalDashboard {
 
   async loadProviderConfig() {
     try {
-      // Load current provider configuration
-      const response = await fetch('/api/v1/config/provider');
-      const data = await response.json();
-
-      if (data.success && data.config) {
-        const config = data.config;
-        document.getElementById('providerSelect').value = config.provider || 'openai';
-        document.getElementById('providerApiKey').value = config.api_key || '';
-        document.getElementById('modelArticle').value = config.model_article || '';
-        document.getElementById('modelImage').value = config.model_image || '';
-        document.getElementById('maxTokens').value = config.max_tokens || 2000;
-        document.getElementById('temperature').value = config.temperature || 0.7;
-        document.getElementById('baseUrl').value = config.base_url || '';
-        
-        // Update provider info
-        this.updateProviderInfo(config.provider);
-        
-        // Load provider-specific models
-        await this.loadProviderModels(config.provider);
-        
-        // Load active providers for this site
-        await this.loadActiveProviders();
-      }
+      // Initialize provider UI with default provider
+      await this.initializeProviderUI();
     } catch (error) {
       console.error('Error loading provider config:', error);
       this.showAlert('Error loading provider configuration', 'warning');
+    }
+  }
+
+  async initializeProviderUI() {
+    try {
+      // Fetch current configuration
+      const response = await fetch('/api/v1/config/provider');
+      const data = await response.json();
+
+      if (data.success) {
+        const activeProvider = data.provider || 'openai';
+        
+        // Switch to the active provider tab
+        await this.switchProviderTab(activeProvider);
+        
+        // Load active providers list
+        await this.loadActiveProviders();
+      }
+    } catch (error) {
+      console.error('Error initializing provider UI:', error);
+    }
+  }
+
+  async switchProviderTab(provider) {
+    // Update active tab styling
+    document.getElementById('providerTabOpenAI')?.classList.toggle('active', provider === 'openai');
+    document.getElementById('providerTabNovita')?.classList.toggle('active', provider === 'novita');
+    
+    // Store current provider selection
+    this.currentProvider = provider;
+    
+    // Load configuration for selected provider
+    await this.loadProviderConfigForProvider(provider);
+    
+    // Load models for selected provider
+    await this.loadProviderModels(provider);
+    
+    // Update provider info display
+    this.updateProviderInfo(provider);
+    
+    // Update base URL
+    const baseUrls = {
+      openai: 'https://api.openai.com/v1',
+      novita: 'https://api.novita.ai/openai/v1'
+    };
+    document.getElementById('baseUrl').value = baseUrls[provider] || '';
+    
+    // Update API key link based on provider
+    const keyLinks = {
+      openai: 'https://platform.openai.com/api-keys',
+      novita: 'https://novita.ai/settings/api-keys'
+    };
+    const keyLink = document.getElementById('providerKeyLink');
+    if (keyLink) {
+      keyLink.href = keyLinks[provider];
+      keyLink.textContent = `Get ${provider === 'openai' ? 'OpenAI' : 'Novita'} API key →`;
+    }
+  }
+
+  async loadProviderConfigForProvider(provider) {
+    try {
+      // Fetch configuration for specific provider
+      const response = await fetch(`/api/v1/config/provider?provider=${provider}`);
+      const data = await response.json();
+
+      if (data.success) {
+        // Populate form fields with provider configuration
+        document.getElementById('providerApiKey').value = data.api_key || '';
+        document.getElementById('modelArticle').value = data.model_article || '';
+        document.getElementById('modelImage').value = data.model_image || '';
+        document.getElementById('maxTokens').value = data.max_tokens || 2000;
+        document.getElementById('temperature').value = data.temperature || 0.7;
+        document.getElementById('temperatureValue').textContent = data.temperature || 0.7;
+      } else {
+        // Clear form if no config found for this provider
+        document.getElementById('providerApiKey').value = '';
+        document.getElementById('modelArticle').value = '';
+        document.getElementById('modelImage').value = '';
+        document.getElementById('maxTokens').value = 2000;
+        document.getElementById('temperature').value = 0.7;
+        document.getElementById('temperatureValue').textContent = 0.7;
+      }
+    } catch (error) {
+      console.error(`Error loading config for ${provider}:`, error);
     }
   }
 
@@ -328,42 +397,30 @@ class ExternalDashboard {
   async loadProviderModels(provider) {
     try {
       // Load article models
-      const articleResponse = await fetch('/api/v1/config/article');
+      const articleResponse = await fetch(`/api/v1/config/article?provider=${provider}`);
       const articleData = await articleResponse.json();
 
-      if (articleData.success && articleData.config) {
+      if (articleData.success && articleData.models) {
         const modelArticle = document.getElementById('modelArticle');
-        const articleModels = articleData.config.available_models || [];
-        
         modelArticle.innerHTML = `
           <option value="">Select article model...</option>
-          ${articleModels.map(model => `<option value="${model}">${model}</option>`).join('')}
+          ${articleData.models.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
         `;
-        
-        if (articleData.config.model) {
-          modelArticle.value = articleData.config.model;
-        }
       }
 
       // Load image models
-      const imageResponse = await fetch('/api/v1/config/image');
+      const imageResponse = await fetch(`/api/v1/config/image?provider=${provider}`);
       const imageData = await imageResponse.json();
 
-      if (imageData.success && imageData.config) {
+      if (imageData.success && imageData.models) {
         const modelImage = document.getElementById('modelImage');
-        const imageModels = imageData.config.available_models || [];
-        
         modelImage.innerHTML = `
           <option value="">Select image model...</option>
-          ${imageModels.map(model => `<option value="${model}">${model}</option>`).join('')}
+          ${imageData.models.map(model => `<option value="${model.value}">${model.label}</option>`).join('')}
         `;
-        
-        if (imageData.config.model) {
-          modelImage.value = imageData.config.model;
-        }
       }
     } catch (error) {
-      console.error('Error loading provider models:', error);
+      console.error(`Error loading models for ${provider}:`, error);
     }
   }
 
@@ -375,23 +432,41 @@ class ExternalDashboard {
         name: 'OpenAI',
         description: 'OpenAI provides state-of-the-art models (GPT-4, GPT-3.5) for text generation and DALL-E 3 for image generation.',
         models: 'GPT-4, GPT-4 Turbo, GPT-3.5 Turbo | DALL-E 3, DALL-E 2',
-        strengths: '✓ Highest quality ✓ Reliable ✓ Premium models'
+        strengths: '✓ Highest quality ✓ Reliable ✓ Premium models',
+        docLink: 'https://platform.openai.com/docs/api-reference'
       },
       novita: {
         name: 'Novita AI',
         description: 'Novita AI provides cost-effective alternatives with DeepSeek, Llama, and Mistral models.',
-        models: 'DeepSeek, Llama 2 7B, Mistral 7B | DALL-E 3 (compatible)',
-        strengths: '✓ Budget-friendly ✓ Fast ✓ Great variety'
+        models: 'DeepSeek R1, DeepSeek V2.5, Llama 2 7B, Mistral 7B | DALL-E 3 (compatible)',
+        strengths: '✓ Budget-friendly ✓ Fast ✓ Great variety',
+        docLink: 'https://novita.ai/docs'
       }
     };
 
     const info = providerInfo[provider] || providerInfo.openai;
     infoDiv.innerHTML = `
-      <h6 class="mb-2">${info.name}</h6>
-      <p class="mb-2">${info.description}</p>
-      <p class="mb-1"><strong>Available Models:</strong></p>
-      <small class="text-muted">${info.models}</small>
-      <p class="mt-2 mb-0"><small>${info.strengths}</small></p>
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h6 class="mb-2 text-primary">${info.name}</h6>
+          <p class="mb-2 small">${info.description}</p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Available Models:</strong></p>
+          <small class="text-muted d-block">${info.models}</small>
+        </div>
+        <div class="col-md-6">
+          <p class="mb-1"><strong>Strengths:</strong></p>
+          <small class="text-muted d-block">${info.strengths}</small>
+        </div>
+      </div>
+      <div class="mt-2">
+        <a href="${info.docLink}" target="_blank" class="btn btn-sm btn-outline-primary">
+          <i class="fas fa-external-link-alt me-1"></i> Documentation
+        </a>
+      </div>
     `;
   }
 

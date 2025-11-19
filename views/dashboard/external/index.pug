@@ -160,43 +160,30 @@ block content
 
       // Configuration Tab
       .tab-pane.fade#config
-        // Provider Selection Card
+        // Provider Selector & Controls Card
         .card.mb-4
           .card-header
-            h5.mb-0 AI Provider Selection
+            .d-flex.justify-content-between.align-items-center
+              h5.mb-0 AI Provider Configuration
+              .btn-group.btn-group-sm(role="group")
+                button.btn.btn-outline-primary#providerTabOpenAI(type="button" data-provider="openai")
+                  i.fas.fa-cube.me-1
+                  | OpenAI
+                button.btn.btn-outline-primary#providerTabNovita(type="button" data-provider="novita")
+                  i.fas.fa-cube.me-1
+                  | Novita AI
           .card-body
             .alert.alert-info
               i.fas.fa-info-circle.me-2
-              | Select and configure your preferred AI provider. You can switch providers at any time without redeploying code.
-            
-            .row
-              .col-md-6
-                .mb-3
-                  label.form-label(for="providerSelect")
-                    | Active Provider
-                    span.text-danger *
-                  select.form-select#providerSelect
-                    option(value="") Select a provider...
-                    option(value="openai") OpenAI
-                    option(value="novita") Novita AI
-              .col-md-6
-                .mb-3
-                  label.form-label Provider Information
-                  .alert.alert-light.mb-0#providerInfo
-                    p.mb-0 Select a provider to see details
-            
-            .row
-              .col-12
-                .mb-3
-                  label.form-label Current Providers on This Site
-                  div.list-group#activeProvidersList
-                    a.list-group-item.list-group-item-action(href="#") Loading...
+              | Configure your AI provider below. Switch between providers using the buttons above. Each provider has unique models and pricing.
 
-        // Provider Configuration Card
-        .card.mb-4
-          .card-header
-            h5.mb-0 Provider Configuration
-          .card-body
+            // Provider Information Section
+            .row.mb-4
+              .col-12
+                .alert.alert-light.border#providerInfo
+                  p.mb-0 Select a provider using the buttons above
+
+            // Provider Configuration Form
             form#providerConfigForm
               .row
                 .col-md-6
@@ -204,10 +191,21 @@ block content
                     label.form-label(for="providerApiKey")
                       | API Key
                       span.text-danger *
-                    input.form-control(type="password" id="providerApiKey" placeholder="Enter API key for selected provider" required)
+                    .input-group
+                      input.form-control(type="password" id="providerApiKey" placeholder="Enter API key for selected provider" required)
+                      button.btn.btn-outline-secondary(type="button" id="toggleApiKeyVisibility")
+                        i.fas.fa-eye
                     small.form-text.text-muted
-                      | Your API key will be encrypted and stored securely
+                      | Your API key will be encrypted and stored securely. 
+                      a(href="#" id="providerKeyLink" target="_blank") Get API key →
 
+                .col-md-6
+                  .mb-3
+                    label.form-label Base URL
+                    input.form-control(type="text" id="baseUrl" readonly)
+                    small.form-text.text-muted Automatically set based on provider
+
+              .row
                 .col-md-6
                   .mb-3
                     label.form-label(for="modelArticle")
@@ -215,50 +213,62 @@ block content
                       span.text-danger *
                     select.form-select#modelArticle(required)
                       option(value="") Select article model...
-                    small.form-text.text-muted#articleModelHelp
+                    small.form-text.text-muted#articleModelHelp Models available for this provider
 
-              .row
-                .col-md-4
+                .col-md-6
                   .mb-3
                     label.form-label(for="modelImage")
                       | Image Model
                       span.text-danger *
                     select.form-select#modelImage(required)
                       option(value="") Select image model...
-                    small.form-text.text-muted#imageModelHelp
-
-                .col-md-4
-                  .mb-3
-                    label.form-label(for="maxTokens") Max Tokens
-                    input.form-control(type="number" id="maxTokens" min="100" max="8000" value="2000")
-                    small.form-text.text-muted Provider-specific limits apply
-
-                .col-md-4
-                  .mb-3
-                    label.form-label(for="temperature") Temperature
-                    input.form-control(type="number" id="temperature" min="0" max="2" step="0.1" value="0.7")
-                    small.form-text.text-muted 0 = deterministic, 2 = creative
+                    small.form-text.text-muted#imageModelHelp Image generation models
 
               .row
                 .col-md-6
                   .mb-3
-                    label.form-label Base URL
-                    input.form-control(type="text" id="baseUrl" readonly)
-                    small.form-text.text-muted Automatically set based on provider
+                    label.form-label(for="maxTokens") Max Tokens
+                    input.form-control(type="number" id="maxTokens" min="100" max="8000" value="2000")
+                    small.form-text.text-muted Max tokens for generation
 
-              .d-flex.gap-2
-                button.btn.btn-primary(type="submit")#saveProviderConfig
-                  i.fas.fa-save.me-2
-                  | Save Provider Configuration
-                button.btn.btn-outline-secondary(type="button")#testProviderConfig
-                  i.fas.fa-vial.me-2
-                  | Test Configuration
-                button.btn.btn-outline-info(type="button")#testArticleGeneration
-                  i.fas.fa-file-alt.me-2
-                  | Test Article Generation
-                button.btn.btn-outline-info(type="button")#testImageGeneration
-                  i.fas.fa-image.me-2
-                  | Test Image Generation
+                .col-md-6
+                  .mb-3
+                    label.form-label(for="temperature") Temperature
+                    input.form-control(type="number" id="temperature" min="0" max="2" step="0.1" value="0.7")
+                    small.form-text.text-muted
+                      | 0 = deterministic, 2 = creative
+                      small.d-block.mt-1
+                        | Current: 
+                        strong#temperatureValue 0.7
+
+              // Action Buttons
+              .row.mt-4
+                .col-12
+                  .d-flex.gap-2.flex-wrap
+                    button.btn.btn-success(type="submit" id="saveProviderConfig")
+                      i.fas.fa-save.me-2
+                      | Save Configuration
+                    button.btn.btn-outline-secondary(type="button" id="testProviderConfig")
+                      i.fas.fa-vial.me-2
+                      | Test Connection
+                    button.btn.btn-outline-info(type="button" id="testArticleGeneration")
+                      i.fas.fa-file-alt.me-2
+                      | Test Article
+                    button.btn.btn-outline-info(type="button" id="testImageGeneration")
+                      i.fas.fa-image.me-2
+                      | Test Image
+                    button.btn.btn-outline-primary(type="button" id="switchProviderBtn")
+                      i.fas.fa-exchange-alt.me-2
+                      | Migration Guide
+
+        // Active Providers List Card
+        .card.mb-4
+          .card-header
+            h5.mb-0 Active Providers on This Site
+          .card-body
+            div#activeProvidersList
+              .spinner-border.spinner-border-sm(role="status")
+                span.visually-hidden Loading...
 
         // Migration Guide Card
         .card.mb-4
