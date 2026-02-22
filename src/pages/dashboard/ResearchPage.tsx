@@ -6,10 +6,7 @@ import {
   Bookmark,
   BookmarkCheck,
   Clock,
-  Filter,
   Sparkles,
-  Globe,
-  ChevronRight,
   RefreshCw,
   ArrowUpRight,
   Newspaper,
@@ -78,8 +75,6 @@ const researchResults = [
     url: '#',
   },
 ];
-
-const savedCount = researchResults.filter(r => r.saved).length;
 
 export default function ResearchPage() {
   const { language } = useLanguage();

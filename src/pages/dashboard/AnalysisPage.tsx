@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import {
-  Brain,
   Play,
-  CheckCircle2,
-  Clock,
   AlertTriangle,
   ChevronRight,
-  FileBarChart,
   Globe,
-  TrendingUp,
   Type,
   LayoutGrid,
   Search,

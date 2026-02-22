@@ -6,13 +6,7 @@ import {
   Plus,
   Clock,
   Globe,
-  FileText,
   MoreVertical,
-  Edit3,
-  Trash2,
-  Copy,
-  CheckCircle2,
-  AlertCircle,
   Repeat,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';

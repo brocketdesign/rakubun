@@ -1,73 +1,79 @@
-# React + TypeScript + Vite
+# Rakubun
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Your blog, on autopilot.
 
-Currently, two official plugins are available:
+Rakubun is an AI-powered platform that analyzes your WordPress site, researches trending topics, and publishes optimized articles while you focus on growth. It learns your style, tone, and structure to build a content plan that feels like you wrote it.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## React Compiler
+- **One-click WordPress Sync**: Connect your site securely using Application Passwords.
+- **AI Site Analysis**: Maps your tone, structure, and content gaps.
+- **Trending Topics Research**: Suggests angles with the best chance to rank based on real search data.
+- **Auto-Publishing**: Schedule once, publish forever. Generates, formats, and publishes to WordPress with images, headings, and SEO meta included.
+- **Monetization Dashboard**: Track your estimated monthly revenue and performance.
+- **Multilingual Support**: Available in English and Japanese.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, shadcn/ui, GSAP (for animations)
+- **Backend**: Node.js (Vercel Serverless Functions), MongoDB
+- **Authentication**: Clerk
+- **Routing**: React Router v7
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 20+
+- MongoDB database
+- Clerk account for authentication
+- A WordPress site (for testing the publishing features)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### Installation
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/rakubun.git
+   cd rakubun
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3. Set up environment variables:
+   Create a `.env` file in the root directory and add the following variables:
+   ```env
+   # Frontend (Vite)
+   VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+
+   # Backend (Vercel/Node)
+   CLERK_SECRET_KEY=your_clerk_secret_key
+   MONGODB_URL=your_mongodb_connection_string
+   MONGODB_DATABASE=rakubun # Optional, defaults to 'rakubun'
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+   The application will be available at `http://localhost:5173`.
+
+## Project Structure
+
+- `api/`: Vercel Serverless Functions (Backend API)
+- `src/`: Frontend React application
+  - `components/`: Reusable UI components (including shadcn/ui)
+  - `hooks/`: Custom React hooks
+  - `i18n/`: Internationalization files (English and Japanese)
+  - `layouts/`: Page layouts (e.g., DashboardLayout)
+  - `lib/`: Utility functions and API clients
+  - `pages/`: Application pages (Landing, Dashboard, etc.)
+  - `sections/`: Landing page sections
+  - `stores/`: State management
+
+## License
+
+This project is private and confidential.

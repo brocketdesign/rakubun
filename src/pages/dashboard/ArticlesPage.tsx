@@ -3,8 +3,6 @@ import {
   FileText,
   Plus,
   Search,
-  Filter,
-  MoreVertical,
   Eye,
   Edit3,
   Trash2,
@@ -13,7 +11,6 @@ import {
   CheckCircle2,
   Loader2,
   Globe,
-  ChevronDown,
   Sparkles,
   Image,
   Link,
@@ -101,7 +98,6 @@ export default function ArticlesPage() {
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showEditor, setShowEditor] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const filteredArticles = articles.filter(a => {
     if (activeFilter !== 'all' && a.status !== activeFilter) return false;

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  BarChart3,
   TrendingUp,
   TrendingDown,
   Eye,
@@ -9,7 +8,6 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Globe,
-  FileText,
   CalendarDays,
   Download,
 } from 'lucide-react';

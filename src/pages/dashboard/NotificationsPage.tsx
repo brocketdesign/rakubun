@@ -1,17 +1,13 @@
 import { useState } from 'react';
 import {
   Bell,
-  Check,
   CheckCheck,
   Clock,
   FileText,
   Globe,
-  AlertTriangle,
   Sparkles,
   Mail,
   Trash2,
-  Filter,
-  MoreVertical,
   Settings,
   Info,
 } from 'lucide-react';
