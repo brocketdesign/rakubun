@@ -10,16 +10,16 @@ import {
   BarChart3,
   Bell,
   Settings,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   LogOut,
   Plus,
-  Moon,
-  Sun,
   ChevronsUpDown,
 } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import DarkModeSwitch from '../components/DarkModeSwitch';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -39,6 +39,7 @@ const navItems = [
   { path: '/dashboard/analytics', icon: BarChart3, labelKey: 'analytics' as const },
   { path: '/dashboard/notifications', icon: Bell, labelKey: 'notifications' as const },
   { path: '/dashboard/settings', icon: Settings, labelKey: 'settings' as const },
+  { path: '/dashboard/docs', icon: BookOpen, labelKey: 'docs' as const },
 ];
 
 const dashboardLabels: Record<string, { en: string; ja: string }> = {
@@ -51,11 +52,11 @@ const dashboardLabels: Record<string, { en: string; ja: string }> = {
   analytics: { en: 'Analytics', ja: 'アナリティクス' },
   notifications: { en: 'Notifications', ja: '通知' },
   settings: { en: 'Settings', ja: '設定' },
+  docs: { en: 'Documentation', ja: 'ドキュメント' },
 };
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,12 +77,12 @@ export default function DashboardLayout() {
         <aside
           className={`
             ${collapsed ? 'w-[68px]' : 'w-[260px]'}
-            flex flex-col border-r border-black/5 bg-white
+            flex flex-col border-r border-rakubun-border bg-rakubun-surface
             transition-all duration-300 ease-in-out shrink-0
           `}
         >
           {/* Sidebar Header */}
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-black/5`}>
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-rakubun-border`}>
             {!collapsed && (
               <button onClick={() => navigate('/')} className="flex items-center gap-2 group">
                 <span className="font-heading text-xl font-bold text-rakubun-text group-hover:text-rakubun-accent transition-colors">
@@ -166,20 +167,9 @@ export default function DashboardLayout() {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className={`border-t border-black/5 p-3 space-y-2 ${collapsed ? 'px-2' : ''}`}>
+          <div className={`border-t border-rakubun-border p-3 space-y-2 ${collapsed ? 'px-2' : ''}`}>
             {/* Dark mode toggle */}
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm
-                text-rakubun-text-secondary hover:bg-rakubun-bg-secondary hover:text-rakubun-text
-                transition-all duration-200
-                ${collapsed ? 'justify-center px-0' : ''}
-              `}
-            >
-              {darkMode ? <Sun className="w-[18px] h-[18px] shrink-0" /> : <Moon className="w-[18px] h-[18px] shrink-0" />}
-              {!collapsed && <span>{language === 'en' ? 'Dark Mode' : 'ダークモード'}</span>}
-            </button>
+            <DarkModeSwitch collapsed={collapsed} showLabel />
 
             {/* Language */}
             {!collapsed && (
@@ -215,7 +205,7 @@ export default function DashboardLayout() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top Bar */}
-          <header className="h-16 border-b border-black/5 bg-white/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0">
+          <header className="h-16 border-b border-rakubun-border bg-rakubun-surface/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0">
             <div className="flex items-center gap-4">
               <h1 className="text-lg font-heading font-semibold text-rakubun-text">
                 {pageTitle}
@@ -223,14 +213,14 @@ export default function DashboardLayout() {
             </div>
             <div className="flex items-center gap-3">
               {/* Search */}
-              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-rakubun-bg rounded-lg border border-black/5">
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-rakubun-bg rounded-lg border border-rakubun-border">
                 <Search className="w-4 h-4 text-rakubun-text-secondary" />
                 <input
                   type="text"
                   placeholder={language === 'en' ? 'Search...' : '検索...'}
                   className="bg-transparent text-sm text-rakubun-text placeholder:text-rakubun-text-secondary/60 outline-none w-48"
                 />
-                <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-rakubun-text-secondary bg-white rounded border border-black/10">
+                <kbd className="hidden lg:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-rakubun-text-secondary bg-rakubun-surface rounded border border-rakubun-border">
                   ⌘K
                 </kbd>
               </div>

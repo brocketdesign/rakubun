@@ -156,7 +156,7 @@ const ResearchSection = ({ className = '' }: ResearchSectionProps) => {
                     className={`topic-chip flex items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-all ${
                       topic.active
                         ? 'bg-rakubun-accent/10 text-rakubun-accent border border-rakubun-accent/30'
-                        : 'bg-white text-rakubun-text-secondary border border-black/5'
+                        : 'bg-rakubun-surface text-rakubun-text-secondary border border-rakubun-border'
                     }`}
                   >
                     <Hash className="w-3.5 h-3.5" />
@@ -165,7 +165,7 @@ const ResearchSection = ({ className = '' }: ResearchSectionProps) => {
                 ))}
               </div>
 
-              <div className="mt-6 pt-4 border-t border-black/5">
+              <div className="mt-6 pt-4 border-t border-rakubun-border">
                 <p className="text-xs text-rakubun-text-secondary">
                   {t.research.sources}
                 </p>

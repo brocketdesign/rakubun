@@ -99,6 +99,57 @@ export interface Translations {
       cta: string;
     }[];
   };
+  documentation: {
+    title: string;
+    subtitle: string;
+    backToDashboard: string;
+    connectSection: {
+      title: string;
+      intro: string;
+      requirements: {
+        title: string;
+        items: string[];
+      };
+      steps: {
+        title: string;
+        items: {
+          title: string;
+          description: string;
+        }[];
+      };
+    };
+    appPasswordSection: {
+      title: string;
+      intro: string;
+      whatIs: {
+        title: string;
+        description: string;
+      };
+      steps: {
+        title: string;
+        items: {
+          title: string;
+          description: string;
+        }[];
+      };
+      tips: {
+        title: string;
+        items: string[];
+      };
+    };
+    troubleshooting: {
+      title: string;
+      items: {
+        question: string;
+        answer: string;
+      }[];
+    };
+    needHelp: {
+      title: string;
+      description: string;
+      cta: string;
+    };
+  };
   footer: {
     headline: string;
     description: string;

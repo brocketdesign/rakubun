@@ -123,7 +123,7 @@ export default function ResearchPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white rounded-2xl border border-black/5 p-4">
+      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-rakubun-text-secondary" />
@@ -143,7 +143,7 @@ export default function ResearchPage() {
       </div>
 
       {/* Trending Topics */}
-      <div className="bg-white rounded-2xl border border-black/5 p-5">
+      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-4 h-4 text-rakubun-accent" />
           <h3 className="font-heading font-semibold text-rakubun-text">
@@ -172,7 +172,7 @@ export default function ResearchPage() {
             onClick={() => setActiveTab('discover')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'discover'
-                ? 'bg-white text-rakubun-text shadow-sm'
+                ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                 : 'text-rakubun-text-secondary hover:text-rakubun-text'
             }`}
           >
@@ -185,7 +185,7 @@ export default function ResearchPage() {
             onClick={() => setActiveTab('saved')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'saved'
-                ? 'bg-white text-rakubun-text shadow-sm'
+                ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                 : 'text-rakubun-text-secondary hover:text-rakubun-text'
             }`}
           >
@@ -203,7 +203,7 @@ export default function ResearchPage() {
           {displayedResults.map((result) => (
             <div
               key={result.id}
-              className="bg-white rounded-2xl border border-black/5 p-5 hover:shadow-md transition-all duration-300 group"
+              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 group"
             >
               <div className="flex items-start gap-4">
                 <div className="flex-1 min-w-0">

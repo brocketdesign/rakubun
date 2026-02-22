@@ -84,9 +84,9 @@ export default function SchedulerPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-black/5 overflow-hidden">
+        <div className="lg:col-span-2 bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
           {/* Calendar Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-rakubun-border">
             <button className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -97,7 +97,7 @@ export default function SchedulerPage() {
           </div>
 
           {/* Day Headers */}
-          <div className="grid grid-cols-7 border-b border-black/5">
+          <div className="grid grid-cols-7 border-b border-rakubun-border">
             {daysOfWeek[language].map((day) => (
               <div key={day} className="py-3 text-center text-xs font-medium text-rakubun-text-secondary">
                 {day}
@@ -117,7 +117,7 @@ export default function SchedulerPage() {
                   key={i}
                   onClick={() => day && setSelectedDate(day)}
                   className={`
-                    min-h-[100px] p-2 border-b border-r border-black/5 cursor-pointer
+                    min-h-[100px] p-2 border-b border-r border-rakubun-border cursor-pointer
                     transition-colors
                     ${!day ? 'bg-rakubun-bg/30' : 'hover:bg-rakubun-bg/50'}
                     ${isSelected ? 'bg-rakubun-accent/5' : ''}
@@ -145,7 +145,7 @@ export default function SchedulerPage() {
                               text-[10px] font-medium px-1.5 py-0.5 rounded-md truncate
                               ${item.status === 'ready'
                                 ? 'bg-rakubun-accent/10 text-rakubun-accent'
-                                : 'bg-amber-50 text-amber-700'
+                                : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400'
                               }
                             `}
                             title={item.title}
@@ -165,7 +165,7 @@ export default function SchedulerPage() {
         {/* Sidebar - Queue */}
         <div className="space-y-4">
           {/* Selected Date Info */}
-          <div className="bg-white rounded-2xl border border-black/5 p-5">
+          <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
             <h3 className="font-heading font-semibold text-rakubun-text mb-3 flex items-center gap-2">
               <CalendarDays className="w-4 h-4 text-rakubun-accent" />
               {language === 'en' ? `February ${selectedDate}` : `2月${selectedDate}日`}
@@ -188,7 +188,7 @@ export default function SchedulerPage() {
                           </span>
                         </div>
                       </div>
-                      <button className="p-1 rounded-lg hover:bg-white text-rakubun-text-secondary opacity-0 group-hover:opacity-100 transition-all">
+                      <button className="p-1 rounded-lg hover:bg-rakubun-surface text-rakubun-text-secondary opacity-0 group-hover:opacity-100 transition-all">
                         <MoreVertical className="w-4 h-4" />
                       </button>
                     </div>
@@ -203,7 +203,7 @@ export default function SchedulerPage() {
           </div>
 
           {/* Publishing Queue */}
-          <div className="bg-white rounded-2xl border border-black/5 p-5">
+          <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
             <h3 className="font-heading font-semibold text-rakubun-text mb-3">
               {language === 'en' ? 'Publishing Queue' : '公開キュー'}
             </h3>
@@ -230,7 +230,7 @@ export default function SchedulerPage() {
           </div>
 
           {/* Quick Stats */}
-          <div className="bg-gradient-to-br from-rakubun-accent/5 to-blue-50 rounded-2xl border border-rakubun-accent/10 p-5">
+          <div className="bg-gradient-to-br from-rakubun-accent/5 to-blue-50 dark:to-blue-500/10 rounded-2xl border border-rakubun-accent/10 p-5">
             <h3 className="font-heading font-semibold text-rakubun-text mb-3">
               {language === 'en' ? 'This Month' : '今月'}
             </h3>
@@ -242,7 +242,7 @@ export default function SchedulerPage() {
                 </p>
               </div>
               <div>
-                <p className="text-2xl font-heading font-bold text-amber-600">5</p>
+                <p className="text-2xl font-heading font-bold text-amber-600 dark:text-amber-400">5</p>
                 <p className="text-xs text-rakubun-text-secondary">
                   {language === 'en' ? 'Scheduled' : '予約済み'}
                 </p>
@@ -254,7 +254,7 @@ export default function SchedulerPage() {
                 </p>
               </div>
               <div>
-                <p className="text-2xl font-heading font-bold text-emerald-600">89%</p>
+                <p className="text-2xl font-heading font-bold text-emerald-600 dark:text-emerald-400">89%</p>
                 <p className="text-xs text-rakubun-text-secondary">
                   {language === 'en' ? 'On Time' : '時間通り'}
                 </p>

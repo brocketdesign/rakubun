@@ -153,7 +153,7 @@ const MonetizeSection = ({ className = '' }: MonetizeSectionProps) => {
               </div>
 
               {/* Mini Chart */}
-              <div className="bg-white rounded-2xl border border-black/5 p-4">
+              <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4">
                 <div className="flex items-end justify-between h-24 gap-2">
                   {[40, 65, 45, 80, 55, 70, 85].map((height, i) => (
                     <div

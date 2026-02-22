@@ -50,11 +50,13 @@ module.exports = {
         },
         // RakuBun custom colors
         rakubun: {
-          bg: '#F6F7F9',
-          'bg-secondary': '#E9EDF3',
-          accent: '#2B6BFF',
-          text: '#0E1116',
-          'text-secondary': '#5A6575',
+          bg: 'hsl(var(--rakubun-bg) / <alpha-value>)',
+          'bg-secondary': 'hsl(var(--rakubun-bg-secondary) / <alpha-value>)',
+          accent: 'hsl(var(--rakubun-accent) / <alpha-value>)',
+          text: 'hsl(var(--rakubun-text) / <alpha-value>)',
+          'text-secondary': 'hsl(var(--rakubun-text-secondary) / <alpha-value>)',
+          surface: 'hsl(var(--rakubun-surface) / <alpha-value>)',
+          border: 'hsl(var(--rakubun-border) / <alpha-value>)',
         },
       },
       fontFamily: {

@@ -90,8 +90,8 @@ const articles = [
 const statusConfig = {
   published: { label: { en: 'Published', ja: '公開済み' }, class: 'status-badge-success', icon: CheckCircle2 },
   scheduled: { label: { en: 'Scheduled', ja: '予約済み' }, class: 'status-badge-warning', icon: Clock },
-  draft: { label: { en: 'Draft', ja: '下書き' }, class: 'text-gray-700 bg-gray-50', icon: FileText },
-  generating: { label: { en: 'Generating', ja: '生成中' }, class: 'text-blue-700 bg-blue-50', icon: Loader2 },
+  draft: { label: { en: 'Draft', ja: '下書き' }, class: 'text-gray-700 bg-gray-50 dark:text-gray-300 dark:bg-gray-500/10', icon: FileText },
+  generating: { label: { en: 'Generating', ja: '生成中' }, class: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', icon: Loader2 },
 };
 
 const statusFilters = ['all', 'published', 'scheduled', 'draft', 'generating'] as const;
@@ -130,7 +130,7 @@ export default function ArticlesPage() {
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-white rounded-2xl border border-black/5 p-4">
+      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4">
         <div className="flex items-center gap-4 flex-wrap">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px]">
@@ -152,7 +152,7 @@ export default function ArticlesPage() {
                 onClick={() => setActiveFilter(filter)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   activeFilter === filter
-                    ? 'bg-white text-rakubun-text shadow-sm'
+                    ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                     : 'text-rakubun-text-secondary hover:text-rakubun-text'
                 }`}
               >
@@ -172,7 +172,7 @@ export default function ArticlesPage() {
           return (
             <div
               key={article.id}
-              className="bg-white rounded-2xl border border-black/5 p-5 hover:shadow-md transition-all duration-300 group cursor-pointer"
+              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 group cursor-pointer"
               onClick={() => setShowEditor(true)}
             >
               <div className="flex items-start gap-4">
@@ -232,7 +232,7 @@ export default function ArticlesPage() {
                   </button>
                   <button
                     onClick={(e) => e.stopPropagation()}
-                    className="p-2 rounded-lg hover:bg-red-50 text-rakubun-text-secondary hover:text-red-500 transition-colors"
+                    className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-rakubun-text-secondary hover:text-red-500 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -246,9 +246,9 @@ export default function ArticlesPage() {
       {/* Article Editor Modal */}
       {showEditor && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             {/* Editor Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-black/5 shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-rakubun-border shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-rakubun-accent/10">
                   <FileText className="w-4 h-4 text-rakubun-accent" />
@@ -334,7 +334,7 @@ export default function ArticlesPage() {
                 {[Bold, Italic, Heading1, Heading2, List, Code, AlignLeft, Image, Link].map((Icon, i) => (
                   <button
                     key={i}
-                    className="p-2 rounded-lg hover:bg-white text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
+                    className="p-2 rounded-lg hover:bg-rakubun-surface text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
                   >
                     <Icon className="w-4 h-4" />
                   </button>

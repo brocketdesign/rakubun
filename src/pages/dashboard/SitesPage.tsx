@@ -14,7 +14,9 @@ import {
   Eye,
   EyeOff,
   Link2,
+  BookOpen,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../../i18n';
 
 const mockSites = [
@@ -103,7 +105,7 @@ export default function SitesPage() {
           return (
             <div
               key={site.id}
-              className="bg-white rounded-2xl border border-black/5 p-5 hover:shadow-md transition-all duration-300 group"
+              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 group"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -162,7 +164,7 @@ export default function SitesPage() {
                   <Settings className="w-3.5 h-3.5" />
                   {language === 'en' ? 'Settings' : '設定'}
                 </button>
-                <button className="p-2 rounded-xl border border-black/10 hover:border-red-200 hover:bg-red-50 text-rakubun-text-secondary hover:text-red-500 transition-all">
+                <button className="p-2 rounded-xl border border-rakubun-border hover:border-red-200 dark:hover:border-red-500/30 hover:bg-red-50 dark:hover:bg-red-500/10 text-rakubun-text-secondary hover:text-red-500 transition-all">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -173,7 +175,7 @@ export default function SitesPage() {
         {/* Add Site Card */}
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-white rounded-2xl border-2 border-dashed border-black/10 p-5 flex flex-col items-center justify-center gap-3 min-h-[260px] hover:border-rakubun-accent/30 hover:bg-rakubun-accent/5 transition-all group"
+          className="bg-rakubun-surface rounded-2xl border-2 border-dashed border-rakubun-border p-5 flex flex-col items-center justify-center gap-3 min-h-[260px] hover:border-rakubun-accent/30 hover:bg-rakubun-accent/5 transition-all group"
         >
           <div className="p-3 rounded-2xl bg-rakubun-bg-secondary group-hover:bg-rakubun-accent/10 transition-colors">
             <Plus className="w-6 h-6 text-rakubun-text-secondary group-hover:text-rakubun-accent transition-colors" />
@@ -192,7 +194,7 @@ export default function SitesPage() {
       {/* Add Site Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAddModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-lg p-8" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 rounded-xl bg-rakubun-accent/10">
                 <Link2 className="w-5 h-5 text-rakubun-accent" />
@@ -264,6 +266,15 @@ export default function SitesPage() {
                     ? 'Generate in WordPress → Users → Application Passwords'
                     : 'WordPress→ユーザー→アプリケーションパスワードで生成'}
                 </p>
+                <Link
+                  to="/dashboard/docs"
+                  className="text-xs text-rakubun-accent hover:underline mt-1 inline-flex items-center gap-1"
+                >
+                  <BookOpen className="w-3 h-3" />
+                  {language === 'en'
+                    ? 'How to get an Application Password →'
+                    : 'アプリケーションパスワードの取得方法 →'}
+                </Link>
               </div>
             </div>
 

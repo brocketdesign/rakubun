@@ -56,25 +56,25 @@ const analysisCategories = [
     icon: Type,
     label: { en: 'Tone & Voice', ja: 'トーン＆ボイス' },
     description: { en: 'Analyze writing style and tone consistency', ja: '文体とトーンの一貫性を分析' },
-    color: 'text-purple-600 bg-purple-50',
+    color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-500/10',
   },
   {
     icon: LayoutGrid,
     label: { en: 'Content Structure', ja: 'コンテンツ構造' },
     description: { en: 'Evaluate heading hierarchy and readability', ja: '見出し構造と読みやすさを評価' },
-    color: 'text-blue-600 bg-blue-50',
+    color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10',
   },
   {
     icon: Search,
     label: { en: 'SEO Analysis', ja: 'SEO分析' },
     description: { en: 'Check keyword density, meta tags, internal links', ja: 'キーワード密度、メタタグ、内部リンクを確認' },
-    color: 'text-emerald-600 bg-emerald-50',
+    color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10',
   },
   {
     icon: Target,
     label: { en: 'Gap Detection', ja: 'ギャップ検出' },
     description: { en: 'Identify missing topics and content opportunities', ja: '欠落トピックとコンテンツ機会を特定' },
-    color: 'text-amber-600 bg-amber-50',
+    color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10',
   },
 ];
 
@@ -93,6 +93,7 @@ function ScoreRing({ value, size = 64, strokeWidth = 6, color = '#2B6BFF' }: { v
           fill="none"
           stroke="#E9EDF3"
           strokeWidth={strokeWidth}
+          className="dark:stroke-white/10"
         />
         <circle
           cx={size / 2}
@@ -142,7 +143,7 @@ export default function AnalysisPage() {
         {analysisCategories.map((cat) => (
           <div
             key={cat.label.en}
-            className="bg-white rounded-2xl border border-black/5 p-5 hover:shadow-md transition-all duration-300 cursor-pointer group"
+            className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 cursor-pointer group"
           >
             <div className={`p-2.5 rounded-xl ${cat.color} w-fit mb-3`}>
               <cat.icon className="w-5 h-5" />
@@ -158,8 +159,8 @@ export default function AnalysisPage() {
       </div>
 
       {/* Reports */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
+      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-rakubun-border">
           <h3 className="font-heading font-semibold text-rakubun-text">
             {language === 'en' ? 'Analysis Reports' : '分析レポート'}
           </h3>

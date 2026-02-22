@@ -155,7 +155,7 @@ export default function NotificationsPage() {
 
       {/* Email Notification Banner */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-4 flex items-center gap-4">
-        <div className="p-2.5 rounded-xl bg-white/80">
+        <div className="p-2.5 rounded-xl bg-rakubun-surface/80">
           <Mail className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1">
@@ -181,7 +181,7 @@ export default function NotificationsPage() {
             onClick={() => setActiveFilter(filter.value)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
               activeFilter === filter.value
-                ? 'bg-white text-rakubun-text shadow-sm'
+                ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                 : 'text-rakubun-text-secondary hover:text-rakubun-text'
             }`}
           >
@@ -193,7 +193,7 @@ export default function NotificationsPage() {
       {/* Notifications List */}
       <div className="space-y-2">
         {filteredNotifications.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-black/5 p-12 text-center">
+          <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-12 text-center">
             <Bell className="w-8 h-8 text-rakubun-text-secondary mx-auto mb-3 opacity-40" />
             <p className="text-sm text-rakubun-text-secondary">
               {language === 'en' ? 'No notifications to show.' : '表示する通知はありません。'}
@@ -208,7 +208,7 @@ export default function NotificationsPage() {
                 key={notification.id}
                 onClick={() => markRead(notification.id)}
                 className={`
-                  bg-white rounded-2xl border border-black/5 p-4 flex items-start gap-4
+                  bg-rakubun-surface rounded-2xl border border-rakubun-border p-4 flex items-start gap-4
                   hover:shadow-md transition-all duration-300 cursor-pointer group
                   ${isUnread ? 'border-l-4 border-l-rakubun-accent' : ''}
                 `}

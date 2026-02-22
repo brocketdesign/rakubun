@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { useLanguage } from '../i18n';
 import { Link } from 'react-router-dom';
 import LanguageSwitcher from './LanguageSwitcher';
+import DarkModeSwitch from './DarkModeSwitch';
 
 const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -29,7 +30,7 @@ const Navigation = () => {
     <nav
       className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/80 backdrop-blur-xl border-b border-black/5'
+          ? 'bg-rakubun-surface/80 backdrop-blur-xl border-b border-rakubun-border'
           : 'bg-transparent'
       }`}
     >
@@ -57,6 +58,7 @@ const Navigation = () => {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-2">
+            <DarkModeSwitch />
             <LanguageSwitcher />
             <Link to="/dashboard" className="btn-primary text-sm">
               {t.nav.startFree}
@@ -79,7 +81,7 @@ const Navigation = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-black/5">
+        <div className="md:hidden bg-rakubun-surface border-b border-rakubun-border">
           <div className="px-6 py-4 space-y-4">
             {navLinks.map((link) => (
               <a
@@ -94,7 +96,8 @@ const Navigation = () => {
             <Link to="/dashboard" className="btn-primary w-full text-sm mt-4 text-center">
               {t.nav.startFree}
             </Link>
-            <div className="flex justify-center mt-3">
+            <div className="flex justify-center mt-3 gap-2">
+              <DarkModeSwitch />
               <LanguageSwitcher />
             </div>
           </div>

@@ -116,7 +116,7 @@ const AnalysisSection = ({ className = '' }: AnalysisSectionProps) => {
           {features.map((feature) => (
             <div
               key={feature.label}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-black/5"
+              className="flex items-center gap-2 px-3 py-1.5 bg-rakubun-surface rounded-full border border-rakubun-border"
             >
               <feature.icon className="w-4 h-4 text-rakubun-accent" />
               <span className="text-sm text-rakubun-text">{feature.label}</span>

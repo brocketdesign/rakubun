@@ -24,7 +24,7 @@ const stats = [
     change: '+1',
     trend: 'up' as const,
     icon: Globe,
-    color: 'text-blue-600 bg-blue-50',
+    color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10',
   },
   {
     label: { en: 'Total Articles', ja: '記事数' },
@@ -32,7 +32,7 @@ const stats = [
     change: '+12',
     trend: 'up' as const,
     icon: FileText,
-    color: 'text-emerald-600 bg-emerald-50',
+    color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10',
   },
   {
     label: { en: 'Monthly Views', ja: '月間ビュー' },
@@ -40,7 +40,7 @@ const stats = [
     change: '+23%',
     trend: 'up' as const,
     icon: Eye,
-    color: 'text-purple-600 bg-purple-50',
+    color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-500/10',
   },
   {
     label: { en: 'SEO Score', ja: 'SEOスコア' },
@@ -48,7 +48,7 @@ const stats = [
     change: '+5',
     trend: 'up' as const,
     icon: TrendingUp,
-    color: 'text-amber-600 bg-amber-50',
+    color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10',
   },
 ];
 
@@ -106,8 +106,8 @@ const upcomingSchedule = [
 const statusConfig = {
   published: { label: { en: 'Published', ja: '公開済み' }, class: 'status-badge-success', icon: CheckCircle2 },
   scheduled: { label: { en: 'Scheduled', ja: '予約済み' }, class: 'status-badge-warning', icon: Clock },
-  draft: { label: { en: 'Draft', ja: '下書き' }, class: 'text-gray-700 bg-gray-50', icon: FileText },
-  generating: { label: { en: 'Generating', ja: '生成中' }, class: 'text-blue-700 bg-blue-50', icon: Loader2 },
+  draft: { label: { en: 'Draft', ja: '下書き' }, class: 'text-gray-700 bg-gray-50 dark:text-gray-300 dark:bg-gray-500/10', icon: FileText },
+  generating: { label: { en: 'Generating', ja: '生成中' }, class: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', icon: Loader2 },
 };
 
 export default function OverviewPage() {
@@ -133,7 +133,7 @@ export default function OverviewPage() {
         {stats.map((stat) => (
           <div
             key={stat.label.en}
-            className="bg-white rounded-2xl border border-black/5 p-5 hover:shadow-md transition-all duration-300"
+            className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300"
           >
             <div className="flex items-center justify-between mb-3">
               <div className={`p-2 rounded-xl ${stat.color}`}>
@@ -154,8 +154,8 @@ export default function OverviewPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Articles */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-black/5 overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-black/5">
+        <div className="lg:col-span-2 bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-rakubun-border">
             <h3 className="font-heading font-semibold text-rakubun-text">
               {language === 'en' ? 'Recent Articles' : '最近の記事'}
             </h3>
@@ -167,7 +167,7 @@ export default function OverviewPage() {
               <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="divide-y divide-black/5">
+          <div className="divide-y divide-black/5 dark:divide-white/5">
             {recentArticles.map((article, i) => {
               const statusCfg = statusConfig[article.status];
               return (
@@ -203,7 +203,7 @@ export default function OverviewPage() {
         {/* Right Column */}
         <div className="space-y-6">
           {/* Quick Actions */}
-          <div className="bg-white rounded-2xl border border-black/5 p-5">
+          <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
             <h3 className="font-heading font-semibold text-rakubun-text mb-3">
               {language === 'en' ? 'Quick Actions' : 'クイックアクション'}
             </h3>
@@ -226,7 +226,7 @@ export default function OverviewPage() {
           </div>
 
           {/* Upcoming Schedule */}
-          <div className="bg-white rounded-2xl border border-black/5 p-5">
+          <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-heading font-semibold text-rakubun-text">
                 {language === 'en' ? 'Upcoming' : '予定'}
@@ -259,9 +259,9 @@ export default function OverviewPage() {
           </div>
 
           {/* AI Activity */}
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl border border-purple-100 p-5">
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-500/10 dark:to-blue-500/10 rounded-2xl border border-purple-100 dark:border-purple-500/20 p-5">
             <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-purple-600" />
+              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
               <h3 className="font-heading font-semibold text-rakubun-text">
                 {language === 'en' ? 'AI Activity' : 'AIアクティビティ'}
               </h3>

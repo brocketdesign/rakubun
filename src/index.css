@@ -34,6 +34,54 @@
     --sidebar-accent-foreground: 220 20% 8%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 220 100% 59%;
+
+    /* RakuBun custom color variables */
+    --rakubun-bg: 220 14% 97%;
+    --rakubun-bg-secondary: 216 28% 93%;
+    --rakubun-accent: 220 100% 59%;
+    --rakubun-text: 218 22% 7%;
+    --rakubun-text-secondary: 215 13% 41%;
+    --rakubun-surface: 0 0% 100%;
+    --rakubun-border: 220 13% 90%;
+  }
+
+  .dark {
+    --background: 222 16% 10%;
+    --foreground: 220 14% 93%;
+    --card: 222 16% 13%;
+    --card-foreground: 220 14% 93%;
+    --popover: 222 16% 13%;
+    --popover-foreground: 220 14% 93%;
+    --primary: 220 100% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 16% 18%;
+    --secondary-foreground: 220 14% 93%;
+    --muted: 222 16% 18%;
+    --muted-foreground: 215 14% 60%;
+    --accent: 220 100% 62%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222 16% 20%;
+    --input: 222 16% 20%;
+    --ring: 220 100% 59%;
+    --sidebar-background: 222 16% 11%;
+    --sidebar-foreground: 220 14% 80%;
+    --sidebar-primary: 220 100% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 16% 18%;
+    --sidebar-accent-foreground: 220 14% 93%;
+    --sidebar-border: 222 16% 18%;
+    --sidebar-ring: 220 100% 59%;
+
+    /* RakuBun custom dark colors */
+    --rakubun-bg: 225 25% 7%;
+    --rakubun-bg-secondary: 226 20% 13%;
+    --rakubun-accent: 220 100% 65%;
+    --rakubun-text: 216 26% 93%;
+    --rakubun-text-secondary: 215 12% 60%;
+    --rakubun-surface: 224 19% 12%;
+    --rakubun-border: 222 16% 20%;
   }
 }
 
@@ -45,7 +93,7 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-rakubun-bg text-rakubun-text font-sans antialiased;
+    @apply bg-rakubun-bg text-rakubun-text font-sans antialiased transition-colors duration-300;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
   h1, h2, h3, h4, h5, h6 {
@@ -60,6 +108,10 @@
     background-size: 24px 24px;
   }
 
+  .dark .dot-grid {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  }
+
   /* Grain overlay */
   .grain-overlay {
     position: fixed;
@@ -71,12 +123,17 @@
     z-index: 9999;
     opacity: 0.04;
     mix-blend-mode: multiply;
+  }
+
+  .dark .grain-overlay {
+    opacity: 0.03;
+    mix-blend-mode: screen;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   }
 
   /* Card styles */
   .rakubun-card {
-    @apply bg-white rounded-3xl border border-black/5 shadow-card;
+    @apply bg-rakubun-surface rounded-3xl border border-rakubun-border shadow-card;
   }
 
   .rakubun-card-hover {
@@ -89,7 +146,7 @@
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-rakubun-text font-medium rounded-xl border border-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-black/20 active:scale-[0.98];
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-rakubun-surface text-rakubun-text font-medium rounded-xl border border-rakubun-border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-black/20 dark:hover:border-white/20 active:scale-[0.98];
   }
 
   /* Eyebrow text */
@@ -104,31 +161,35 @@
 
   /* Micro card */
   .micro-card {
-    @apply bg-white rounded-2xl border border-black/5 shadow-lg p-4;
+    @apply bg-rakubun-surface rounded-2xl border border-rakubun-border shadow-lg p-4;
   }
 
   /* Feature card */
   .feature-card {
-    @apply bg-white rounded-2xl p-6 border border-black/5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md;
+    @apply bg-rakubun-surface rounded-2xl p-6 border border-rakubun-border shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md;
   }
 
   /* Pricing card */
   .pricing-card {
-    @apply bg-white rounded-3xl p-8 border border-black/5 shadow-card;
+    @apply bg-rakubun-surface rounded-3xl p-8 border border-rakubun-border shadow-card;
   }
 
   .pricing-card-highlighted {
-    @apply bg-white rounded-3xl p-8 border-2 border-rakubun-accent shadow-card relative;
+    @apply bg-rakubun-surface rounded-3xl p-8 border-2 border-rakubun-accent shadow-card relative;
   }
 
   /* Testimonial card */
   .testimonial-card {
-    @apply bg-white rounded-2xl p-8 border border-black/5 shadow-sm;
+    @apply bg-rakubun-surface rounded-2xl p-8 border border-rakubun-border shadow-sm;
   }
 
   /* Input styles */
   .rakubun-input {
-    @apply w-full px-4 py-3 bg-white border border-black/10 rounded-xl text-rakubun-text placeholder:text-rakubun-text-secondary/60 focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 focus:border-rakubun-accent transition-all duration-200;
+    @apply w-full px-4 py-3 bg-rakubun-surface border border-rakubun-border rounded-xl text-rakubun-text focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 focus:border-rakubun-accent transition-all duration-200;
+    &::placeholder {
+      color: var(--rakubun-text-secondary);
+      opacity: 0.6;
+    }
   }
 
   /* Link styles */
@@ -142,15 +203,15 @@
   }
 
   .status-badge-success {
-    @apply status-badge bg-green-50 text-green-700;
+    @apply status-badge bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-400;
   }
 
   .status-badge-warning {
-    @apply status-badge bg-amber-50 text-amber-700;
+    @apply status-badge bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400;
   }
 
   .status-badge-error {
-    @apply status-badge bg-red-50 text-red-700;
+    @apply status-badge bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400;
   }
 }
 
@@ -199,8 +260,21 @@
   background: rgba(14, 17, 22, 0.25);
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
 /* Selection */
 ::selection {
   background: rgba(43, 107, 255, 0.2);
   color: #0E1116;
+}
+
+.dark ::selection {
+  background: rgba(77, 138, 255, 0.3);
+  color: #E8ECF2;
 }

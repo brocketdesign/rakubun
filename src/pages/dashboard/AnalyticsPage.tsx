@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
                 onClick={() => setTimeRange(range.value)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   timeRange === range.value
-                    ? 'bg-white text-rakubun-text shadow-sm'
+                    ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                     : 'text-rakubun-text-secondary hover:text-rakubun-text'
                 }`}
               >
@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
         {overviewStats.map((stat) => (
           <div
             key={stat.label.en}
-            className="bg-white rounded-2xl border border-black/5 p-5 hover:shadow-md transition-all duration-300"
+            className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300"
           >
             <div className="flex items-center justify-between mb-3">
               <div className={`p-2 rounded-xl ${stat.color}`}>
@@ -159,7 +159,7 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-black/5 p-5">
+        <div className="lg:col-span-2 bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
           <div className="flex items-center justify-between mb-6">
             <h3 className="font-heading font-semibold text-rakubun-text">
               {language === 'en' ? 'Views This Week' : '今週のビュー'}
@@ -185,8 +185,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Top Articles */}
-        <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-          <div className="px-5 py-4 border-b border-black/5">
+        <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-rakubun-border">
             <h3 className="font-heading font-semibold text-rakubun-text">
               {language === 'en' ? 'Top Articles' : '人気記事'}
             </h3>
@@ -213,8 +213,8 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Site Performance */}
-      <div className="bg-white rounded-2xl border border-black/5 overflow-hidden">
-        <div className="px-5 py-4 border-b border-black/5">
+      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
+        <div className="px-5 py-4 border-b border-rakubun-border">
           <h3 className="font-heading font-semibold text-rakubun-text">
             {language === 'en' ? 'Site Performance' : 'サイトパフォーマンス'}
           </h3>
@@ -222,7 +222,7 @@ export default function AnalyticsPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-black/5">
+              <tr className="border-b border-rakubun-border">
                 <th className="px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
                   {language === 'en' ? 'Site' : 'サイト'}
                 </th>

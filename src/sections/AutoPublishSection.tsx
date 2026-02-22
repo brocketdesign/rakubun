@@ -129,7 +129,7 @@ const AutoPublishSection = ({ className = '' }: AutoPublishSectionProps) => {
           {features.map((feature) => (
             <div
               key={feature.label}
-              className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-full border border-black/5"
+              className="flex items-center gap-2 px-3 py-1.5 bg-rakubun-surface rounded-full border border-rakubun-border"
             >
               <feature.icon className="w-4 h-4 text-rakubun-accent" />
               <span className="text-sm text-rakubun-text">{feature.label}</span>
@@ -158,14 +158,14 @@ const AutoPublishSection = ({ className = '' }: AutoPublishSectionProps) => {
               </div>
 
               {/* Mini Calendar */}
-              <div className="bg-white rounded-2xl border border-black/5 p-4">
+              <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4">
                 <div className="text-sm font-medium text-rakubun-text mb-3">
                   {t.autoPublish.calendarMonth}
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center">
-                  {days.map((day) => (
+                  {days.map((day, i) => (
                     <div
-                      key={day}
+                      key={i}
                       className="text-xs text-rakubun-text-secondary py-1"
                     >
                       {day}
