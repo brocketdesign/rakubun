@@ -131,3 +131,4 @@ dist
 public/downloads/
 public/uploads/
 public/output/
+.vercel

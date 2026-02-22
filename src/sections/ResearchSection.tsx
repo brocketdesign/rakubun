@@ -104,10 +104,7 @@ const ResearchSection = ({ className = '' }: ResearchSectionProps) => {
   return (
     <section
       ref={sectionRef}
-      className={`section-pinned bg-rakubun-bg ${className}`}
-      style={{
-        background: 'linear-gradient(225deg, #F6F7F9 0%, #E9EDF3 100%)',
-      }}
+      className={`section-pinned bg-gradient-to-bl from-rakubun-bg to-rakubun-bg-secondary ${className}`}
     >
       {/* Text Block - Left */}
       <div

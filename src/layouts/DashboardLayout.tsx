@@ -1,6 +1,6 @@
-import { useState, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useUser, useClerk } from '@clerk/clerk-react';
+import { useUser, useClerk, useAuth } from '@clerk/clerk-react';
 import {
   LayoutDashboard,
   Globe,
@@ -21,6 +21,7 @@ import {
 import { useLanguage } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import DarkModeSwitch from '../components/DarkModeSwitch';
+import { sitesActions } from '../stores/sitesStore';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -64,6 +65,14 @@ export default function DashboardLayout() {
   const location = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { getToken } = useAuth();
+
+  // Pre-load sites as soon as the dashboard mounts
+  useEffect(() => {
+    if (!sitesActions.isLoaded() && !sitesActions.isLoading()) {
+      sitesActions.loadSites(getToken);
+    }
+  }, [getToken]);
 
   // Get current page title
   const currentItem = navItems.find(item => {

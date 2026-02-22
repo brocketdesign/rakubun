@@ -111,6 +111,10 @@ button:active {
   background-color: rgba(0, 0, 0, 0.05);
 }
 
+.dark .calendar-day:hover:not(.highlighted) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
 /* Chart bar animation */
 .chart-bar {
   transition: height 0.5s ease;
@@ -133,6 +137,10 @@ button:active {
 /* Input focus ring */
 .rakubun-input:focus {
   box-shadow: 0 0 0 3px rgba(43, 107, 255, 0.1);
+}
+
+.dark .rakubun-input:focus {
+  box-shadow: 0 0 0 3px rgba(77, 138, 255, 0.2);
 }
 
 /* Navigation blur */
@@ -183,6 +191,15 @@ nav {
   animation: skeleton-loading 1.5s ease-in-out infinite;
 }
 
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.06) 75%
+  );
+}
+
 @keyframes skeleton-loading {
   0% {
     background-position: 200% 0;
@@ -192,32 +209,8 @@ nav {
   }
 }
 
-/* Custom scrollbar for webkit browsers */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(14, 17, 22, 0.2);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 17, 22, 0.3);
-}
-
 /* Focus visible styles */
 *:focus-visible {
   outline: 2px solid #2B6BFF;
   outline-offset: 2px;
-}
-
-/* Selection color */
-::selection {
-  background: rgba(43, 107, 255, 0.2);
-  color: inherit;
 }

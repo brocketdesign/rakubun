@@ -46,6 +46,7 @@ const defaultSettings: SiteSettings = {
 let sites: Site[] = [];
 let loading = false;
 let loaded = false;
+let loadingPromise: Promise<void> | null = null;
 const listeners: Set<() => void> = new Set();
 
 function emitChange() {
@@ -98,17 +99,21 @@ type GetToken = () => Promise<string | null>;
 
 export const sitesActions = {
   async loadSites(getToken: GetToken): Promise<void> {
-    if (loading) return;
+    if (loadingPromise) return loadingPromise;
     loading = true;
-    try {
-      const api = createApiClient(getToken);
-      const data = await api.get<{ sites: Record<string, unknown>[]; total: number }>('/api/sites');
-      sites = data.sites.map(mapSiteFromApi);
-      loaded = true;
-      emitChange();
-    } finally {
-      loading = false;
-    }
+    loadingPromise = (async () => {
+      try {
+        const api = createApiClient(getToken);
+        const data = await api.get<{ sites: Record<string, unknown>[]; total: number }>('/api/sites');
+        sites = data.sites.map(mapSiteFromApi);
+        loaded = true;
+        emitChange();
+      } finally {
+        loading = false;
+        loadingPromise = null;
+      }
+    })();
+    return loadingPromise;
   },
 
   async addSite(
@@ -165,6 +170,26 @@ export const sitesActions = {
     sites[idx] = updated;
     emitChange();
     return updated;
+  },
+
+  async updateCredentials(
+    getToken: GetToken,
+    id: string,
+    credentials: { username?: string; applicationPassword?: string },
+  ): Promise<boolean> {
+    const api = createApiClient(getToken);
+    const raw = await api.put<Record<string, unknown>>(`/api/sites/${id}`, credentials);
+    const idx = sites.findIndex((s) => s.id === id);
+    if (idx >= 0) {
+      const updated: Site = {
+        ...sites[idx],
+        username: (raw.username as string) || sites[idx].username,
+      };
+      sites = [...sites];
+      sites[idx] = updated;
+      emitChange();
+    }
+    return !!(raw.success);
   },
 
   isLoaded(): boolean {

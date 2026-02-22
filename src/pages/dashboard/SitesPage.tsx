@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Plus,
   ExternalLink,
@@ -16,6 +16,12 @@ import {
   X,
   Copy,
   Loader2,
+  Globe,
+  Clock,
+  FileText,
+  Tag,
+  Image,
+  Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
@@ -26,6 +32,14 @@ import {
   type Site,
   type SiteSettings as SiteSettingsType,
 } from '../../stores/sitesStore';
+import { createApiClient } from '../../lib/api';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
 
 const statusConfig = {
   connected: {
@@ -133,6 +147,100 @@ function SiteCardMenu({
 
 // ─── Settings Modal ──────────────────────────────────────────────────────────
 
+interface WpCategory {
+  id: number;
+  name: string;
+  slug: string;
+  count: number;
+  parent: number;
+}
+
+function SettingsField({
+  icon: Icon,
+  label,
+  description,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="group rounded-2xl border border-rakubun-border/60 bg-rakubun-bg/40 p-4 transition-all hover:border-rakubun-accent/30 hover:bg-rakubun-bg/60">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div className="mt-0.5 p-1.5 rounded-lg bg-rakubun-accent/8 text-rakubun-accent shrink-0">
+            <Icon className="w-3.5 h-3.5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-rakubun-text">{label}</p>
+            {description && (
+              <p className="text-xs text-rakubun-text-secondary mt-0.5">{description}</p>
+            )}
+          </div>
+        </div>
+        <div className="shrink-0">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsSelect({
+  icon: Icon,
+  label,
+  description,
+  value,
+  onValueChange,
+  options,
+  placeholder,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  description?: string;
+  value: string;
+  onValueChange: (value: string) => void;
+  options: { value: string; label: string; description?: string }[];
+  placeholder?: string;
+}) {
+  return (
+    <div className="group rounded-2xl border border-rakubun-border/60 bg-rakubun-bg/40 p-4 transition-all hover:border-rakubun-accent/30 hover:bg-rakubun-bg/60">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="mt-0.5 p-1.5 rounded-lg bg-rakubun-accent/8 text-rakubun-accent shrink-0">
+          <Icon className="w-3.5 h-3.5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-rakubun-text">{label}</p>
+          {description && (
+            <p className="text-xs text-rakubun-text-secondary mt-0.5">{description}</p>
+          )}
+        </div>
+      </div>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="w-full h-auto min-h-10 py-2 rounded-xl border-rakubun-border bg-rakubun-surface text-rakubun-text text-sm px-3.5 text-left items-start focus:ring-2 focus:ring-rakubun-accent/20 focus:border-rakubun-accent transition-all hover:border-rakubun-accent/40 [&>span]:items-start whitespace-normal overflow-hidden">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent className="rounded-xl border-rakubun-border bg-rakubun-surface shadow-xl">
+          {options.map((opt) => (
+            <SelectItem
+              key={opt.value}
+              value={opt.value}
+              className="rounded-lg text-sm text-rakubun-text focus:bg-rakubun-accent/10 focus:text-rakubun-accent cursor-pointer"
+            >
+              <div className="flex flex-col">
+                <span>{opt.label}</span>
+                {opt.description && (
+                  <span className="text-xs text-rakubun-text-secondary">{opt.description}</span>
+                )}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 function SettingsModal({
   site,
   language,
@@ -144,12 +252,100 @@ function SettingsModal({
   onClose: () => void;
   onSave: (settings: Partial<SiteSettingsType>) => void;
 }) {
+  const { getToken } = useAuth();
   const [settings, setSettings] = useState<SiteSettingsType>({ ...site.settings });
+
+  // WordPress categories
+  const [categories, setCategories] = useState<WpCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState('');
+
+  // Credentials state
+  const [credUsername, setCredUsername] = useState(site.username || '');
+  const [credPassword, setCredPassword] = useState('');
+  const [showCredPassword, setShowCredPassword] = useState(false);
+  const [credSaving, setCredSaving] = useState(false);
+  const [credSuccess, setCredSuccess] = useState(false);
+  const [credError, setCredError] = useState('');
+
+  // Fetch WordPress categories on mount
+  const fetchCategories = useCallback(async () => {
+    setCategoriesLoading(true);
+    setCategoriesError('');
+    try {
+      const api = createApiClient(getToken);
+      const data = await api.get<{ categories: WpCategory[] }>(
+        `/api/sites/${site.id}/categories`,
+      );
+      setCategories(data.categories);
+    } catch {
+      setCategoriesError(
+        language === 'en'
+          ? 'Could not load categories'
+          : 'カテゴリを読み込めませんでした',
+      );
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, [getToken, site.id, language]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const save = () => {
     onSave(settings);
     onClose();
   };
+
+  const saveCredentials = async () => {
+    if (!credUsername.trim()) {
+      setCredError(language === 'en' ? 'Username is required' : 'ユーザー名は必須です');
+      return;
+    }
+    setCredSaving(true);
+    setCredError('');
+    setCredSuccess(false);
+    try {
+      const creds: { username: string; applicationPassword?: string } = {
+        username: credUsername.trim(),
+      };
+      if (credPassword.trim()) {
+        creds.applicationPassword = credPassword.trim();
+      }
+      const ok = await sitesActions.updateCredentials(getToken, site.id, creds);
+      if (ok) {
+        setCredSuccess(true);
+        setCredPassword('');
+        setTimeout(() => setCredSuccess(false), 3000);
+      } else {
+        setCredError(language === 'en' ? 'Failed to update credentials' : '認証情報の更新に失敗しました');
+      }
+    } catch {
+      setCredError(language === 'en' ? 'Failed to update credentials' : '認証情報の更新に失敗しました');
+    } finally {
+      setCredSaving(false);
+    }
+  };
+
+  // Build category options from WordPress data
+  const categoryOptions = categories.map((c) => ({
+    value: c.name,
+    label: c.name,
+    description: `${c.count} ${language === 'en' ? 'posts' : '件'}`,
+  }));
+
+  // If the current defaultCategory isn't in the fetched list, add it
+  if (
+    settings.defaultCategory &&
+    !categoryOptions.find((o) => o.value === settings.defaultCategory)
+  ) {
+    categoryOptions.unshift({
+      value: settings.defaultCategory,
+      label: settings.defaultCategory,
+      description: language === 'en' ? 'Current' : '現在',
+    });
+  }
 
   return (
     <div
@@ -157,211 +353,412 @@ function SettingsModal({
       onClick={onClose}
     >
       <div
-        className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-lg p-8 max-h-[85vh] overflow-y-auto"
+        className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-rakubun-accent/10">
-              <Settings className="w-5 h-5 text-rakubun-accent" />
-            </div>
-            <div>
-              <h3 className="text-lg font-heading font-bold text-rakubun-text">
-                {language === 'en' ? 'Site Settings' : 'サイト設定'}
-              </h3>
-              <p className="text-sm text-rakubun-text-secondary">{site.name}</p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="space-y-5">
-          {/* Auto Sync */}
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-rakubun-surface rounded-t-3xl px-8 pt-8 pb-4 border-b border-rakubun-border/40">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-rakubun-text">
-                {language === 'en' ? 'Auto Sync' : '自動同期'}
-              </p>
-              <p className="text-xs text-rakubun-text-secondary">
-                {language === 'en'
-                  ? 'Automatically sync content at intervals'
-                  : 'コンテンツを定期的に自動同期'}
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-rakubun-accent/10">
+                <Settings className="w-5 h-5 text-rakubun-accent" />
+              </div>
+              <div>
+                <h3 className="text-lg font-heading font-bold text-rakubun-text">
+                  {language === 'en' ? 'Site Settings' : 'サイト設定'}
+                </h3>
+                <p className="text-sm text-rakubun-text-secondary">{site.name}</p>
+              </div>
             </div>
             <button
-              onClick={() => setSettings({ ...settings, autoSync: !settings.autoSync })}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.autoSync ? 'bg-rakubun-accent' : 'bg-rakubun-border'
-              }`}
+              onClick={onClose}
+              className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors"
             >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  settings.autoSync ? 'translate-x-5' : ''
-                }`}
-              />
+              <X className="w-5 h-5" />
             </button>
           </div>
+        </div>
 
-          {/* Sync Interval */}
-          {settings.autoSync && (
-            <div>
-              <label className="block text-sm font-medium text-rakubun-text mb-1.5">
-                {language === 'en' ? 'Sync Interval (minutes)' : '同期間隔（分）'}
-              </label>
-              <select
-                value={settings.syncInterval}
-                onChange={(e) =>
-                  setSettings({ ...settings, syncInterval: Number(e.target.value) })
+        <div className="px-8 py-6 space-y-6">
+          {/* ─── Publishing Section ─────────────────────────────── */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3">
+              {language === 'en' ? 'Publishing' : '公開設定'}
+            </h4>
+            <div className="space-y-3">
+              {/* Default Post Status */}
+              <SettingsSelect
+                icon={FileText}
+                label={language === 'en' ? 'Default Post Status' : 'デフォルト投稿ステータス'}
+                description={
+                  language === 'en'
+                    ? 'Status assigned to new posts'
+                    : '新規投稿に割り当てられるステータス'
                 }
-                className="rakubun-input"
+                value={settings.defaultStatus}
+                onValueChange={(v) =>
+                  setSettings({
+                    ...settings,
+                    defaultStatus: v as 'draft' | 'publish' | 'pending',
+                  })
+                }
+                options={[
+                  {
+                    value: 'draft',
+                    label: language === 'en' ? 'Draft' : '下書き',
+                    description: language === 'en' ? 'Save without publishing' : '公開せずに保存',
+                  },
+                  {
+                    value: 'publish',
+                    label: language === 'en' ? 'Published' : '公開',
+                    description: language === 'en' ? 'Immediately visible' : 'すぐに表示',
+                  },
+                  {
+                    value: 'pending',
+                    label: language === 'en' ? 'Pending Review' : 'レビュー待ち',
+                    description: language === 'en' ? 'Awaits editor approval' : '編集者の承認待ち',
+                  },
+                ]}
+              />
+
+              {/* Default Category */}
+              <div className="group rounded-2xl border border-rakubun-border/60 bg-rakubun-bg/40 p-4 transition-all hover:border-rakubun-accent/30 hover:bg-rakubun-bg/60">
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="mt-0.5 p-1.5 rounded-lg bg-rakubun-accent/8 text-rakubun-accent shrink-0">
+                    <Tag className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-rakubun-text">
+                      {language === 'en' ? 'Default Category' : 'デフォルトカテゴリ'}
+                    </p>
+                    <p className="text-xs text-rakubun-text-secondary mt-0.5">
+                      {language === 'en'
+                        ? 'Category assigned to new posts'
+                        : '新規投稿に割り当てられるカテゴリ'}
+                    </p>
+                  </div>
+                </div>
+                {categoriesLoading ? (
+                  <div className="flex items-center gap-2 h-10 px-3.5 rounded-xl border border-rakubun-border bg-rakubun-surface text-sm text-rakubun-text-secondary">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    {language === 'en' ? 'Loading categories…' : 'カテゴリを読み込み中…'}
+                  </div>
+                ) : categoriesError ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 h-10 px-3.5 rounded-xl border border-amber-300/60 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5 text-sm text-amber-600 dark:text-amber-400">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{categoriesError}</span>
+                      <button
+                        onClick={fetchCategories}
+                        className="ml-auto shrink-0 text-xs font-medium underline underline-offset-2 hover:no-underline"
+                      >
+                        {language === 'en' ? 'Retry' : '再試行'}
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={settings.defaultCategory}
+                      onChange={(e) =>
+                        setSettings({ ...settings, defaultCategory: e.target.value })
+                      }
+                      placeholder={language === 'en' ? 'Type category name' : 'カテゴリ名を入力'}
+                      className="w-full h-10 px-3.5 rounded-xl border border-rakubun-border bg-rakubun-surface text-sm text-rakubun-text focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 focus:border-rakubun-accent transition-all"
+                    />
+                  </div>
+                ) : (
+                  <Select
+                    value={settings.defaultCategory}
+                    onValueChange={(v) =>
+                      setSettings({ ...settings, defaultCategory: v })
+                    }
+                  >
+                    <SelectTrigger className="w-full h-auto min-h-10 py-2 rounded-xl border-rakubun-border bg-rakubun-surface text-rakubun-text text-sm px-3.5 text-left items-start focus:ring-2 focus:ring-rakubun-accent/20 focus:border-rakubun-accent transition-all hover:border-rakubun-accent/40 [&>span]:items-start">
+                      <SelectValue
+                        placeholder={
+                          language === 'en' ? 'Select a category' : 'カテゴリを選択'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-rakubun-border bg-rakubun-surface shadow-xl max-h-60">
+                      {categoryOptions.map((opt) => (
+                        <SelectItem
+                          key={opt.value}
+                          value={opt.value}
+                          className="rounded-lg text-sm text-rakubun-text focus:bg-rakubun-accent/10 focus:text-rakubun-accent cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between gap-3 w-full">
+                            <span>{opt.label}</span>
+                            <span className="text-[11px] text-rakubun-text-secondary tabular-nums">
+                              {opt.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Sync Section ─────────────────────────────────── */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3">
+              {language === 'en' ? 'Synchronization' : '同期'}
+            </h4>
+            <div className="space-y-3">
+              {/* Auto Sync */}
+              <SettingsField
+                icon={RefreshCw}
+                label={language === 'en' ? 'Auto Sync' : '自動同期'}
+                description={
+                  language === 'en'
+                    ? 'Automatically sync content at intervals'
+                    : 'コンテンツを定期的に自動同期'
+                }
               >
-                <option value={15}>15</option>
-                <option value={30}>30</option>
-                <option value={60}>60</option>
-                <option value={120}>120</option>
-              </select>
-            </div>
-          )}
+                <button
+                  onClick={() => setSettings({ ...settings, autoSync: !settings.autoSync })}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    settings.autoSync ? 'bg-rakubun-accent' : 'bg-rakubun-border'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      settings.autoSync ? 'translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </SettingsField>
 
-          {/* Default Status */}
-          <div>
-            <label className="block text-sm font-medium text-rakubun-text mb-1.5">
-              {language === 'en' ? 'Default Post Status' : 'デフォルト投稿ステータス'}
-            </label>
-            <select
-              value={settings.defaultStatus}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  defaultStatus: e.target.value as 'draft' | 'publish' | 'pending',
-                })
-              }
-              className="rakubun-input"
-            >
-              <option value="draft">{language === 'en' ? 'Draft' : '下書き'}</option>
-              <option value="publish">{language === 'en' ? 'Published' : '公開'}</option>
-              <option value="pending">{language === 'en' ? 'Pending Review' : 'レビュー待ち'}</option>
-            </select>
+              {/* Sync Interval */}
+              {settings.autoSync && (
+                <SettingsSelect
+                  icon={Clock}
+                  label={language === 'en' ? 'Sync Interval' : '同期間隔'}
+                  description={
+                    language === 'en'
+                      ? 'How often to sync content'
+                      : 'コンテンツを同期する頻度'
+                  }
+                  value={String(settings.syncInterval)}
+                  onValueChange={(v) =>
+                    setSettings({ ...settings, syncInterval: Number(v) })
+                  }
+                  options={[
+                    { value: '15', label: language === 'en' ? '15 minutes' : '15分' },
+                    { value: '30', label: language === 'en' ? '30 minutes' : '30分' },
+                    { value: '60', label: language === 'en' ? '1 hour' : '1時間' },
+                    { value: '120', label: language === 'en' ? '2 hours' : '2時間' },
+                  ]}
+                />
+              )}
+            </div>
           </div>
 
-          {/* Default Category */}
+          {/* ─── Content Section ───────────────────────────────── */}
           <div>
-            <label className="block text-sm font-medium text-rakubun-text mb-1.5">
-              {language === 'en' ? 'Default Category' : 'デフォルトカテゴリ'}
-            </label>
-            <input
-              type="text"
-              value={settings.defaultCategory}
-              onChange={(e) => setSettings({ ...settings, defaultCategory: e.target.value })}
-              className="rakubun-input"
-            />
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3">
+              {language === 'en' ? 'Content' : 'コンテンツ'}
+            </h4>
+            <div className="space-y-3">
+              {/* Auto Images */}
+              <SettingsField
+                icon={Image}
+                label={language === 'en' ? 'Auto Images' : '自動画像'}
+                description={
+                  language === 'en'
+                    ? 'Automatically generate featured images'
+                    : 'アイキャッチ画像を自動生成'
+                }
+              >
+                <button
+                  onClick={() =>
+                    setSettings({ ...settings, autoImages: !settings.autoImages })
+                  }
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    settings.autoImages ? 'bg-rakubun-accent' : 'bg-rakubun-border'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      settings.autoImages ? 'translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </SettingsField>
+
+              {/* SEO Optimization */}
+              <SettingsField
+                icon={Sparkles}
+                label={language === 'en' ? 'SEO Optimization' : 'SEO最適化'}
+                description={
+                  language === 'en'
+                    ? 'Auto-generate meta tags and optimize content'
+                    : 'メタタグを自動生成しコンテンツを最適化'
+                }
+              >
+                <button
+                  onClick={() =>
+                    setSettings({
+                      ...settings,
+                      seoOptimization: !settings.seoOptimization,
+                    })
+                  }
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    settings.seoOptimization ? 'bg-rakubun-accent' : 'bg-rakubun-border'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                      settings.seoOptimization ? 'translate-x-5' : ''
+                    }`}
+                  />
+                </button>
+              </SettingsField>
+            </div>
           </div>
 
-          {/* Auto Images */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-rakubun-text">
-                {language === 'en' ? 'Auto Images' : '自動画像'}
-              </p>
-              <p className="text-xs text-rakubun-text-secondary">
-                {language === 'en'
-                  ? 'Automatically generate featured images'
-                  : 'アイキャッチ画像を自動生成'}
-              </p>
-            </div>
-            <button
-              onClick={() => setSettings({ ...settings, autoImages: !settings.autoImages })}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.autoImages ? 'bg-rakubun-accent' : 'bg-rakubun-border'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  settings.autoImages ? 'translate-x-5' : ''
-                }`}
+          {/* ─── Locale Section ────────────────────────────────── */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3">
+              {language === 'en' ? 'Locale' : 'ロケール'}
+            </h4>
+            <div className="space-y-3">
+              {/* Content Language */}
+              <SettingsSelect
+                icon={Globe}
+                label={language === 'en' ? 'Content Language' : 'コンテンツ言語'}
+                description={
+                  language === 'en'
+                    ? 'Language for generated content'
+                    : '生成されるコンテンツの言語'
+                }
+                value={settings.language}
+                onValueChange={(v) => setSettings({ ...settings, language: v })}
+                options={[
+                  { value: 'en', label: 'English' },
+                  { value: 'ja', label: '日本語' },
+                  { value: 'es', label: 'Español' },
+                  { value: 'fr', label: 'Français' },
+                  { value: 'de', label: 'Deutsch' },
+                ]}
               />
-            </button>
-          </div>
 
-          {/* SEO Optimization */}
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-rakubun-text">
-                {language === 'en' ? 'SEO Optimization' : 'SEO最適化'}
-              </p>
-              <p className="text-xs text-rakubun-text-secondary">
-                {language === 'en'
-                  ? 'Auto-generate meta tags and optimize content'
-                  : 'メタタグを自動生成しコンテンツを最適化'}
-              </p>
-            </div>
-            <button
-              onClick={() =>
-                setSettings({ ...settings, seoOptimization: !settings.seoOptimization })
-              }
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                settings.seoOptimization ? 'bg-rakubun-accent' : 'bg-rakubun-border'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  settings.seoOptimization ? 'translate-x-5' : ''
-                }`}
+              {/* Timezone */}
+              <SettingsSelect
+                icon={Clock}
+                label={language === 'en' ? 'Timezone' : 'タイムゾーン'}
+                description={
+                  language === 'en'
+                    ? 'Timezone for scheduling posts'
+                    : '投稿スケジュールのタイムゾーン'
+                }
+                value={settings.timezone}
+                onValueChange={(v) => setSettings({ ...settings, timezone: v })}
+                options={[
+                  { value: 'UTC', label: 'UTC' },
+                  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+                  { value: 'America/Chicago', label: 'Central Time (CT)' },
+                  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
+                  { value: 'Europe/London', label: 'London (GMT)' },
+                  { value: 'Europe/Paris', label: 'Paris (CET)' },
+                  { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
+                ]}
               />
+            </div>
+          </div>
+
+          {/* ─── WordPress Credentials ─────────────────────────── */}
+          <div className="pt-2 border-t border-rakubun-border/40">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3 flex items-center gap-1.5">
+              <Shield className="w-3 h-3" />
+              {language === 'en' ? 'WordPress Credentials' : 'WordPress認証情報'}
+            </h4>
+
+            {credError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-xs text-red-600 dark:text-red-400">
+                {credError}
+              </div>
+            )}
+            {credSuccess && (
+              <div className="mb-3 p-2.5 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 text-xs text-green-600 dark:text-green-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {language === 'en' ? 'Credentials updated successfully' : '認証情報を更新しました'}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-rakubun-text mb-1.5">
+                  {language === 'en' ? 'Username' : 'ユーザー名'}
+                </label>
+                <input
+                  type="text"
+                  placeholder={language === 'en' ? 'WordPress username' : 'WordPressユーザー名'}
+                  value={credUsername}
+                  onChange={(e) => setCredUsername(e.target.value)}
+                  className="rakubun-input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-rakubun-text mb-1.5">
+                  {language === 'en' ? 'Application Password' : 'アプリケーションパスワード'}
+                </label>
+                <div className="relative">
+                  <input
+                    type={showCredPassword ? 'text' : 'password'}
+                    placeholder={language === 'en' ? 'Leave blank to keep current' : '変更しない場合は空欄'}
+                    value={credPassword}
+                    onChange={(e) => setCredPassword(e.target.value)}
+                    className="rakubun-input pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCredPassword(!showCredPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
+                  >
+                    {showCredPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-rakubun-text-secondary mt-1.5 flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  {language === 'en'
+                    ? 'Generate in WordPress → Users → Application Passwords'
+                    : 'WordPress→ユーザー→アプリケーションパスワードで生成'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={saveCredentials}
+              disabled={credSaving}
+              className="mt-4 w-full btn-secondary text-sm flex items-center justify-center gap-2"
+            >
+              {credSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Shield className="w-4 h-4" />
+              )}
+              {language === 'en' ? 'Update Credentials' : '認証情報を更新'}
             </button>
-          </div>
-
-          {/* Language */}
-          <div>
-            <label className="block text-sm font-medium text-rakubun-text mb-1.5">
-              {language === 'en' ? 'Content Language' : 'コンテンツ言語'}
-            </label>
-            <select
-              value={settings.language}
-              onChange={(e) => setSettings({ ...settings, language: e.target.value })}
-              className="rakubun-input"
-            >
-              <option value="en">English</option>
-              <option value="ja">日本語</option>
-              <option value="es">Español</option>
-              <option value="fr">Français</option>
-              <option value="de">Deutsch</option>
-            </select>
-          </div>
-
-          {/* Timezone */}
-          <div>
-            <label className="block text-sm font-medium text-rakubun-text mb-1.5">
-              {language === 'en' ? 'Timezone' : 'タイムゾーン'}
-            </label>
-            <select
-              value={settings.timezone}
-              onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-              className="rakubun-input"
-            >
-              <option value="UTC">UTC</option>
-              <option value="America/New_York">Eastern Time (ET)</option>
-              <option value="America/Chicago">Central Time (CT)</option>
-              <option value="America/Los_Angeles">Pacific Time (PT)</option>
-              <option value="Europe/London">London (GMT)</option>
-              <option value="Europe/Paris">Paris (CET)</option>
-              <option value="Asia/Tokyo">Tokyo (JST)</option>
-            </select>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 mt-8">
-          <button onClick={onClose} className="flex-1 btn-secondary text-sm">
-            {language === 'en' ? 'Cancel' : 'キャンセル'}
-          </button>
-          <button onClick={save} className="flex-1 btn-primary text-sm">
-            {language === 'en' ? 'Save Settings' : '設定を保存'}
-          </button>
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-rakubun-surface rounded-b-3xl px-8 py-5 border-t border-rakubun-border/40">
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} className="flex-1 btn-secondary text-sm">
+              {language === 'en' ? 'Cancel' : 'キャンセル'}
+            </button>
+            <button onClick={save} className="flex-1 btn-primary text-sm">
+              {language === 'en' ? 'Save Settings' : '設定を保存'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -447,10 +844,15 @@ export default function SitesPage() {
   });
   const [addError, setAddError] = useState('');
 
-  // Load sites on mount
+  // Load sites on mount (also triggered by DashboardLayout, but await the promise here)
   useEffect(() => {
     if (!sitesActions.isLoaded()) {
-      sitesActions.loadSites(getToken).finally(() => setInitialLoading(false));
+      sitesActions.loadSites(getToken).then(
+        () => setInitialLoading(false),
+        () => setInitialLoading(false),
+      );
+    } else {
+      setInitialLoading(false);
     }
   }, [getToken]);
 

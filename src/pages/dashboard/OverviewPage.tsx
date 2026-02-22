@@ -14,49 +14,33 @@ import {
   Calendar,
   Sparkles,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useLanguage } from '../../i18n';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { useConnectedSitesCount, useTotalArticlesGenerated, sitesActions } from '../../stores/sitesStore';
+import { useConnectedSitesCount, useTotalArticlesGenerated, sitesActions, useSites } from '../../stores/sitesStore';
+import { useArticles, useArticlesLoading, articlesActions } from '../../stores/articlesStore';
 
-const recentArticles = [
-  {
-    title: '10 Best Practices for React Performance',
-    site: 'techblog.com',
-    status: 'published' as const,
-    date: '2 hours ago',
-    views: '234',
-  },
-  {
-    title: 'Getting Started with TypeScript in 2026',
-    site: 'devinsights.io',
-    status: 'scheduled' as const,
-    date: 'Tomorrow, 9:00 AM',
-    views: '-',
-  },
-  {
-    title: 'Understanding Modern CSS Layout',
-    site: 'techblog.com',
-    status: 'draft' as const,
-    date: '1 day ago',
-    views: '-',
-  },
-  {
-    title: 'AI Tools for Content Creators',
-    site: 'aiweekly.net',
-    status: 'published' as const,
-    date: '3 days ago',
-    views: '1.2K',
-  },
-  {
-    title: 'Web Performance Optimization Guide',
-    site: 'devinsights.io',
-    status: 'generating' as const,
-    date: 'Just now',
-    views: '-',
-  },
-];
+function formatRelativeTime(dateString: string, lang: 'en' | 'ja'): string {
+  const now = Date.now();
+  const date = new Date(dateString).getTime();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return lang === 'en' ? 'Just now' : 'たった今';
+  if (diffMin < 60) return lang === 'en' ? `${diffMin}m ago` : `${diffMin}分前`;
+  if (diffHr < 24) return lang === 'en' ? `${diffHr}h ago` : `${diffHr}時間前`;
+  if (diffDay < 7) return lang === 'en' ? `${diffDay}d ago` : `${diffDay}日前`;
+  return new Date(dateString).toLocaleDateString(lang === 'en' ? 'en-US' : 'ja-JP', { month: 'short', day: 'numeric' });
+}
+
+function formatViews(views: number): string {
+  if (views >= 1000) return `${(views / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+  return String(views);
+}
 
 const quickActions = [
   { label: { en: 'New Article', ja: '新しい記事' }, icon: Plus, path: '/dashboard/articles?new=true', color: 'bg-rakubun-accent text-white' },
@@ -84,11 +68,33 @@ export default function OverviewPage() {
   const { getToken } = useAuth();
   const connectedSites = useConnectedSitesCount();
   const totalArticles = useTotalArticlesGenerated();
+  const allArticles = useArticles();
+  const articlesLoading = useArticlesLoading();
+  const sites = useSites();
 
-  // Ensure sites are loaded (may already be loaded by SitesPage)
+  // Build a siteId → siteName map
+  const siteNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of sites) {
+      map[s.id] = s.name || new URL(s.url).hostname;
+    }
+    return map;
+  }, [sites]);
+
+  // Get the 5 most recent articles
+  const recentArticles = useMemo(() => {
+    return [...allArticles]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+  }, [allArticles]);
+
+  // Ensure sites and articles are loaded
   useEffect(() => {
     if (!sitesActions.isLoaded() && !sitesActions.isLoading()) {
       sitesActions.loadSites(getToken);
+    }
+    if (!articlesActions.isLoaded()) {
+      articlesActions.loadArticles(getToken);
     }
   }, [getToken]);
 
@@ -181,35 +187,55 @@ export default function OverviewPage() {
             </button>
           </div>
           <div className="divide-y divide-black/5 dark:divide-white/5">
-            {recentArticles.map((article, i) => {
-              const statusCfg = statusConfig[article.status];
-              return (
-                <div
-                  key={i}
-                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-rakubun-bg/50 transition-colors cursor-pointer"
+            {articlesLoading && recentArticles.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-rakubun-text-secondary">
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <span className="text-sm">{language === 'en' ? 'Loading articles...' : '記事を読み込み中...'}</span>
+              </div>
+            ) : recentArticles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-rakubun-text-secondary">
+                <FileText className="w-8 h-8 mb-2 opacity-40" />
+                <p className="text-sm">{language === 'en' ? 'No articles yet' : 'まだ記事がありません'}</p>
+                <button
+                  onClick={() => navigate('/dashboard/articles?new=true')}
+                  className="mt-2 text-xs text-rakubun-accent font-medium hover:underline"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-rakubun-text truncate">{article.title}</p>
-                    <p className="text-xs text-rakubun-text-secondary mt-0.5">
-                      {article.site} · {article.date}
-                    </p>
-                  </div>
-                  <div className={`status-badge ${statusCfg.class} shrink-0`}>
-                    {article.status === 'generating' ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <statusCfg.icon className="w-3 h-3" />
+                  {language === 'en' ? 'Create your first article' : '最初の記事を作成'}
+                </button>
+              </div>
+            ) : (
+              recentArticles.map((article) => {
+                const statusCfg = statusConfig[article.status];
+                const siteName = siteNameMap[article.site] || article.site;
+                return (
+                  <div
+                    key={article.id}
+                    onClick={() => navigate('/dashboard/articles')}
+                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-rakubun-bg/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-rakubun-text truncate">{article.title}</p>
+                      <p className="text-xs text-rakubun-text-secondary mt-0.5">
+                        {siteName} · {formatRelativeTime(article.createdAt, language)}
+                      </p>
+                    </div>
+                    <div className={`status-badge ${statusCfg.class} shrink-0`}>
+                      {article.status === 'generating' ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <statusCfg.icon className="w-3 h-3" />
+                      )}
+                      <span>{statusCfg.label[language]}</span>
+                    </div>
+                    {article.views > 0 && (
+                      <span className="text-xs text-rakubun-text-secondary tabular-nums shrink-0 w-12 text-right">
+                        {formatViews(article.views)} <Eye className="w-3 h-3 inline" />
+                      </span>
                     )}
-                    <span>{statusCfg.label[language]}</span>
                   </div>
-                  {article.views !== '-' && (
-                    <span className="text-xs text-rakubun-text-secondary tabular-nums shrink-0 w-12 text-right">
-                      {article.views} <Eye className="w-3 h-3 inline" />
-                    </span>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 

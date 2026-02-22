@@ -24,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name: site.name,
         url: site.url,
         username: site.username,
+        hasApplicationPassword: !!site.applicationPassword,
         status: site.status,
         articlesGenerated: site.articlesGenerated,
         lastSync: site.lastSync,
@@ -31,6 +32,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         wpVersion: site.wpVersion,
         favicon: site.favicon,
         settings: site.settings,
+      });
+    }
+
+    if (req.method === 'PUT') {
+      const { username, applicationPassword } = req.body || {};
+
+      const updates: Record<string, unknown> = {};
+      if (username !== undefined) updates.username = username;
+      if (applicationPassword !== undefined) updates.applicationPassword = applicationPassword;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
+      }
+
+      const result = await collection.findOneAndUpdate(
+        filter,
+        { $set: updates },
+        { returnDocument: 'after' },
+      );
+
+      if (!result) return res.status(404).json({ error: 'Site not found' });
+
+      return res.status(200).json({
+        id: result._id.toString(),
+        name: result.name,
+        url: result.url,
+        username: result.username,
+        hasApplicationPassword: !!result.applicationPassword,
+        status: result.status,
+        success: true,
       });
     }
 

@@ -51,6 +51,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         name,
         url: cleanUrl,
         username,
+        applicationPassword,
         status: 'connected',
         articlesGenerated: 0,
         lastSync: new Date(now).toISOString(),

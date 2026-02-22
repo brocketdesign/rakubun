@@ -98,10 +98,7 @@ const MonetizeSection = ({ className = '' }: MonetizeSectionProps) => {
   return (
     <section
       ref={sectionRef}
-      className={`section-pinned bg-rakubun-bg ${className}`}
-      style={{
-        background: 'linear-gradient(135deg, #F6F7F9 0%, #E9EDF3 100%)',
-      }}
+      className={`section-pinned bg-gradient-to-br from-rakubun-bg to-rakubun-bg-secondary ${className}`}
     >
       {/* Text Block - Left */}
       <div
@@ -154,22 +151,35 @@ const MonetizeSection = ({ className = '' }: MonetizeSectionProps) => {
 
               {/* Mini Chart */}
               <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4">
-                <div className="flex items-end justify-between h-24 gap-2">
-                  {[40, 65, 45, 80, 55, 70, 85].map((height, i) => (
+                <div className="flex items-end justify-between h-32 gap-2">
+                  {[
+                    { height: 40, value: '$120' },
+                    { height: 65, value: '$195' },
+                    { height: 45, value: '$135' },
+                    { height: 80, value: '$240' },
+                    { height: 55, value: '$165' },
+                    { height: 70, value: '$210' },
+                    { height: 85, value: '$255' }
+                  ].map((data, i) => (
                     <div
                       key={i}
-                      className="flex-1 bg-gray-100 rounded-t-lg relative overflow-hidden"
+                      className="flex-1 flex flex-col justify-end items-center gap-1 group h-full"
                     >
-                      <div
-                        className={`absolute bottom-0 left-0 right-0 rounded-t-lg transition-all ${
-                          i === 6 ? 'bg-rakubun-accent' : 'bg-gray-300'
-                        }`}
-                        style={{ height: `${height}%` }}
-                      />
+                      <span className="text-[10px] font-medium text-rakubun-text-secondary opacity-0 group-hover:opacity-100 transition-opacity">
+                        {data.value}
+                      </span>
+                      <div className="w-full bg-black/5 dark:bg-white/5 rounded-t-lg relative overflow-hidden h-24">
+                        <div
+                          className={`absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-500 ${
+                            i === 6 ? 'bg-rakubun-accent' : 'bg-rakubun-border group-hover:bg-rakubun-accent/50'
+                          }`}
+                          style={{ height: `${data.height}%` }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between mt-2 text-xs text-rakubun-text-secondary">
+                <div className="flex justify-between mt-2 text-xs text-rakubun-text-secondary px-1">
                   {t.monetize.weekDays.map((day, i) => (
                     <span key={i}>{day}</span>
                   ))}
@@ -181,8 +191,8 @@ const MonetizeSection = ({ className = '' }: MonetizeSectionProps) => {
                 ref={microCardRef}
                 className="micro-card mt-4 flex items-center gap-3"
               >
-                <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                   <p className="text-xs text-rakubun-text-secondary">
@@ -192,7 +202,7 @@ const MonetizeSection = ({ className = '' }: MonetizeSectionProps) => {
                     $1,247.00
                   </p>
                 </div>
-                <div className="ml-auto flex items-center gap-1 text-green-600">
+                <div className="ml-auto flex items-center gap-1 text-green-600 dark:text-green-400">
                   <TrendingUp className="w-4 h-4" />
                   <span className="text-sm font-medium">+12.4%</span>
                 </div>
