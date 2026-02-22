@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { SignIn, SignUp } from '@clerk/clerk-react';
 import LandingPage from './pages/LandingPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import OverviewPage from './pages/dashboard/OverviewPage';
@@ -11,6 +12,7 @@ import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import NotificationsPage from './pages/dashboard/NotificationsPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
 import DocumentationPage from './pages/dashboard/DocumentationPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -20,8 +22,33 @@ function App() {
         {/* Landing Page */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Dashboard */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
+        {/* Auth Pages */}
+        <Route
+          path="/sign-in/*"
+          element={
+            <div className="flex items-center justify-center min-h-screen bg-rakubun-bg">
+              <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/dashboard" />
+            </div>
+          }
+        />
+        <Route
+          path="/sign-up/*"
+          element={
+            <div className="flex items-center justify-center min-h-screen bg-rakubun-bg">
+              <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" afterSignUpUrl="/dashboard" />
+            </div>
+          }
+        />
+
+        {/* Dashboard (protected) */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route index element={<OverviewPage />} />
           <Route path="sites" element={<SitesPage />} />
           <Route path="analysis" element={<AnalysisPage />} />

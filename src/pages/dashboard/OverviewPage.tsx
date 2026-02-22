@@ -7,50 +7,18 @@ import {
   ArrowDownRight,
   Clock,
   CheckCircle2,
-  AlertCircle,
+
   Loader2,
   ChevronRight,
   Plus,
   Calendar,
   Sparkles,
 } from 'lucide-react';
+import { useEffect } from 'react';
 import { useLanguage } from '../../i18n';
 import { useNavigate } from 'react-router-dom';
-
-const stats = [
-  {
-    label: { en: 'Connected Sites', ja: '接続サイト' },
-    value: '3',
-    change: '+1',
-    trend: 'up' as const,
-    icon: Globe,
-    color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10',
-  },
-  {
-    label: { en: 'Total Articles', ja: '記事数' },
-    value: '47',
-    change: '+12',
-    trend: 'up' as const,
-    icon: FileText,
-    color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10',
-  },
-  {
-    label: { en: 'Monthly Views', ja: '月間ビュー' },
-    value: '12.4K',
-    change: '+23%',
-    trend: 'up' as const,
-    icon: Eye,
-    color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-500/10',
-  },
-  {
-    label: { en: 'SEO Score', ja: 'SEOスコア' },
-    value: '84',
-    change: '+5',
-    trend: 'up' as const,
-    icon: TrendingUp,
-    color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10',
-  },
-];
+import { useAuth } from '@clerk/clerk-react';
+import { useConnectedSitesCount, useTotalArticlesGenerated, sitesActions } from '../../stores/sitesStore';
 
 const recentArticles = [
   {
@@ -113,6 +81,51 @@ const statusConfig = {
 export default function OverviewPage() {
   const { language } = useLanguage();
   const navigate = useNavigate();
+  const { getToken } = useAuth();
+  const connectedSites = useConnectedSitesCount();
+  const totalArticles = useTotalArticlesGenerated();
+
+  // Ensure sites are loaded (may already be loaded by SitesPage)
+  useEffect(() => {
+    if (!sitesActions.isLoaded() && !sitesActions.isLoading()) {
+      sitesActions.loadSites(getToken);
+    }
+  }, [getToken]);
+
+  const stats = [
+    {
+      label: { en: 'Connected Sites', ja: '接続サイト' },
+      value: String(connectedSites),
+      change: '+1',
+      trend: 'up' as const,
+      icon: Globe,
+      color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10',
+    },
+    {
+      label: { en: 'Articles Generated', ja: '生成記事数' },
+      value: String(totalArticles),
+      change: '+12',
+      trend: 'up' as const,
+      icon: FileText,
+      color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10',
+    },
+    {
+      label: { en: 'Monthly Views', ja: '月間ビュー' },
+      value: '12.4K',
+      change: '+23%',
+      trend: 'up' as const,
+      icon: Eye,
+      color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-500/10',
+    },
+    {
+      label: { en: 'SEO Score', ja: 'SEOスコア' },
+      value: '84',
+      change: '+5',
+      trend: 'up' as const,
+      icon: TrendingUp,
+      color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10',
+    },
+  ];
 
   return (
     <div className="space-y-6 max-w-[1400px]">

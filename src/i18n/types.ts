@@ -144,6 +144,20 @@ export interface Translations {
         answer: string;
       }[];
     };
+    apiSection: {
+      title: string;
+      intro: string;
+      baseUrl: string;
+      authentication: string;
+      authDescription: string;
+      endpoints: {
+        title: string;
+        method: string;
+        path: string;
+        description: string;
+        responseExample: string;
+      }[];
+    };
     needHelp: {
       title: string;
       description: string;

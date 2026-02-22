@@ -3,24 +3,34 @@ import {
   BookOpen,
   CheckCircle2,
   ChevronDown,
+  Code2,
   Globe,
   HelpCircle,
   Key,
   Lightbulb,
   Lock,
   Mail,
-  Shield,
+
   AlertTriangle,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../i18n';
 
+const methodColors: Record<string, string> = {
+  GET: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+  POST: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  PUT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  DELETE: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
+  PATCH: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+};
+
 export default function DocumentationPage() {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
   const doc = t.documentation;
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [openEndpoint, setOpenEndpoint] = useState<number | null>(null);
 
   return (
     <div className="max-w-[860px] mx-auto space-y-10 pb-12">
@@ -184,7 +194,102 @@ export default function DocumentationPage() {
       </section>
 
       {/* ============================================= */}
-      {/* Section 3 – Troubleshooting / FAQ             */}
+      {/* Section 3 – API Reference                     */}
+      {/* ============================================= */}
+      <section className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-indigo-500/10">
+            <Code2 className="w-5 h-5 text-indigo-500" />
+          </div>
+          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+            {doc.apiSection.title}
+          </h2>
+        </div>
+
+        <p className="text-sm text-rakubun-text-secondary leading-relaxed">
+          {doc.apiSection.intro}
+        </p>
+
+        {/* Base URL */}
+        <div className="bg-rakubun-bg rounded-xl p-4">
+          <p className="text-xs font-semibold text-rakubun-text-secondary uppercase tracking-wider mb-1.5">
+            {doc.apiSection.baseUrl}
+          </p>
+          <code className="text-sm font-mono text-rakubun-accent">
+            https://api.rakubun.app/api/v1
+          </code>
+        </div>
+
+        {/* Authentication */}
+        <div className="bg-rakubun-bg rounded-xl p-4 space-y-2">
+          <p className="text-sm font-semibold text-rakubun-text flex items-center gap-2">
+            <Lock className="w-4 h-4 text-rakubun-text-secondary" />
+            {doc.apiSection.authentication}
+          </p>
+          <p className="text-sm text-rakubun-text-secondary leading-relaxed">
+            {doc.apiSection.authDescription}
+          </p>
+          <div className="bg-rakubun-surface rounded-lg p-3 border border-rakubun-border">
+            <code className="text-xs font-mono text-rakubun-text-secondary">
+              Authorization: Bearer YOUR_API_KEY
+            </code>
+          </div>
+        </div>
+
+        {/* Endpoints */}
+        <div className="space-y-3">
+          <h3 className="text-base font-semibold text-rakubun-text">
+            {language === 'en' ? 'Endpoints' : 'エンドポイント'}
+          </h3>
+          <div className="divide-y divide-rakubun-border rounded-xl overflow-hidden border border-rakubun-border">
+            {doc.apiSection.endpoints.map((endpoint, i) => (
+              <div key={i}>
+                <button
+                  className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-rakubun-bg/50 transition-colors"
+                  onClick={() => setOpenEndpoint(openEndpoint === i ? null : i)}
+                >
+                  <span
+                    className={`px-2 py-0.5 rounded-md text-xs font-bold font-mono ${
+                      methodColors[endpoint.method] || 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {endpoint.method}
+                  </span>
+                  <code className="text-sm font-mono text-rakubun-text-secondary">
+                    {endpoint.path}
+                  </code>
+                  <span className="flex-1 text-sm font-medium text-rakubun-text text-right truncate ml-2">
+                    {endpoint.title}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-rakubun-text-secondary shrink-0 transition-transform duration-200 ${
+                      openEndpoint === i ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                {openEndpoint === i && (
+                  <div className="px-5 pb-5 space-y-3">
+                    <p className="text-sm text-rakubun-text-secondary leading-relaxed">
+                      {endpoint.description}
+                    </p>
+                    <div>
+                      <p className="text-xs font-semibold text-rakubun-text-secondary uppercase tracking-wider mb-2">
+                        {language === 'en' ? 'Response Example' : 'レスポンス例'}
+                      </p>
+                      <pre className="bg-gray-900 text-gray-100 rounded-xl p-4 text-xs font-mono overflow-x-auto leading-relaxed">
+                        {endpoint.responseExample}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================= */}
+      {/* Section 4 – Troubleshooting / FAQ             */}
       {/* ============================================= */}
       <section className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6 md:p-8 space-y-6">
         <div className="flex items-center gap-3">
@@ -225,7 +330,7 @@ export default function DocumentationPage() {
       </section>
 
       {/* ============================================= */}
-      {/* Section 4 – Need Help CTA                     */}
+      {/* Section 5 – Need Help CTA                     */}
       {/* ============================================= */}
       <section className="bg-gradient-to-r from-rakubun-accent/5 to-blue-500/5 rounded-2xl border border-rakubun-accent/20 p-6 md:p-8 text-center space-y-4">
         <div className="flex justify-center">
