@@ -1,0 +1,223 @@
+/* App-specific styles */
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Prevent horizontal overflow */
+body {
+  overflow-x: hidden;
+}
+
+/* Pin spacer fix for GSAP */
+.pin-spacer {
+  pointer-events: none !important;
+}
+
+.pin-spacer > * {
+  pointer-events: auto !important;
+}
+
+/* Section transitions */
+section {
+  will-change: transform, opacity;
+}
+
+/* Card hover effects */
+.rakubun-card {
+  will-change: transform, opacity;
+}
+
+/* Micro card animations */
+.micro-card {
+  will-change: transform, opacity;
+}
+
+/* Feature card hover */
+.feature-card {
+  will-change: transform, box-shadow;
+}
+
+/* Pricing card highlight */
+.pricing-card-highlighted {
+  transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+  .pricing-card-highlighted {
+    transform: scale(1);
+  }
+}
+
+/* Button press effect */
+button:active {
+  transform: scale(0.98);
+}
+
+/* Link underline animation */
+.rakubun-link {
+  position: relative;
+}
+
+.rakubun-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.3s ease;
+}
+
+.rakubun-link:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Status dot pulse */
+@keyframes status-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.status-dot-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+/* Topic chip hover */
+.topic-chip {
+  will-change: transform, background-color;
+  transition: all 0.2s ease;
+}
+
+.topic-chip:hover {
+  transform: translateY(-1px);
+}
+
+/* Calendar day hover */
+.calendar-day {
+  transition: all 0.2s ease;
+}
+
+.calendar-day:hover:not(.highlighted) {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Chart bar animation */
+.chart-bar {
+  transition: height 0.5s ease;
+}
+
+/* Testimonial card quote */
+.testimonial-card {
+  position: relative;
+}
+
+/* Avatar hover */
+.testimonial-card img {
+  transition: transform 0.3s ease;
+}
+
+.testimonial-card:hover img {
+  transform: scale(1.05);
+}
+
+/* Input focus ring */
+.rakubun-input:focus {
+  box-shadow: 0 0 0 3px rgba(43, 107, 255, 0.1);
+}
+
+/* Navigation blur */
+nav {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Mobile menu animation */
+@media (max-width: 768px) {
+  nav > div:last-child {
+    animation: slide-down 0.3s ease-out;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.1) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(14, 17, 22, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(14, 17, 22, 0.3);
+}
+
+/* Focus visible styles */
+*:focus-visible {
+  outline: 2px solid #2B6BFF;
+  outline-offset: 2px;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(43, 107, 255, 0.2);
+  color: inherit;
+}

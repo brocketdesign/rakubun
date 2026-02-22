@@ -1,6 +1,0 @@
-{
-  "watch": ["public/js","views","services","modules","routers"],
-  "ext": "js,json,html,pug",
-  "ignore": ["node_modules"],
-  "exec": "node app.js"
-}
