@@ -12,12 +12,12 @@ import {
   ArrowUpRight,
   Newspaper,
   Zap,
-  Globe,
   Loader2,
   AlertCircle,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { useSites, sitesActions } from '../../stores/sitesStore';
+import { SiteSelector } from '../../components/SiteSelector';
 import {
   useResearchResults,
   useResearchLoading,
@@ -116,22 +116,13 @@ export default function ResearchPage() {
       <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4 space-y-3">
         {/* Site selector */}
         <div className="flex items-center gap-3">
-          <div className="relative shrink-0">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rakubun-text-secondary pointer-events-none" />
-            <select
+          <div className="shrink-0 min-w-[220px]">
+            <SiteSelector
               value={selectedSiteId}
-              onChange={(e) => setSelectedSiteId(e.target.value)}
-              className="pl-9 pr-8 py-3 bg-rakubun-bg rounded-xl text-sm text-rakubun-text focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 transition-all appearance-none cursor-pointer min-w-[200px] border border-rakubun-border"
-            >
-              <option value="">
-                {language === 'en' ? 'All sites (no filter)' : 'すべてのサイト（フィルターなし）'}
-              </option>
-              {sites.map((site) => (
-                <option key={site.id} value={site.id}>
-                  {site.favicon} {site.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedSiteId}
+              sites={sites}
+              placeholder={language === 'en' ? 'All sites (no filter)' : 'すべてのサイト（フィルターなし）'}
+            />
           </div>
 
           {/* Search input */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Play,
   AlertTriangle,
@@ -12,6 +12,9 @@ import {
   Download,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
+import { useAuth } from '@clerk/clerk-react';
+import { useSites, sitesActions } from '../../stores/sitesStore';
+import { SiteSelector } from '../../components/SiteSelector';
 
 const analysisReports = [
   {
@@ -111,7 +114,13 @@ function ScoreRing({ value, size = 64, strokeWidth = 6, color = '#2B6BFF' }: { v
 
 export default function AnalysisPage() {
   const { language } = useLanguage();
-  const [selectedSite, setSelectedSite] = useState('all');
+  const [selectedSite, setSelectedSite] = useState('');
+  const { getToken } = useAuth();
+  const sites = useSites();
+
+  useEffect(() => {
+    sitesActions.loadSites(getToken);
+  }, [getToken]);
 
   return (
     <div className="space-y-6 max-w-[1400px]">
@@ -159,16 +168,15 @@ export default function AnalysisPage() {
           <h3 className="font-heading font-semibold text-rakubun-text">
             {language === 'en' ? 'Analysis Reports' : '分析レポート'}
           </h3>
-          <select
-            value={selectedSite}
-            onChange={(e) => setSelectedSite(e.target.value)}
-            className="text-sm bg-rakubun-bg border-0 rounded-lg px-3 py-1.5 text-rakubun-text-secondary focus:ring-2 focus:ring-rakubun-accent/20"
-          >
-            <option value="all">{language === 'en' ? 'All Sites' : '全サイト'}</option>
-            <option value="techblog">techblog.com</option>
-            <option value="devinsights">devinsights.io</option>
-            <option value="aiweekly">aiweekly.net</option>
-          </select>
+          <div className="w-[220px]">
+            <SiteSelector
+              value={selectedSite}
+              onChange={setSelectedSite}
+              sites={sites}
+              size="sm"
+              placeholder={language === 'en' ? 'All Sites' : '全サイト'}
+            />
+          </div>
         </div>
 
         <div className="divide-y divide-black/5">

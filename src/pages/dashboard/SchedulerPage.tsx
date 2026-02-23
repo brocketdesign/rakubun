@@ -23,6 +23,7 @@ import {
 import { useAuth } from '@clerk/clerk-react';
 import { useLanguage } from '../../i18n';
 import { useSites, sitesActions } from '../../stores/sitesStore';
+import { SiteSelector } from '../../components/SiteSelector';
 import { useArticles, articlesActions } from '../../stores/articlesStore';
 import { useSchedules, schedulesActions } from '../../stores/schedulesStore';
 
@@ -620,21 +621,13 @@ export default function SchedulerPage() {
 
           {/* Site Filter */}
           <div className="px-5 py-2.5 border-b border-rakubun-border bg-rakubun-bg/30">
-            <div className="relative">
-              <Globe className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-rakubun-text-secondary" />
-              <select
-                value={calendarSiteFilter}
-                onChange={(e) => setCalendarSiteFilter(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-rakubun-surface rounded-lg text-xs text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 appearance-none cursor-pointer transition-all"
-              >
-                <option value="">{language === 'en' ? 'All sites' : 'すべてのサイト'}</option>
-                {sites.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name || s.url}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SiteSelector
+              value={calendarSiteFilter}
+              onChange={setCalendarSiteFilter}
+              sites={sites}
+              size="sm"
+              placeholder={language === 'en' ? 'All sites' : 'すべてのサイト'}
+            />
           </div>
 
           {/* Day Headers */}
@@ -949,26 +942,12 @@ export default function SchedulerPage() {
                     <label className="block text-xs font-medium text-rakubun-text-secondary mb-1.5">
                       {language === 'en' ? 'Select Site' : 'サイトを選択'}
                     </label>
-                    <div className="relative">
-                      <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rakubun-text-secondary" />
-                      <select
-                        value={autoSiteId}
-                        onChange={(e) => setAutoSiteId(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-rakubun-bg rounded-xl text-sm text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 appearance-none cursor-pointer transition-all"
-                      >
-                        <option value="">
-                          {language === 'en' ? 'Choose a site...' : 'サイトを選択...'}
-                        </option>
-                        {sites.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.url})
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                        <ChevronRight className="w-4 h-4 text-rakubun-text-secondary rotate-90" />
-                      </div>
-                    </div>
+                    <SiteSelector
+                      value={autoSiteId}
+                      onChange={setAutoSiteId}
+                      sites={sites}
+                      placeholder={language === 'en' ? 'Choose a site...' : 'サイトを選択...'}
+                    />
                   </div>
 
                   {/* Articles Per Week */}
@@ -1161,24 +1140,12 @@ export default function SchedulerPage() {
                 <label className="block text-xs font-medium text-rakubun-text-secondary mb-1.5">
                   {language === 'en' ? 'Filter by Site' : 'サイトで絞り込み'}
                 </label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rakubun-text-secondary" />
-                  <select
-                    value={scheduleSiteFilter}
-                    onChange={(e) => { setScheduleSiteFilter(e.target.value); setSelectedArticleId(''); }}
-                    className="w-full pl-10 pr-4 py-2.5 bg-rakubun-bg rounded-xl text-sm text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 appearance-none cursor-pointer transition-all"
-                  >
-                    <option value="">{language === 'en' ? 'All sites' : 'すべてのサイト'}</option>
-                    {sites.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.url})
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <ChevronRight className="w-4 h-4 text-rakubun-text-secondary rotate-90" />
-                  </div>
-                </div>
+                <SiteSelector
+                  value={scheduleSiteFilter}
+                  onChange={(siteId) => { setScheduleSiteFilter(siteId); setSelectedArticleId(''); }}
+                  sites={sites}
+                  placeholder={language === 'en' ? 'All sites' : 'すべてのサイト'}
+                />
               </div>
 
               {/* Select Draft Article */}

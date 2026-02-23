@@ -28,6 +28,7 @@ import {
 import { useLanguage } from '../../i18n';
 import { useSites } from '../../stores/sitesStore';
 import { createApiClient } from '../../lib/api';
+import { SiteSelector } from '../../components/SiteSelector';
 import {
   useArticles,
   useArticlesLoading,
@@ -1104,26 +1105,12 @@ export default function ArticlesPage() {
                   <label className="block text-xs font-medium text-rakubun-text-secondary mb-1.5">
                     {language === 'en' ? 'Target Site' : '対象サイト'}
                   </label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rakubun-text-secondary" />
-                    <select
-                      value={editorSite}
-                      onChange={(e) => setEditorSite(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-rakubun-bg rounded-xl text-sm text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 appearance-none cursor-pointer transition-all"
-                    >
-                      <option value="">{language === 'en' ? 'No site selected' : 'サイト未選択'}</option>
-                      {sites.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.url})
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-rakubun-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
+                  <SiteSelector
+                    value={editorSite}
+                    onChange={setEditorSite}
+                    sites={sites}
+                    placeholder={language === 'en' ? 'No site selected' : 'サイト未選択'}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-rakubun-text-secondary mb-1.5">

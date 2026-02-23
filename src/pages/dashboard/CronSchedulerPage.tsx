@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@clerk/clerk-react';
 import { useLanguage } from '../../i18n';
 import { useSites, sitesActions } from '../../stores/sitesStore';
+import { SiteSelector } from '../../components/SiteSelector';
 import {
   useCronJobs,
   useCronJobsLoading,
@@ -858,20 +859,12 @@ export default function CronSchedulerPage() {
                     <label className="block text-sm font-medium text-rakubun-text mb-2">
                       {language === 'en' ? 'Select Site' : 'サイトを選択'}
                     </label>
-                    <select
+                    <SiteSelector
                       value={selectedSiteId}
-                      onChange={(e) => setSelectedSiteId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-rakubun-border bg-rakubun-bg text-rakubun-text focus:outline-none focus:ring-2 focus:ring-rakubun-accent/50"
-                    >
-                      <option value="">
-                        {language === 'en' ? '-- Choose a site --' : '-- サイトを選択 --'}
-                      </option>
-                      {availableSites.map((site) => (
-                        <option key={site.id} value={site.id}>
-                          {site.name || site.url}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={setSelectedSiteId}
+                      sites={availableSites}
+                      placeholder={language === 'en' ? '-- Choose a site --' : '-- サイトを選択 --'}
+                    />
                   </div>
 
                   <div>
