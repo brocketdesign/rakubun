@@ -1,5 +1,13 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" }
+    { "source": "/api/agent/:action", "destination": "/api/agent?_action=:action" },
+    { "source": "/api/articles/:action", "destination": "/api/articles?_action=:action" },
+    { "source": "/api/cron-jobs/:action", "destination": "/api/cron-jobs?_action=:action" },
+    { "source": "/api/notifications/:action", "destination": "/api/notifications?_action=:action" },
+    { "source": "/api/research/:action", "destination": "/api/research?_action=:action" },
+    { "source": "/api/schedules/:action", "destination": "/api/schedules?_action=:action" },
+    { "source": "/api/sites/:id/:subaction", "destination": "/api/sites?_id=:id&_subaction=:subaction" },
+    { "source": "/api/sites/:action", "destination": "/api/sites?_action=:action" },
+    { "source": "/(.*)", "destination": "/" }
   ]
 }

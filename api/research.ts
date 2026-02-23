@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDb } from '../lib/mongodb.js';
-import { authenticateRequest, AuthError } from '../lib/auth.js';
+import { getDb } from './lib/mongodb.js';
+import { authenticateRequest, AuthError } from './lib/auth.js';
 
 const FIRECRAWL_API = 'https://api.firecrawl.dev/v1';
 
@@ -63,6 +63,16 @@ function extractDate(result: FirecrawlSearchResult): string {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const action = (req.query._action as string) || '';
+
+  if (action === 'search') {
+    return handleSearch(req, res);
+  }
+
+  return res.status(404).json({ error: 'Not found' });
+}
+
+async function handleSearch(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -80,7 +90,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'FIRECRAWL_API_KEY is not configured' });
     }
 
-    // If a siteId is provided, look up the site and build a contextual query
     let searchQuery = query || '';
     let siteUrl = '';
 
@@ -98,7 +107,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       siteUrl = site.url as string;
 
-      // If no explicit query, generate one based on the site
       if (!searchQuery) {
         searchQuery = `trending content ideas for ${site.name || siteUrl}`;
       } else {
@@ -106,7 +114,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // ── Step 1: If site provided, scrape the site to understand its niche ──
     let siteContext = '';
     if (siteUrl) {
       try {
@@ -127,15 +134,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (scrapeRes.ok) {
           const scrapeData = (await scrapeRes.json()) as { data?: { markdown?: string } };
           const md = scrapeData?.data?.markdown || '';
-          // Take first ~500 chars as context for the niche
           siteContext = md.slice(0, 500).replace(/\n/g, ' ').trim();
         }
       } catch {
-        // Non-critical – continue without site context
+        // Non-critical
       }
     }
 
-    // ── Step 2: Search the web for trending content ──
     const finalQuery = siteContext
       ? `${searchQuery}. Context: this is for a blog about: ${siteContext.slice(0, 200)}`
       : searchQuery;
@@ -166,7 +171,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const searchData = (await searchRes.json()) as { data?: FirecrawlSearchResult[] };
     const rawResults: FirecrawlSearchResult[] = searchData?.data || [];
 
-    // ── Step 3: Map to our result shape ──
     const results: SearchResultItem[] = rawResults.map((r, i) => ({
       id: `fc-${Date.now()}-${i}`,
       title: r.title || r.metadata?.title || r.url,
@@ -174,7 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       url: r.url,
       summary: extractSummary(r),
       date: extractDate(r),
-      relevance: Math.max(50, 100 - i * 5), // Higher rank → higher relevance
+      relevance: Math.max(50, 100 - i * 5),
     }));
 
     return res.status(200).json({
