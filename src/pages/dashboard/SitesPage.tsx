@@ -22,8 +22,6 @@ import {
   Tag,
   Image,
   Sparkles,
-  Calendar,
-  Timer,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
