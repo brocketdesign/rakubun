@@ -38,6 +38,7 @@ import {
   type SortField,
   type SortOrder,
 } from '../../stores/articlesStore';
+import { useSchedules, schedulesActions } from '../../stores/schedulesStore';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,11 +152,9 @@ export default function ArticlesPage() {
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // ─── Load articles on mount ─────────────────────────────────────────────────
+  // ─── Load articles on mount (always re-fetch to reflect scheduler changes) ──
   useEffect(() => {
-    if (!articlesActions.isLoaded()) {
-      articlesActions.loadArticles(getToken);
-    }
+    articlesActions.loadArticles(getToken);
   }, [getToken]);
 
   // Poll for generating articles to check completion
@@ -461,12 +460,26 @@ export default function ArticlesPage() {
     .split(/\s+/)
     .filter((w) => w.length > 0).length;
 
+  // ─── Schedules (plan topics) ────────────────────────────────────────────────
+  const schedules = useSchedules();
+
+  useEffect(() => {
+    if (!schedulesActions.isLoaded()) {
+      schedulesActions.loadSchedules(getToken);
+    }
+  }, [getToken]);
+
+  const plannedCount = schedules.reduce((sum, s) => {
+    if (s.status !== 'active') return sum;
+    return sum + s.topics.length;
+  }, 0);
+
   // ─── Stats ──────────────────────────────────────────────────────────────────
   const stats = {
     total: articles.length,
     published: articles.filter((a) => a.status === 'published').length,
     drafts: articles.filter((a) => a.status === 'draft').length,
-    scheduled: articles.filter((a) => a.status === 'scheduled').length,
+    scheduled: articles.filter((a) => a.status === 'scheduled').length + plannedCount,
     generating: articles.filter((a) => a.status === 'generating').length,
   };
 

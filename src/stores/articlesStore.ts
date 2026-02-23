@@ -226,6 +226,29 @@ export const articlesActions = {
     return loaded;
   },
 
+  /** Call AI to analyze a site and suggest topics for auto-scheduling. */
+  async autoSchedule(
+    getToken: GetToken,
+    siteId: string,
+    articlesPerWeek: number,
+  ): Promise<Array<{
+    title: string;
+    description: string;
+    suggestedDate: string;
+    time: string;
+  }>> {
+    const api = createApiClient(getToken);
+    const data = await api.post<{
+      topics: Array<{
+        title: string;
+        description: string;
+        suggestedDate: string;
+        time: string;
+      }>;
+    }>('/api/articles/auto-schedule', { siteId, articlesPerWeek });
+    return data.topics;
+  },
+
   /** Sync article statuses from WordPress and reload the list. */
   async syncStatuses(getToken: GetToken): Promise<{ updated: number; errors: number }> {
     try {

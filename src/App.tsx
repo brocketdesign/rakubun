@@ -8,6 +8,7 @@ import AnalysisPage from './pages/dashboard/AnalysisPage';
 import ResearchPage from './pages/dashboard/ResearchPage';
 import ArticlesPage from './pages/dashboard/ArticlesPage';
 import SchedulerPage from './pages/dashboard/SchedulerPage';
+import CronSchedulerPage from './pages/dashboard/CronSchedulerPage';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import NotificationsPage from './pages/dashboard/NotificationsPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
@@ -55,6 +56,7 @@ function App() {
           <Route path="research" element={<ResearchPage />} />
           <Route path="articles" element={<ArticlesPage />} />
           <Route path="scheduler" element={<SchedulerPage />} />
+          <Route path="cron-scheduler" element={<CronSchedulerPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />

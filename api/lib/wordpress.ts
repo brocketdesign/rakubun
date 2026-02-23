@@ -70,6 +70,80 @@ export async function uploadImageToWordPress(
   }
 }
 
+/**
+ * Upload a base64-encoded image to WordPress Media Library.
+ * Returns the attachment ID and source URL, or null on failure.
+ */
+export async function uploadBase64ImageToWordPress(
+  site: WordPressSite,
+  base64Data: string,
+  filename?: string,
+  altText?: string,
+): Promise<{ id: number; sourceUrl: string } | null> {
+  if (!site || !site.url || !site.username || !site.applicationPassword) {
+    return null;
+  }
+
+  try {
+    // Strip data URI prefix if present (e.g. "data:image/png;base64,...")
+    const base64Clean = base64Data.replace(/^data:image\/\w+;base64,/, '');
+    const imageBuffer = Buffer.from(base64Clean, 'base64');
+
+    // Detect content type from data URI or default to jpeg
+    let contentType = 'image/jpeg';
+    const dataUriMatch = base64Data.match(/^data:(image\/\w+);base64,/);
+    if (dataUriMatch) {
+      contentType = dataUriMatch[1];
+    }
+    const extension = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg';
+    const finalFilename = filename || `image-${Date.now()}.${extension}`;
+
+    const baseUrl = site.url.startsWith('http') ? site.url : `https://${site.url}`;
+    const mediaEndpoint = `${baseUrl.replace(/\/$/, '')}/wp-json/wp/v2/media`;
+    const authHeader = 'Basic ' + Buffer.from(`${site.username}:${site.applicationPassword}`).toString('base64');
+
+    const wpResponse = await fetch(mediaEndpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': authHeader,
+        'Content-Disposition': `attachment; filename="${finalFilename}"`,
+        'Content-Type': contentType,
+      },
+      body: imageBuffer,
+    });
+
+    if (!wpResponse.ok) {
+      const errorText = await wpResponse.text();
+      console.error('[WP] Failed to upload base64 image:', wpResponse.status, errorText);
+      return null;
+    }
+
+    const wpData = await wpResponse.json() as any;
+
+    // Set alt text if provided
+    if (altText && wpData.id) {
+      try {
+        await fetch(`${mediaEndpoint}/${wpData.id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ alt_text: altText }),
+        });
+      } catch {
+        // Non-critical, continue
+      }
+    }
+
+    console.log('[WP] Base64 image uploaded, ID:', wpData.id, 'URL:', wpData.source_url);
+    return { id: wpData.id, sourceUrl: wpData.source_url };
+  } catch (error) {
+    console.error('[WP] Error uploading base64 image:', error);
+    return null;
+  }
+}
+
 export async function publishToWordPress(
   site: WordPressSite,
   article: {

@@ -1,9 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import {
   Settings,
   Key,
-  Eye,
-  EyeOff,
   Copy,
   Check,
   Plus,
@@ -19,131 +18,272 @@ import {
   ChevronRight,
   ChevronDown,
   Terminal,
-  Zap,
   Globe,
   FileText,
-  BarChart3,
   Bot,
   Webhook,
   X,
   RefreshCw,
   Activity,
+  Mail,
+  Send,
+  Loader2,
+  Power,
+  Calendar,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLanguage } from '../../i18n';
+import { createApiClient } from '../../lib/api';
+import { useApiKeys, useApiKeysLoading, apiKeysActions } from '../../stores/apiKeysStore';
+import type { NewApiKeyResult } from '../../stores/apiKeysStore';
 
-// ── Dashboard API Keys ──────────────────────────────────────────────
-interface DashboardApiKey {
-  id: string;
-  name: string;
-  prefix: string;
-  permissions: string[];
-  status: 'active' | 'revoked' | 'expired';
-  created: string;
-  lastUsed: string | null;
-  expiresAt: string | null;
-  requests30d: number;
+// ── Notification Settings types ─────────────────────────────────────
+interface NotificationPreference {
+  email: boolean;
+  inApp: boolean;
 }
 
-const dashboardApiKeys: DashboardApiKey[] = [
-  {
-    id: '1',
-    name: 'Production Agent',
-    prefix: 'rbk_live_...a4Xb',
-    permissions: ['read:articles', 'write:articles', 'read:analytics', 'read:sites'],
-    status: 'active',
-    created: 'Jan 15, 2026',
-    lastUsed: '2 min ago',
-    expiresAt: null,
-    requests30d: 12847,
+interface NotificationPreferences {
+  articlePublished: NotificationPreference;
+  aiGenerationComplete: NotificationPreference;
+  siteConnectionIssues: NotificationPreference;
+  scheduledReminders: NotificationPreference;
+  weeklyAnalytics: NotificationPreference;
+  systemUpdates: NotificationPreference;
+}
+
+interface NotificationSettings {
+  emailEnabled: boolean;
+  preferences: NotificationPreferences;
+}
+
+const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  emailEnabled: true,
+  preferences: {
+    articlePublished: { email: true, inApp: true },
+    aiGenerationComplete: { email: false, inApp: true },
+    siteConnectionIssues: { email: true, inApp: true },
+    scheduledReminders: { email: true, inApp: true },
+    weeklyAnalytics: { email: true, inApp: false },
+    systemUpdates: { email: false, inApp: true },
   },
-  {
-    id: '2',
-    name: 'Content Automation Bot',
-    prefix: 'rbk_live_...fG92',
-    permissions: ['read:articles', 'write:articles', 'read:research'],
-    status: 'active',
-    created: 'Feb 1, 2026',
-    lastUsed: '3 hours ago',
-    expiresAt: 'Mar 1, 2026',
-    requests30d: 3421,
-  },
-  {
-    id: '3',
-    name: 'Analytics Reporter',
-    prefix: 'rbk_live_...kR7m',
-    permissions: ['read:analytics', 'read:sites'],
-    status: 'active',
-    created: 'Feb 10, 2026',
-    lastUsed: '1 day ago',
-    expiresAt: null,
-    requests30d: 856,
-  },
-  {
-    id: '4',
-    name: 'Old Integration Key',
-    prefix: 'rbk_live_...pQ3x',
-    permissions: ['read:articles'],
-    status: 'revoked',
-    created: 'Dec 5, 2025',
-    lastUsed: 'Jan 20, 2026',
-    expiresAt: null,
-    requests30d: 0,
-  },
+};
+
+const notificationKeys: { key: keyof NotificationPreferences; label: { en: string; ja: string }; description: { en: string; ja: string } }[] = [
+  { key: 'articlePublished', label: { en: 'Article published', ja: '記事公開時' }, description: { en: 'When an article is published to your WordPress site', ja: 'WordPressサイトに記事が公開された時' } },
+  { key: 'aiGenerationComplete', label: { en: 'AI generation complete', ja: 'AI生成完了時' }, description: { en: 'When AI finishes generating an article', ja: 'AIが記事の生成を完了した時' } },
+  { key: 'siteConnectionIssues', label: { en: 'Site connection issues', ja: 'サイト接続問題時' }, description: { en: 'When a connected site has connectivity problems', ja: '接続サイトに接続問題が発生した時' } },
+  { key: 'scheduledReminders', label: { en: 'Scheduled article reminders', ja: '予約記事リマインダー' }, description: { en: 'Reminders before scheduled articles are published', ja: '予約記事の公開前のリマインダー' } },
+  { key: 'weeklyAnalytics', label: { en: 'Weekly analytics report', ja: '週間アナリティクスレポート' }, description: { en: 'Weekly summary of your site performance', ja: 'サイトパフォーマンスの週間サマリー' } },
+  { key: 'systemUpdates', label: { en: 'System updates', ja: 'システムアップデート' }, description: { en: 'New features and important platform updates', ja: '新機能と重要なプラットフォームアップデート' } },
 ];
 
-// ── Permission scopes ───────────────────────────────────────────────
-const permissionScopes = [
-  { scope: 'read:articles', label: { en: 'Read Articles', ja: '記事の読み取り' }, description: { en: 'List and read articles, drafts, and metadata', ja: '記事、下書き、メタデータの一覧・読み取り' } },
-  { scope: 'write:articles', label: { en: 'Write Articles', ja: '記事の書き込み' }, description: { en: 'Create, update, publish, and delete articles', ja: '記事の作成、更新、公開、削除' } },
-  { scope: 'read:sites', label: { en: 'Read Sites', ja: 'サイトの読み取り' }, description: { en: 'List connected sites and their status', ja: '接続サイトとステータスの一覧' } },
-  { scope: 'write:sites', label: { en: 'Manage Sites', ja: 'サイトの管理' }, description: { en: 'Add, remove, and configure WordPress sites', ja: 'WordPressサイトの追加、削除、設定' } },
-  { scope: 'read:analytics', label: { en: 'Read Analytics', ja: 'アナリティクスの読み取り' }, description: { en: 'Access views, traffic, and performance data', ja: 'ビュー、トラフィック、パフォーマンスデータへのアクセス' } },
-  { scope: 'read:research', label: { en: 'Read Research', ja: 'リサーチの読み取り' }, description: { en: 'Access trending topics and saved research', ja: 'トレンドトピックと保存済みリサーチへのアクセス' } },
-  { scope: 'write:research', label: { en: 'Trigger Research', ja: 'リサーチの実行' }, description: { en: 'Start new research queries and AI searches', ja: '新しいリサーチクエリとAI検索の開始' } },
-  { scope: 'read:scheduler', label: { en: 'Read Scheduler', ja: 'スケジューラーの読み取り' }, description: { en: 'View publishing schedule and queue', ja: '公開スケジュールとキューの閲覧' } },
-  { scope: 'write:scheduler', label: { en: 'Manage Scheduler', ja: 'スケジューラーの管理' }, description: { en: 'Schedule, reschedule, and cancel publications', ja: '公開のスケジュール、再スケジュール、キャンセル' } },
-  { scope: 'trigger:analysis', label: { en: 'Trigger Analysis', ja: '分析の実行' }, description: { en: 'Start AI site analysis and read reports', ja: 'AIサイト分析の開始とレポートの読み取り' } },
-  { scope: 'trigger:generation', label: { en: 'Trigger Generation', ja: '生成の実行' }, description: { en: 'Start AI article generation', ja: 'AI記事生成の開始' } },
-];
-
-// ── API Docs endpoints ──────────────────────────────────────────────
+// ── API Docs endpoints — real endpoints from the codebase ───────────
 const apiEndpoints = [
-  { method: 'GET' as const, path: '/api/v1/articles', label: { en: 'List Articles', ja: '記事一覧' }, description: { en: 'Retrieve all articles with optional filtering by status, site, and date range.', ja: 'ステータス、サイト、日付範囲でフィルタリング可能なすべての記事を取得。' }, scope: 'read:articles', category: 'articles' },
-  { method: 'POST' as const, path: '/api/v1/articles', label: { en: 'Create Article', ja: '記事作成' }, description: { en: 'Create a new article or trigger AI generation with a topic prompt.', ja: 'トピックプロンプトで新しい記事を作成またはAI生成をトリガー。' }, scope: 'write:articles', category: 'articles' },
-  { method: 'GET' as const, path: '/api/v1/articles/:id', label: { en: 'Get Article', ja: '記事取得' }, description: { en: 'Retrieve a specific article by ID, including content, metadata, and SEO score.', ja: 'ID指定で記事を取得（コンテンツ、メタデータ、SEOスコア含む）。' }, scope: 'read:articles', category: 'articles' },
-  { method: 'PUT' as const, path: '/api/v1/articles/:id', label: { en: 'Update Article', ja: '記事更新' }, description: { en: 'Update article content, title, metadata, or status.', ja: '記事のコンテンツ、タイトル、メタデータ、ステータスを更新。' }, scope: 'write:articles', category: 'articles' },
-  { method: 'POST' as const, path: '/api/v1/articles/:id/publish', label: { en: 'Publish Article', ja: '記事公開' }, description: { en: 'Publish an article immediately to the connected WordPress site.', ja: '接続されたWordPressサイトに記事を即座に公開。' }, scope: 'write:articles', category: 'articles' },
-  { method: 'GET' as const, path: '/api/v1/sites', label: { en: 'List Sites', ja: 'サイト一覧' }, description: { en: 'List all connected WordPress sites and their connection status.', ja: 'すべての接続WordPressサイトとステータスを一覧。' }, scope: 'read:sites', category: 'sites' },
-  { method: 'GET' as const, path: '/api/v1/analytics/overview', label: { en: 'Analytics Overview', ja: 'アナリティクス概要' }, description: { en: 'Get aggregated analytics: views, visitors, read time, bounce rate.', ja: '集約アナリティクスを取得: ビュー、訪問者、読了時間、直帰率。' }, scope: 'read:analytics', category: 'analytics' },
-  { method: 'GET' as const, path: '/api/v1/analytics/articles/:id', label: { en: 'Article Analytics', ja: '記事アナリティクス' }, description: { en: 'Get detailed analytics for a specific article.', ja: '特定の記事の詳細アナリティクスを取得。' }, scope: 'read:analytics', category: 'analytics' },
-  { method: 'GET' as const, path: '/api/v1/research/trending', label: { en: 'Trending Topics', ja: 'トレンドトピック' }, description: { en: 'Get current trending topics in your configured niches.', ja: '設定済みニッチの現在のトレンドトピックを取得。' }, scope: 'read:research', category: 'research' },
-  { method: 'POST' as const, path: '/api/v1/research/search', label: { en: 'AI Search', ja: 'AI検索' }, description: { en: 'Perform an AI-powered web research query and get summarized results.', ja: 'AI搭載ウェブリサーチクエリを実行し、要約結果を取得。' }, scope: 'write:research', category: 'research' },
-  { method: 'POST' as const, path: '/api/v1/analysis/run', label: { en: 'Run Analysis', ja: '分析実行' }, description: { en: 'Trigger a full AI site analysis for tone, structure, SEO, and content gaps.', ja: 'トーン、構造、SEO、コンテンツギャップの完全なAIサイト分析をトリガー。' }, scope: 'trigger:analysis', category: 'analysis' },
-  { method: 'GET' as const, path: '/api/v1/scheduler/queue', label: { en: 'Get Queue', ja: 'キュー取得' }, description: { en: 'Get the current publishing queue with scheduled articles.', ja: '予定記事の現在の公開キューを取得。' }, scope: 'read:scheduler', category: 'scheduler' },
-  { method: 'POST' as const, path: '/api/v1/scheduler/schedule', label: { en: 'Schedule Article', ja: '記事スケジュール' }, description: { en: 'Schedule an article for publishing at a specific date and time.', ja: '特定の日時に記事の公開をスケジュール。' }, scope: 'write:scheduler', category: 'scheduler' },
+  // ── Agent Endpoints ──
+  { method: 'POST' as const, path: '/api/agent/publish', label: { en: 'Publish Article (Agent)', ja: '記事公開（エージェント）' }, description: { en: 'Create an article in the dashboard and optionally publish it to WordPress. Supports scheduling, image uploads (URL or base64), thumbnails, categories, and tags.', ja: 'ダッシュボードに記事を作成し、オプションでWordPressに公開。スケジュール、画像アップロード（URLまたはbase64）、サムネイル、カテゴリ、タグをサポート。' }, auth: 'X-API-Key', category: 'agent',
+    requestBody: {
+      title: '"My Article Title"',
+      content: '"# Article\\n\\nMarkdown or HTML content..."',
+      siteId: '"<site-mongodb-id>"',
+      status: '"draft" | "publish" | "schedule"',
+      scheduledAt: '"2026-03-01T09:00:00Z" (required if status=schedule)',
+      publishToBlog: 'true (default)',
+      thumbnailUrl: '"https://..." (optional)',
+      thumbnailBase64: '"data:image/png;base64,..." (optional)',
+      images: '[{ url?: "...", base64?: "...", altText?: "...", filename?: "..." }]',
+      category: '"Technology" (optional)',
+      categoryId: '1 (WP category ID, optional)',
+      tags: '["tag1", "tag2"] (optional)',
+      insertImagesInContent: 'true (default)',
+      excerpt: '"..." (auto-generated if omitted)',
+    },
+    responseExample: `{
+  "success": true,
+  "article": {
+    "id": "...",
+    "title": "My Article Title",
+    "status": "published",
+    "wpPostId": 123,
+    "wpUrl": "https://example.com/my-article"
+  },
+  "wordpress": { "postId": 123, "url": "...", "status": "publish" },
+  "uploadedImages": [{ "wpMediaId": 45, "url": "..." }]
+}` },
+  { method: 'POST' as const, path: '/api/agent/upload-image', label: { en: 'Upload Image (Agent)', ja: '画像アップロード（エージェント）' }, description: { en: 'Upload an image to a WordPress site\'s media library. Supports both URL-based and base64-encoded images.', ja: 'WordPressサイトのメディアライブラリに画像をアップロード。URL指定とbase64エンコードの両方をサポート。' }, auth: 'X-API-Key', category: 'agent',
+    requestBody: {
+      siteId: '"<site-mongodb-id>"',
+      imageUrl: '"https://..." (or use base64)',
+      base64: '"data:image/png;base64,..." (or use imageUrl)',
+      filename: '"my-image.jpg" (optional)',
+      altText: '"Description" (optional)',
+    },
+    responseExample: `{
+  "success": true,
+  "media": { "wpMediaId": 45, "url": "https://example.com/wp-content/uploads/image.jpg" }
+}` },
+  { method: 'GET' as const, path: '/api/agent/sites', label: { en: 'List Sites (Agent)', ja: 'サイト一覧（エージェント）' }, description: { en: 'List all WordPress sites. Add ?id=<siteId> to get a single site with its WordPress categories.', ja: 'WordPressサイト一覧。?id=<siteId>で単一サイトとWordPressカテゴリを取得。' }, auth: 'X-API-Key', category: 'agent',
+    responseExample: `{
+  "sites": [{ "id": "...", "name": "My Blog", "url": "example.com", "status": "connected", "articlesGenerated": 42 }],
+  "total": 1
+}` },
+  { method: 'GET' as const, path: '/api/agent/articles', label: { en: 'List Articles (Agent)', ja: '記事一覧（エージェント）' }, description: { en: 'List articles with optional filters: ?status=draft&siteId=...&limit=20. Add ?id=<articleId> for a single article.', ja: '記事一覧（フィルター: ?status=draft&siteId=...&limit=20）。?id=<articleId>で単一記事を取得。' }, auth: 'X-API-Key', category: 'agent',
+    responseExample: `{
+  "articles": [{ "id": "...", "title": "...", "status": "published", "wpPostId": 123, "wpUrl": "..." }],
+  "total": 5
+}` },
+
+  // ── Articles ──
+  { method: 'GET' as const, path: '/api/articles', label: { en: 'List Articles', ja: '記事一覧' }, description: { en: 'Retrieve all articles with optional filtering by status, sort field, order (asc/desc), and search text.', ja: 'ステータス、ソートフィールド、並び順（asc/desc）、検索テキストでフィルタリング可能な記事一覧。' }, auth: 'Bearer', category: 'articles',
+    responseExample: `{
+  "articles": [{ "id": "...", "title": "...", "status": "draft", "wordCount": 1200, "seoScore": 85 }],
+  "total": 47
+}` },
+  { method: 'POST' as const, path: '/api/articles', label: { en: 'Create Article', ja: '記事作成' }, description: { en: 'Create a new article. Set publishToBlog=true with a siteId to publish to WordPress. Supports blogStatus ("publish" or "draft") and scheduledAt for scheduling.', ja: '新しい記事を作成。publishToBlog=trueとsiteIdでWordPressに公開。blogStatus（"publish"/"draft"）とscheduledAtでスケジュール対応。' }, auth: 'Bearer', category: 'articles',
+    requestBody: {
+      title: '"Article Title"',
+      content: '"Markdown or HTML content"',
+      site: '"<site-id>" (optional)',
+      category: '"Uncategorized"',
+      status: '"draft" | "published" | "scheduled"',
+      publishToBlog: 'true/false',
+      blogStatus: '"publish" | "draft"',
+      scheduledAt: '"2026-03-01T09:00:00Z"',
+      thumbnailUrl: '"https://..."',
+    } },
+  { method: 'GET' as const, path: '/api/articles/:id', label: { en: 'Get Article', ja: '記事取得' }, description: { en: 'Retrieve a specific article by ID, including content, metadata, SEO score, WordPress post ID and URL.', ja: 'ID指定で記事取得（コンテンツ、メタデータ、SEOスコア、WP投稿ID・URL含む）。' }, auth: 'Bearer', category: 'articles' },
+  { method: 'PUT' as const, path: '/api/articles/:id', label: { en: 'Update Article', ja: '記事更新' }, description: { en: 'Update article fields. Set publishToBlog=true to sync changes to WordPress. Supports re-scheduling.', ja: '記事フィールドを更新。publishToBlog=trueでWordPressに同期。再スケジュール対応。' }, auth: 'Bearer', category: 'articles' },
+  { method: 'DELETE' as const, path: '/api/articles/:id', label: { en: 'Delete Article', ja: '記事削除' }, description: { en: 'Delete an article by ID.', ja: 'ID指定で記事を削除。' }, auth: 'Bearer', category: 'articles' },
+  { method: 'POST' as const, path: '/api/articles/generate', label: { en: 'Generate Article (AI)', ja: '記事生成（AI）' }, description: { en: 'Generate an article using AI from a topic prompt. Supports web search, image generation (up to 4), and thumbnail generation. Images are automatically uploaded to WordPress.', ja: 'トピックプロンプトからAIで記事を生成。Web検索、画像生成（最大4枚）、サムネイル生成対応。画像は自動的にWordPressにアップロード。' }, auth: 'Bearer', category: 'articles',
+    requestBody: {
+      prompt: '"Write about AI in healthcare"',
+      useWebSearch: 'true/false',
+      imageCount: '0-4',
+      generateThumbnail: 'true/false',
+      site: '"<site-id>"',
+      category: '"Technology"',
+    } },
+  { method: 'POST' as const, path: '/api/articles/auto-schedule', label: { en: 'Auto-Schedule Topics', ja: 'トピック自動スケジュール' }, description: { en: 'AI analyzes a website and suggests N article topics with optimal publishing days and times.', ja: 'AIがウェブサイトを分析し、最適な公開日時でN件の記事トピックを提案。' }, auth: 'Bearer', category: 'articles' },
+  { method: 'POST' as const, path: '/api/articles/sync-status', label: { en: 'Sync WP Statuses', ja: 'WPステータス同期' }, description: { en: 'Sync the status of all published articles with WordPress. Returns updated, unchanged, and error counts.', ja: '公開済み記事のステータスをWordPressと同期。更新件数、未変更件数、エラー件数を返却。' }, auth: 'Bearer', category: 'articles' },
+
+  // ── Sites ──
+  { method: 'GET' as const, path: '/api/sites', label: { en: 'List Sites', ja: 'サイト一覧' }, description: { en: 'List all connected WordPress sites with status, article count, and settings.', ja: '接続済みWordPressサイト一覧（ステータス、記事数、設定含む）。' }, auth: 'Bearer', category: 'sites',
+    responseExample: `{
+  "sites": [{
+    "id": "...", "name": "My Blog", "url": "example.com",
+    "status": "connected", "articlesGenerated": 42,
+    "settings": { "autoSync": true, "defaultStatus": "draft" }
+  }]
+}` },
+  { method: 'POST' as const, path: '/api/sites', label: { en: 'Add Website', ja: 'ウェブサイト追加' }, description: { en: 'Connect a new WordPress site. Requires the site URL, WordPress username, and an Application Password.', ja: '新しいWordPressサイトを接続。サイトURL、WordPressユーザー名、アプリケーションパスワードが必要。' }, auth: 'Bearer', category: 'sites',
+    requestBody: {
+      name: '"My WordPress Blog"',
+      url: '"https://example.com"',
+      username: '"admin"',
+      applicationPassword: '"xxxx xxxx xxxx xxxx"',
+    } },
+  { method: 'GET' as const, path: '/api/sites/:id', label: { en: 'Get Site', ja: 'サイト取得' }, description: { en: 'Get a single site\'s details (credentials are hidden — only hasApplicationPassword is shown).', ja: '単一サイトの詳細を取得（認証情報は非表示 — hasApplicationPasswordのみ表示）。' }, auth: 'Bearer', category: 'sites' },
+  { method: 'PUT' as const, path: '/api/sites/:id', label: { en: 'Update Site Credentials', ja: 'サイト認証情報更新' }, description: { en: 'Update WordPress username and/or application password.', ja: 'WordPressのユーザー名・アプリケーションパスワードを更新。' }, auth: 'Bearer', category: 'sites',
+    requestBody: {
+      username: '"new_admin"',
+      applicationPassword: '"new xxxx xxxx xxxx"',
+    } },
+  { method: 'DELETE' as const, path: '/api/sites/:id', label: { en: 'Delete Site', ja: 'サイト削除' }, description: { en: 'Remove a connected WordPress site.', ja: '接続済みWordPressサイトを削除。' }, auth: 'Bearer', category: 'sites' },
+  { method: 'PUT' as const, path: '/api/sites/:id/settings', label: { en: 'Update Site Settings', ja: 'サイト設定更新' }, description: { en: 'Update site settings: autoSync, syncInterval, defaultCategory, defaultStatus, autoImages, seoOptimization, language, timezone.', ja: 'サイト設定を更新: autoSync、syncInterval、defaultCategory、defaultStatus、autoImages、seoOptimization、language、timezone。' }, auth: 'Bearer', category: 'sites' },
+  { method: 'GET' as const, path: '/api/sites/:id/categories', label: { en: 'Get WP Categories', ja: 'WPカテゴリ取得' }, description: { en: 'Fetch all WordPress categories from the site. Paginates automatically.', ja: 'サイトからすべてのWordPressカテゴリを取得。自動ページネーション。' }, auth: 'Bearer', category: 'sites',
+    responseExample: `{
+  "categories": [{ "id": 1, "name": "Uncategorized", "slug": "uncategorized", "count": 12, "parent": 0 }]
+}` },
+  { method: 'POST' as const, path: '/api/sites/:id/sync', label: { en: 'Sync Site', ja: 'サイト同期' }, description: { en: 'Update the site\'s last sync timestamp and set status to connected.', ja: 'サイトの最終同期タイムスタンプを更新し、ステータスをconnectedに設定。' }, auth: 'Bearer', category: 'sites' },
+
+  // ── Schedules ──
+  { method: 'GET' as const, path: '/api/schedules', label: { en: 'List Schedules', ja: 'スケジュール一覧' }, description: { en: 'List all publishing schedules. Optionally filter by ?status=active.', ja: '公開スケジュール一覧。?status=activeでフィルタ可能。' }, auth: 'Bearer', category: 'schedules',
+    responseExample: `{
+  "schedules": [{
+    "id": "...", "siteId": "...", "status": "active",
+    "topics": [{ "title": "...", "description": "...", "date": "2026-03-01", "time": "09:00" }]
+  }]
+}` },
+  { method: 'POST' as const, path: '/api/schedules', label: { en: 'Create Schedule', ja: 'スケジュール作成' }, description: { en: 'Create a new publishing schedule with a siteId and an array of topics (each with title, description, date, time).', ja: 'siteIdとトピック配列（各トピック: title、description、date、time）で新しい公開スケジュールを作成。' }, auth: 'Bearer', category: 'schedules',
+    requestBody: {
+      siteId: '"<site-id>"',
+      topics: '[{ "title": "...", "description": "...", "date": "2026-03-01", "time": "09:00" }]',
+    } },
+  { method: 'PUT' as const, path: '/api/schedules/:id', label: { en: 'Update Schedule', ja: 'スケジュール更新' }, description: { en: 'Update a schedule\'s status or topics.', ja: 'スケジュールのステータスまたはトピックを更新。' }, auth: 'Bearer', category: 'schedules' },
+  { method: 'DELETE' as const, path: '/api/schedules/:id', label: { en: 'Delete Schedule', ja: 'スケジュール削除' }, description: { en: 'Delete a publishing schedule.', ja: '公開スケジュールを削除。' }, auth: 'Bearer', category: 'schedules' },
+
+  // ── Cron Jobs ──
+  { method: 'GET' as const, path: '/api/cron-jobs', label: { en: 'List Cron Jobs', ja: 'Cronジョブ一覧' }, description: { en: 'List all automated cron jobs with their schedules, language, word count, and image settings.', ja: '自動Cronジョブ一覧（スケジュール、言語、文字数、画像設定含む）。' }, auth: 'Bearer', category: 'cron-jobs',
+    responseExample: `{
+  "cronJobs": [{
+    "id": "...", "siteId": "...", "siteName": "My Blog",
+    "schedule": [{ "day": "Monday", "articleType": "Tech News" }],
+    "articlesPerWeek": 7, "imagesPerArticle": 4, "status": "active"
+  }]
+}` },
+  { method: 'POST' as const, path: '/api/cron-jobs', label: { en: 'Create Cron Job', ja: 'Cronジョブ作成' }, description: { en: 'Create an automated content cron job with schedule, language, word count range, images per article, style, and email notification settings.', ja: '自動コンテンツCronジョブを作成（スケジュール、言語、文字数範囲、画像数、スタイル、メール通知設定）。' }, auth: 'Bearer', category: 'cron-jobs',
+    requestBody: {
+      siteId: '"<site-id>"',
+      siteName: '"My Blog"',
+      siteUrl: '"example.com"',
+      schedule: '[{ "day": "Monday", "articleType": "Tech News" }]',
+      language: '"ja"',
+      wordCountMin: '1000',
+      wordCountMax: '1500',
+      imagesPerArticle: '4',
+      articlesPerWeek: '7',
+      style: '"Professional and informative"',
+      emailNotification: '"user@example.com"',
+    } },
+  { method: 'PUT' as const, path: '/api/cron-jobs/:id', label: { en: 'Update Cron Job', ja: 'Cronジョブ更新' }, description: { en: 'Update cron job fields: schedule, language, word count, images, articles per week, style, email notification, or status.', ja: 'Cronジョブを更新: スケジュール、言語、文字数、画像数、週間記事数、スタイル、メール通知、ステータス。' }, auth: 'Bearer', category: 'cron-jobs' },
+  { method: 'DELETE' as const, path: '/api/cron-jobs/:id', label: { en: 'Delete Cron Job', ja: 'Cronジョブ削除' }, description: { en: 'Delete an automated cron job.', ja: '自動Cronジョブを削除。' }, auth: 'Bearer', category: 'cron-jobs' },
+  { method: 'POST' as const, path: '/api/cron-jobs/generate-schedule', label: { en: 'AI Generate Schedule', ja: 'AIスケジュール生成' }, description: { en: 'Use AI to analyze a website and generate an optimal weekly publishing schedule with article types. Uses web search to understand the site.', ja: 'AIでウェブサイトを分析し、最適な週間公開スケジュールを記事タイプ付きで生成。Web検索でサイトを理解。' }, auth: 'Bearer', category: 'cron-jobs',
+    requestBody: {
+      siteId: '"<site-id>"',
+      articlesPerWeek: '7 (1-7)',
+    } },
+
+  // ── API Key Management ──
+  { method: 'GET' as const, path: '/api/agent/api-keys', label: { en: 'List API Keys', ja: 'APIキー一覧' }, description: { en: 'List all active API keys for the authenticated user. Returns key prefix, name, and last used timestamp.', ja: '認証ユーザーのアクティブAPIキー一覧。キープレフィックス、名前、最終使用日時を返却。' }, auth: 'Bearer', category: 'api-keys' },
+  { method: 'POST' as const, path: '/api/agent/api-keys', label: { en: 'Create API Key', ja: 'APIキー作成' }, description: { en: 'Create a new API key for agent access. The full key is returned ONLY at creation time. Store it securely.', ja: 'エージェントアクセス用の新しいAPIキーを作成。完全なキーは作成時のみ返却。安全に保管してください。' }, auth: 'Bearer', category: 'api-keys',
+    requestBody: {
+      name: '"My AI Agent"',
+    },
+    responseExample: `{
+  "id": "...",
+  "name": "My AI Agent",
+  "key": "rkb_a1b2c3d4...",
+  "createdAt": "2026-02-23T...",
+  "message": "Store this API key securely. It will not be shown again."
+}` },
+  { method: 'DELETE' as const, path: '/api/agent/api-keys?id=:id', label: { en: 'Revoke API Key', ja: 'APIキー無効化' }, description: { en: 'Revoke an API key by ID. The key will immediately stop working.', ja: 'ID指定でAPIキーを無効化。キーは即座に使用不可になります。' }, auth: 'Bearer', category: 'api-keys' },
 ];
 
 const methodColors: Record<string, string> = {
-  GET: 'bg-emerald-100 text-emerald-700',
-  POST: 'bg-blue-100 text-blue-700',
-  PUT: 'bg-amber-100 text-amber-700',
-  DELETE: 'bg-red-100 text-red-700',
-  PATCH: 'bg-purple-100 text-purple-700',
+  GET: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
+  POST: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+  PUT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
+  DELETE: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
+  PATCH: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400',
 };
 
 const categoryIcons: Record<string, typeof FileText> = {
+  agent: Bot,
   articles: FileText,
   sites: Globe,
-  analytics: BarChart3,
-  research: Zap,
-  analysis: Activity,
-  scheduler: Clock,
+  schedules: Calendar,
+  'cron-jobs': Clock,
+  'api-keys': Key,
 };
 
-const statusConfig = {
-  active: { label: { en: 'Active', ja: '有効' }, class: 'status-badge-success', icon: CheckCircle2 },
-  revoked: { label: { en: 'Revoked', ja: '無効化済' }, class: 'status-badge-error', icon: AlertTriangle },
-  expired: { label: { en: 'Expired', ja: '期限切れ' }, class: 'status-badge-error', icon: AlertTriangle },
+const categoryLabels: Record<string, { en: string; ja: string }> = {
+  all: { en: 'All', ja: '全て' },
+  agent: { en: 'Agent', ja: 'エージェント' },
+  articles: { en: 'Articles', ja: '記事' },
+  sites: { en: 'Sites', ja: 'サイト' },
+  schedules: { en: 'Schedules', ja: 'スケジュール' },
+  'cron-jobs': { en: 'Cron Jobs', ja: 'Cronジョブ' },
+  'api-keys': { en: 'API Keys', ja: 'APIキー' },
 };
 
 // ── Settings Tabs ───────────────────────────────────────────────────
@@ -158,37 +298,138 @@ const settingsTabs = [
 // ── Component ───────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { language } = useLanguage();
+  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState('api-keys');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showNewKeyResult, setShowNewKeyResult] = useState(false);
-  const [showKey, setShowKey] = useState<Set<string>>(new Set());
+  const [newKeyResult, setNewKeyResult] = useState<NewApiKeyResult | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [expandedEndpoint, setExpandedEndpoint] = useState<string | null>(null);
   const [docsCategory, setDocsCategory] = useState<string>('all');
-  const [selectedPermissions, setSelectedPermissions] = useState<Set<string>>(new Set());
-  const [keyExpiry, setKeyExpiry] = useState('never');
+  const [newKeyName, setNewKeyName] = useState('');
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [revokingKey, setRevokingKey] = useState<string | null>(null);
 
-  const toggleShowKey = (id: string) => {
-    setShowKey(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  // Real API keys from store
+  const liveApiKeys = useApiKeys();
+  const apiKeysLoading = useApiKeysLoading();
+
+  // Load API keys on mount / tab switch
+  useEffect(() => {
+    if (activeTab === 'api-keys') {
+      apiKeysActions.loadApiKeys(getToken);
+    }
+  }, [activeTab, getToken]);
+
+  // ── Notification settings state ─────────────────────────────────
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifSaving, setNotifSaving] = useState(false);
+  const [notifDirty, setNotifDirty] = useState(false);
+  const [testEmailSending, setTestEmailSending] = useState(false);
+  const [testEmailAddress, setTestEmailAddress] = useState('');
+
+  const fetchNotificationSettings = useCallback(async () => {
+    setNotifLoading(true);
+    try {
+      const api = createApiClient(getToken);
+      const data = await api.get<{ settings: NotificationSettings }>('/api/notifications/settings');
+      setNotifSettings(data.settings);
+    } catch {
+      // Use defaults on error
+    } finally {
+      setNotifLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      fetchNotificationSettings();
+    }
+  }, [activeTab, fetchNotificationSettings]);
+
+  const saveNotificationSettings = async () => {
+    setNotifSaving(true);
+    try {
+      const api = createApiClient(getToken);
+      const data = await api.put<{ settings: NotificationSettings }>('/api/notifications/settings', notifSettings);
+      setNotifSettings(data.settings);
+      setNotifDirty(false);
+      toast.success(language === 'en' ? 'Notification preferences saved' : '通知設定を保存しました');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to save preferences' : '設定の保存に失敗しました');
+    } finally {
+      setNotifSaving(false);
+    }
+  };
+
+  const toggleEmailEnabled = () => {
+    setNotifSettings(prev => ({ ...prev, emailEnabled: !prev.emailEnabled }));
+    setNotifDirty(true);
+  };
+
+  const toggleNotifPref = (key: keyof NotificationPreferences, channel: 'email' | 'inApp') => {
+    setNotifSettings(prev => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        [key]: { ...prev.preferences[key], [channel]: !prev.preferences[key][channel] },
+      },
+    }));
+    setNotifDirty(true);
+  };
+
+  const sendTestEmail = async () => {
+    if (!testEmailAddress) {
+      toast.error(language === 'en' ? 'Please enter an email address' : 'メールアドレスを入力してください');
+      return;
+    }
+    setTestEmailSending(true);
+    try {
+      const api = createApiClient(getToken);
+      await api.post('/api/notifications/test-email', { email: testEmailAddress });
+      toast.success(language === 'en' ? 'Test email sent successfully!' : 'テストメールを送信しました！');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to send test email' : 'テストメールの送信に失敗しました');
+    } finally {
+      setTestEmailSending(false);
+    }
+  };
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKey(id);
+      toast.success(language === 'en' ? 'Copied to clipboard' : 'クリップボードにコピーしました');
+      setTimeout(() => setCopiedKey(null), 2000);
     });
   };
 
-  const handleCopy = (id: string) => {
-    setCopiedKey(id);
-    setTimeout(() => setCopiedKey(null), 2000);
+  const handleCreateKey = async () => {
+    if (!newKeyName.trim()) {
+      toast.error(language === 'en' ? 'Please enter a name for the key' : 'キー名を入力してください');
+      return;
+    }
+    setCreatingKey(true);
+    try {
+      const result = await apiKeysActions.createApiKey(getToken, newKeyName.trim());
+      setNewKeyResult(result);
+      toast.success(language === 'en' ? 'API key created!' : 'APIキーが作成されました！');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to create API key' : 'APIキーの作成に失敗しました');
+    } finally {
+      setCreatingKey(false);
+    }
   };
 
-  const togglePermission = (scope: string) => {
-    setSelectedPermissions(prev => {
-      const next = new Set(prev);
-      if (next.has(scope)) next.delete(scope);
-      else next.add(scope);
-      return next;
-    });
+  const handleRevokeKey = async (keyId: string) => {
+    setRevokingKey(keyId);
+    try {
+      await apiKeysActions.revokeApiKey(getToken, keyId);
+      toast.success(language === 'en' ? 'API key revoked' : 'APIキーを無効化しました');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to revoke key' : 'キーの無効化に失敗しました');
+    } finally {
+      setRevokingKey(null);
+    }
   };
 
   const filteredEndpoints = docsCategory === 'all'
@@ -242,7 +483,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-heading font-semibold text-rakubun-text">
-                    {language === 'en' ? 'Dashboard API Keys' : 'ダッシュボードAPIキー'}
+                    {language === 'en' ? 'API Keys' : 'APIキー'}
                   </h3>
                   <p className="text-sm text-rakubun-text-secondary mt-0.5">
                     {language === 'en'
@@ -250,23 +491,23 @@ export default function SettingsPage() {
                       : 'AIエージェント、自動化、外部ツールがAPI経由でRakuBunダッシュボードにアクセスするためのキーを作成。'}
                   </p>
                 </div>
-                <button onClick={() => { setShowCreateModal(true); setShowNewKeyResult(false); setSelectedPermissions(new Set()); setKeyExpiry('never'); }} className="btn-primary text-sm">
+                <button onClick={() => { setShowCreateModal(true); setNewKeyResult(null); setNewKeyName(''); }} className="btn-primary text-sm">
                   <Plus className="w-4 h-4" />
                   {language === 'en' ? 'Create Key' : 'キー作成'}
                 </button>
               </div>
 
               {/* Info banner */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-4 flex items-start gap-3">
-                <Bot className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-500/10 dark:to-purple-500/10 rounded-2xl border border-blue-100 dark:border-blue-500/20 p-4 flex items-start gap-3">
+                <Bot className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-blue-900">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
                     {language === 'en' ? 'Connect AI Agents & External Tools' : 'AIエージェント＆外部ツールを接続'}
                   </p>
-                  <p className="text-xs text-blue-700 mt-0.5">
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
                     {language === 'en'
-                      ? 'Each key has fine-grained permissions so your integrations only access what they need. Use keys to connect your AI agent, automation pipelines, or any tool that speaks REST.'
-                      : '各キーには細かい権限設定があり、統合は必要なデータのみにアクセス。AIエージェント、自動化パイプライン、REST対応ツールの接続に使用。'}
+                      ? 'Use API keys with the X-API-Key header to authenticate agent requests. Keys grant full access to publish articles, upload images, and manage your WordPress sites.'
+                      : 'X-API-Keyヘッダーを使用してエージェントリクエストを認証。キーは記事の公開、画像のアップロード、WordPressサイトの管理へのフルアクセスを付与。'}
                   </p>
                 </div>
                 <button
@@ -279,119 +520,88 @@ export default function SettingsPage() {
               </div>
 
               {/* Usage summary */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="bg-rakubun-surface rounded-xl border border-rakubun-border p-4">
                   <p className="text-2xl font-heading font-bold text-rakubun-text">
-                    {dashboardApiKeys.filter(k => k.status === 'active').length}
+                    {apiKeysLoading ? '—' : liveApiKeys.length}
                   </p>
                   <p className="text-xs text-rakubun-text-secondary mt-0.5">
                     {language === 'en' ? 'Active Keys' : 'アクティブキー'}
                   </p>
                 </div>
                 <div className="bg-rakubun-surface rounded-xl border border-rakubun-border p-4">
-                  <p className="text-2xl font-heading font-bold text-rakubun-text">
-                    {dashboardApiKeys.reduce((sum, k) => sum + k.requests30d, 0).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-rakubun-text-secondary mt-0.5">
-                    {language === 'en' ? 'Requests (30d)' : 'リクエスト (30日)'}
-                  </p>
-                </div>
-                <div className="bg-rakubun-surface rounded-xl border border-rakubun-border p-4">
                   <p className="text-2xl font-heading font-bold text-emerald-600">
-                    99.9%
+                    {apiEndpoints.filter(ep => ep.auth === 'X-API-Key').length}
                   </p>
                   <p className="text-xs text-rakubun-text-secondary mt-0.5">
-                    {language === 'en' ? 'Uptime' : '稼働率'}
+                    {language === 'en' ? 'Agent Endpoints' : 'エージェントエンドポイント'}
                   </p>
                 </div>
               </div>
 
               {/* Keys List */}
-              <div className="space-y-3">
-                {dashboardApiKeys.map((key) => {
-                  const statusCfg = statusConfig[key.status];
-                  return (
+              {apiKeysLoading ? (
+                <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-12 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-rakubun-accent" />
+                </div>
+              ) : liveApiKeys.length === 0 ? (
+                <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-8 text-center">
+                  <div className="w-12 h-12 rounded-2xl bg-rakubun-bg-secondary flex items-center justify-center mx-auto mb-3">
+                    <Key className="w-6 h-6 text-rakubun-text-secondary" />
+                  </div>
+                  <p className="text-sm font-medium text-rakubun-text">
+                    {language === 'en' ? 'No API keys yet' : 'APIキーがありません'}
+                  </p>
+                  <p className="text-xs text-rakubun-text-secondary mt-1">
+                    {language === 'en'
+                      ? 'Create your first API key to start using the agent API.'
+                      : '最初のAPIキーを作成してエージェントAPIの使用を開始しましょう。'}
+                  </p>
+                  <button
+                    onClick={() => { setShowCreateModal(true); setNewKeyResult(null); setNewKeyName(''); }}
+                    className="btn-primary text-sm mt-4"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {language === 'en' ? 'Create Your First Key' : '最初のキーを作成'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {liveApiKeys.map((key) => (
                     <div
                       key={key.id}
-                      className={`bg-rakubun-surface rounded-2xl border border-rakubun-border p-4 hover:shadow-md transition-all duration-300 ${
-                        key.status === 'revoked' ? 'opacity-60' : ''
-                      }`}
+                      className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4 hover:shadow-md transition-all duration-300"
                     >
                       <div className="flex items-start gap-4">
-                        <div className={`p-2.5 rounded-xl shrink-0 ${
-                          key.status === 'active' ? 'bg-emerald-50 dark:bg-emerald-500/10' : 'bg-gray-100 dark:bg-gray-500/10'
-                        }`}>
-                          <Key className={`w-4 h-4 ${
-                            key.status === 'active' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'
-                          }`} />
+                        <div className="p-2.5 rounded-xl shrink-0 bg-emerald-50 dark:bg-emerald-500/10">
+                          <Key className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="text-sm font-semibold text-rakubun-text">{key.name}</h4>
-                            <span className={`status-badge ${statusCfg.class}`}>
-                              <statusCfg.icon className="w-3 h-3" />
-                              <span>{statusCfg.label[language]}</span>
+                            <span className="status-badge status-badge-success">
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>{language === 'en' ? 'Active' : '有効'}</span>
                             </span>
                           </div>
 
-                          {/* Key preview */}
+                          {/* Key prefix */}
                           <div className="flex items-center gap-2 mt-1.5">
                             <code className="text-xs text-rakubun-text-secondary font-mono bg-rakubun-bg px-2 py-0.5 rounded">
-                              {showKey.has(key.id) ? 'rbk_live_f8a3k29dm4x7p2ql9vbn' : key.prefix}
+                              {key.keyPrefix}
                             </code>
-                            <button
-                              onClick={() => toggleShowKey(key.id)}
-                              className="p-1 rounded hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors"
-                            >
-                              {showKey.has(key.id) ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                            </button>
-                            <button
-                              onClick={() => handleCopy(key.id)}
-                              className="p-1 rounded hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors"
-                            >
-                              {copiedKey === key.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-                          </div>
-
-                          {/* Permissions */}
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {key.permissions.map((perm) => (
-                              <span
-                                key={perm}
-                                className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-rakubun-bg text-rakubun-text-secondary"
-                              >
-                                <Hash className="w-2.5 h-2.5" />
-                                {perm}
-                              </span>
-                            ))}
                           </div>
 
                           {/* Meta info */}
-                          <div className="flex items-center gap-4 mt-2 text-xs text-rakubun-text-secondary">
+                          <div className="flex items-center gap-4 mt-2 text-xs text-rakubun-text-secondary flex-wrap">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {language === 'en' ? 'Created' : '作成'}: {key.created}
+                              {language === 'en' ? 'Created' : '作成'}: {new Date(key.createdAt).toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                             </span>
-                            {key.lastUsed && (
+                            {key.lastUsedAt && (
                               <span className="flex items-center gap-1">
                                 <Activity className="w-3 h-3" />
-                                {language === 'en' ? 'Last used' : '最終使用'}: {key.lastUsed}
-                              </span>
-                            )}
-                            {key.requests30d > 0 && (
-                              <span className="flex items-center gap-1">
-                                <Zap className="w-3 h-3" />
-                                {key.requests30d.toLocaleString()} {language === 'en' ? 'requests' : 'リクエスト'}
-                              </span>
-                            )}
-                            {key.expiresAt && (
-                              <span className="flex items-center gap-1 text-amber-600">
-                                <AlertTriangle className="w-3 h-3" />
-                                {language === 'en' ? 'Expires' : '有効期限'}: {key.expiresAt}
+                                {language === 'en' ? 'Last used' : '最終使用'}: {new Date(key.lastUsedAt).toLocaleDateString(language === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                               </span>
                             )}
                           </div>
@@ -399,30 +609,48 @@ export default function SettingsPage() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-1 shrink-0">
-                          {key.status === 'active' && (
-                            <button className="p-2 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors" title={language === 'en' ? 'Regenerate' : '再生成'}>
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-rakubun-text-secondary hover:text-red-500 transition-colors" title={key.status === 'active' ? (language === 'en' ? 'Revoke' : '無効化') : (language === 'en' ? 'Delete' : '削除')}>
-                            {key.status === 'active' ? <Shield className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                          <button
+                            onClick={() => handleRevokeKey(key.id)}
+                            disabled={revokingKey === key.id}
+                            className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-rakubun-text-secondary hover:text-red-500 transition-colors disabled:opacity-50"
+                            title={language === 'en' ? 'Revoke' : '無効化'}
+                          >
+                            {revokingKey === key.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
                           </button>
                         </div>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+
+                  {/* Refresh link */}
+                  <div className="text-center pt-1">
+                    <button
+                      onClick={() => apiKeysActions.refreshApiKeys(getToken)}
+                      className="text-xs text-rakubun-text-secondary hover:text-rakubun-accent transition-colors inline-flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      {language === 'en' ? 'Refresh' : '更新'}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Quick Start Snippet */}
               <div className="bg-[#1e1e2e] rounded-2xl p-5 text-sm font-mono overflow-x-auto">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs text-gray-400 font-sans font-medium flex items-center gap-2">
                     <Terminal className="w-3.5 h-3.5" />
-                    {language === 'en' ? 'Quick Start' : 'クイックスタート'}
+                    {language === 'en' ? 'Quick Start — Publish via Agent API' : 'クイックスタート — エージェントAPIで公開'}
                   </span>
                   <button
-                    onClick={() => handleCopy('snippet')}
+                    onClick={() => handleCopy(
+                      `curl -X POST ${window.location.origin}/api/agent/publish \\\n  -H "X-API-Key: rkb_YOUR_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"title":"My Article","content":"# Hello\\nArticle content...","siteId":"YOUR_SITE_ID","status":"draft"}'`,
+                      'snippet',
+                    )}
                     className="text-xs text-gray-400 hover:text-white font-sans flex items-center gap-1 transition-colors"
                   >
                     {copiedKey === 'snippet' ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
@@ -430,10 +658,11 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 <div className="text-gray-300 space-y-1 text-xs leading-relaxed">
-                  <div><span className="text-emerald-400">curl</span> <span className="text-blue-400">-X GET</span> \</div>
-                  <div>  <span className="text-amber-300">https://api.rakubun.com/v1/articles</span> \</div>
-                  <div>  <span className="text-blue-400">-H</span> <span className="text-green-300">"Authorization: Bearer rbk_live_YOUR_KEY"</span> \</div>
-                  <div>  <span className="text-blue-400">-H</span> <span className="text-green-300">"Content-Type: application/json"</span></div>
+                  <div><span className="text-emerald-400">curl</span> <span className="text-blue-400">-X POST</span> \</div>
+                  <div>  <span className="text-amber-300">{window.location.origin}/api/agent/publish</span> \</div>
+                  <div>  <span className="text-blue-400">-H</span> <span className="text-green-300">"X-API-Key: rkb_YOUR_KEY"</span> \</div>
+                  <div>  <span className="text-blue-400">-H</span> <span className="text-green-300">"Content-Type: application/json"</span> \</div>
+                  <div>  <span className="text-blue-400">-d</span> <span className="text-green-300">'{`{"title":"My Article","content":"...","siteId":"...","status":"draft"}`}'</span></div>
                 </div>
               </div>
             </div>
@@ -448,67 +677,61 @@ export default function SettingsPage() {
                 </h3>
                 <p className="text-sm text-rakubun-text-secondary mt-0.5">
                   {language === 'en'
-                    ? 'Full reference for the RakuBun Dashboard REST API. Use your API key to authenticate.'
-                    : 'RakuBunダッシュボードREST APIの完全リファレンス。APIキーで認証。'}
+                    ? 'Complete reference for all RakuBun API endpoints. Agent endpoints use X-API-Key auth; dashboard endpoints use Clerk Bearer tokens.'
+                    : 'すべてのRakuBun APIエンドポイントの完全リファレンス。エージェントはX-API-Key認証、ダッシュボードはClerk Bearerトークンを使用。'}
                 </p>
               </div>
 
               {/* Base URL */}
               <div className="bg-[#1e1e2e] rounded-2xl p-4 flex items-center gap-3">
                 <span className="text-xs text-gray-400 font-sans font-medium shrink-0">Base URL</span>
-                <code className="text-sm text-emerald-400 font-mono">https://api.rakubun.com</code>
-                <button onClick={() => handleCopy('baseurl')} className="ml-auto p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
+                <code className="text-sm text-emerald-400 font-mono">{window.location.origin}</code>
+                <button onClick={() => handleCopy(window.location.origin, 'baseurl')} className="ml-auto p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
                   {copiedKey === 'baseurl' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
 
               {/* Authentication */}
-              <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
+              <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 space-y-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Shield className="w-4 h-4 text-rakubun-accent" />
                   <h4 className="font-heading font-semibold text-rakubun-text text-sm">
                     {language === 'en' ? 'Authentication' : '認証'}
                   </h4>
                 </div>
-                <p className="text-sm text-rakubun-text-secondary mb-3">
-                  {language === 'en'
-                    ? 'All API requests require a Bearer token in the Authorization header:'
-                    : 'すべてのAPIリクエストにはAuthorizationヘッダーにBearerトークンが必要:'}
-                </p>
-                <div className="bg-rakubun-bg rounded-xl p-3 font-mono text-xs text-rakubun-text">
-                  Authorization: Bearer <span className="text-rakubun-accent">rbk_live_your_api_key_here</span>
+                <div>
+                  <p className="text-sm font-medium text-rakubun-text mb-1.5">
+                    {language === 'en' ? '1. Agent API (for AI agents & automations)' : '1. エージェントAPI（AIエージェント＆自動化用）'}
+                  </p>
+                  <p className="text-xs text-rakubun-text-secondary mb-2">
+                    {language === 'en'
+                      ? 'Use your API key in the X-API-Key header:'
+                      : 'X-API-Keyヘッダーにあなたのログインキーを使用:'}
+                  </p>
+                  <div className="bg-rakubun-bg rounded-xl p-3 font-mono text-xs text-rakubun-text">
+                    X-API-Key: <span className="text-rakubun-accent">rkb_your_api_key_here</span>
+                  </div>
                 </div>
-                <div className="mt-3 flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-xl p-3">
+                <div>
+                  <p className="text-sm font-medium text-rakubun-text mb-1.5">
+                    {language === 'en' ? '2. Dashboard API (for frontend / user sessions)' : '2. ダッシュボードAPI（フロントエンド/ユーザーセッション用）'}
+                  </p>
+                  <p className="text-xs text-rakubun-text-secondary mb-2">
+                    {language === 'en'
+                      ? 'Use a Clerk JWT Bearer token in the Authorization header:'
+                      : 'AuthorizationヘッダーにClerk JWT Bearerトークンを使用:'}
+                  </p>
+                  <div className="bg-rakubun-bg rounded-xl p-3 font-mono text-xs text-rakubun-text">
+                    Authorization: Bearer <span className="text-rakubun-accent">clerk_jwt_token</span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 rounded-xl p-3">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
                     {language === 'en'
                       ? 'Never expose your API key in client-side code. Always make API calls from your server or AI agent backend.'
                       : 'APIキーをクライアントサイドコードに公開しないでください。常にサーバーまたはAIエージェントバックエンドからAPI呼び出しを行ってください。'}
                   </span>
-                </div>
-              </div>
-
-              {/* Rate Limits */}
-              <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Zap className="w-4 h-4 text-amber-600" />
-                  <h4 className="font-heading font-semibold text-rakubun-text text-sm">
-                    {language === 'en' ? 'Rate Limits' : 'レート制限'}
-                  </h4>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-rakubun-bg rounded-xl p-3">
-                    <p className="text-lg font-heading font-bold text-rakubun-text">1,000</p>
-                    <p className="text-xs text-rakubun-text-secondary">{language === 'en' ? 'Requests / min' : 'リクエスト / 分'}</p>
-                  </div>
-                  <div className="bg-rakubun-bg rounded-xl p-3">
-                    <p className="text-lg font-heading font-bold text-rakubun-text">50,000</p>
-                    <p className="text-xs text-rakubun-text-secondary">{language === 'en' ? 'Requests / day' : 'リクエスト / 日'}</p>
-                  </div>
-                  <div className="bg-rakubun-bg rounded-xl p-3">
-                    <p className="text-lg font-heading font-bold text-rakubun-text">10 MB</p>
-                    <p className="text-xs text-rakubun-text-secondary">{language === 'en' ? 'Max payload' : '最大ペイロード'}</p>
-                  </div>
                 </div>
               </div>
 
@@ -527,17 +750,25 @@ export default function SettingsPage() {
                       }`}
                     >
                       <CatIcon className="w-3.5 h-3.5" />
-                      <span className="capitalize">{cat === 'all' ? (language === 'en' ? 'All' : '全て') : cat}</span>
+                      <span>{categoryLabels[cat]?.[language] || cat}</span>
                     </button>
                   );
                 })}
               </div>
+
+              {/* Endpoints count */}
+              <p className="text-xs text-rakubun-text-secondary">
+                {language === 'en'
+                  ? `Showing ${filteredEndpoints.length} endpoints`
+                  : `${filteredEndpoints.length}件のエンドポイントを表示`}
+              </p>
 
               {/* Endpoints List */}
               <div className="space-y-2">
                 {filteredEndpoints.map((ep, i) => {
                   const epKey = `${ep.method}-${ep.path}`;
                   const isExpanded = expandedEndpoint === epKey;
+                  const epWithBody = ep as typeof ep & { requestBody?: Record<string, string>; responseExample?: string };
                   return (
                     <div
                       key={i}
@@ -550,8 +781,11 @@ export default function SettingsPage() {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md font-mono ${methodColors[ep.method]}`}>
                           {ep.method}
                         </span>
-                        <code className="text-sm font-mono text-rakubun-text flex-1">{ep.path}</code>
-                        <span className="text-xs text-rakubun-text-secondary hidden sm:inline">{ep.label[language]}</span>
+                        <code className="text-sm font-mono text-rakubun-text flex-1 truncate">{ep.path}</code>
+                        <span className="text-[10px] font-medium text-rakubun-text-secondary bg-rakubun-bg px-1.5 py-0.5 rounded hidden sm:inline">
+                          {ep.auth === 'X-API-Key' ? 'API Key' : 'Bearer'}
+                        </span>
+                        <span className="text-xs text-rakubun-text-secondary hidden md:inline">{ep.label[language]}</span>
                         {isExpanded ? (
                           <ChevronDown className="w-4 h-4 text-rakubun-text-secondary shrink-0" />
                         ) : (
@@ -561,15 +795,36 @@ export default function SettingsPage() {
                       {isExpanded && (
                         <div className="px-5 pb-4 border-t border-rakubun-border pt-3 space-y-3">
                           <p className="text-sm text-rakubun-text-secondary">{ep.description[language]}</p>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <span className="text-xs text-rakubun-text-secondary">
-                              {language === 'en' ? 'Required scope:' : '必要スコープ:'}
+                              {language === 'en' ? 'Auth:' : '認証:'}
                             </span>
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-rakubun-accent/10 text-rakubun-accent font-mono">
+                              <Shield className="w-2.5 h-2.5" />
+                              {ep.auth}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-rakubun-bg text-rakubun-text-secondary">
                               <Hash className="w-2.5 h-2.5" />
-                              {ep.scope}
+                              {ep.category}
                             </span>
                           </div>
+
+                          {/* Request body */}
+                          {epWithBody.requestBody && (
+                            <div>
+                              <span className="text-xs font-medium text-rakubun-text block mb-1.5">
+                                {language === 'en' ? 'Request Body (JSON)' : 'リクエストボディ（JSON）'}
+                              </span>
+                              <div className="bg-[#1e1e2e] rounded-xl p-3 text-xs font-mono text-gray-300 space-y-0.5">
+                                <div>{'{'}</div>
+                                {Object.entries(epWithBody.requestBody).map(([field, desc], fi) => (
+                                  <div key={fi}>{'  '}<span className="text-blue-400">"{field}"</span>: <span className="text-green-300">{desc}</span>{fi < Object.entries(epWithBody.requestBody!).length - 1 ? ',' : ''}</div>
+                                ))}
+                                <div>{'}'}</div>
+                              </div>
+                            </div>
+                          )}
+
                           {/* Example Request */}
                           <div className="bg-[#1e1e2e] rounded-xl p-3 text-xs font-mono text-gray-300">
                             <div className="flex items-center justify-between mb-2">
@@ -577,27 +832,35 @@ export default function SettingsPage() {
                                 {language === 'en' ? 'Example Request' : 'リクエスト例'}
                               </span>
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleCopy(epKey); }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const authHeader = ep.auth === 'X-API-Key'
+                                    ? '-H "X-API-Key: rkb_YOUR_KEY"'
+                                    : '-H "Authorization: Bearer YOUR_TOKEN"';
+                                  handleCopy(
+                                    `curl -X ${ep.method} ${window.location.origin}${ep.path} \\\n  ${authHeader} \\\n  -H "Content-Type: application/json"`,
+                                    epKey,
+                                  );
+                                }}
                                 className="text-gray-500 hover:text-white transition-colors"
                               >
                                 {copiedKey === epKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                               </button>
                             </div>
                             <div><span className="text-emerald-400">curl</span> <span className="text-blue-400">-X {ep.method}</span> \</div>
-                            <div>  <span className="text-amber-300">https://api.rakubun.com{ep.path}</span> \</div>
-                            <div>  <span className="text-blue-400">-H</span> <span className="text-green-300">"Authorization: Bearer rbk_live_..."</span></div>
+                            <div>  <span className="text-amber-300">{window.location.origin}{ep.path}</span> \</div>
+                            <div>  <span className="text-blue-400">-H</span> <span className="text-green-300">"{ep.auth === 'X-API-Key' ? 'X-API-Key: rkb_...' : 'Authorization: Bearer ...'}"</span></div>
                           </div>
+
                           {/* Example Response */}
-                          <div className="bg-[#1e1e2e] rounded-xl p-3 text-xs font-mono text-gray-300">
-                            <span className="text-[10px] text-gray-500 font-sans font-medium block mb-2">
-                              {language === 'en' ? 'Example Response' : 'レスポンス例'}
-                            </span>
-                            <div>{'{'}</div>
-                            <div>  <span className="text-blue-400">"success"</span>: <span className="text-emerald-400">true</span>,</div>
-                            <div>  <span className="text-blue-400">"data"</span>: {'['} ... {']'},</div>
-                            <div>  <span className="text-blue-400">"meta"</span>: {'{'} <span className="text-blue-400">"total"</span>: <span className="text-amber-300">47</span>, <span className="text-blue-400">"page"</span>: <span className="text-amber-300">1</span> {'}'}</div>
-                            <div>{'}'}</div>
-                          </div>
+                          {epWithBody.responseExample && (
+                            <div className="bg-[#1e1e2e] rounded-xl p-3 text-xs font-mono text-gray-300">
+                              <span className="text-[10px] text-gray-500 font-sans font-medium block mb-2">
+                                {language === 'en' ? 'Example Response' : 'レスポンス例'}
+                              </span>
+                              <pre className="whitespace-pre-wrap text-green-300">{epWithBody.responseExample}</pre>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -606,10 +869,10 @@ export default function SettingsPage() {
               </div>
 
               {/* Webhooks Preview */}
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100 p-5">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-500/10 dark:to-blue-500/10 rounded-2xl border border-purple-100 dark:border-purple-500/20 p-5">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-rakubun-surface/80">
-                    <Webhook className="w-5 h-5 text-purple-600" />
+                    <Webhook className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-heading font-semibold text-rakubun-text text-sm">
@@ -621,7 +884,7 @@ export default function SettingsPage() {
                         : '記事公開、分析完了、スケジュールトリガー時にリアルタイム通知を受信。'}
                     </p>
                   </div>
-                  <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2.5 py-1 rounded-full">
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-500/20 px-2.5 py-1 rounded-full">
                     {language === 'en' ? 'Coming Soon' : '近日公開'}
                   </span>
                 </div>
@@ -673,37 +936,163 @@ export default function SettingsPage() {
               <h3 className="font-heading font-semibold text-rakubun-text">
                 {language === 'en' ? 'Notification Preferences' : '通知設定'}
               </h3>
-              <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6 space-y-5">
-                {[
-                  { label: { en: 'Article published', ja: '記事公開時' }, email: true, inApp: true },
-                  { label: { en: 'AI generation complete', ja: 'AI生成完了時' }, email: false, inApp: true },
-                  { label: { en: 'Site connection issues', ja: 'サイト接続問題時' }, email: true, inApp: true },
-                  { label: { en: 'Scheduled article reminders', ja: '予約記事リマインダー' }, email: true, inApp: true },
-                  { label: { en: 'Weekly analytics report', ja: '週間アナリティクスレポート' }, email: true, inApp: false },
-                  { label: { en: 'System updates', ja: 'システムアップデート' }, email: false, inApp: true },
-                ].map((pref, i) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-rakubun-border last:border-0">
-                    <span className="text-sm text-rakubun-text">{pref.label[language]}</span>
-                    <div className="flex items-center gap-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" defaultChecked={pref.email} className="rounded border-black/20 text-rakubun-accent focus:ring-rakubun-accent/20" />
-                        <span className="text-xs text-rakubun-text-secondary">
-                          {language === 'en' ? 'Email' : 'メール'}
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" defaultChecked={pref.inApp} className="rounded border-black/20 text-rakubun-accent focus:ring-rakubun-accent/20" />
-                        <span className="text-xs text-rakubun-text-secondary">
-                          {language === 'en' ? 'In-App' : 'アプリ内'}
-                        </span>
-                      </label>
+
+              {notifLoading ? (
+                <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-12 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-rakubun-accent" />
+                </div>
+              ) : (
+                <>
+                  {/* Master Email Toggle */}
+                  <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl ${notifSettings.emailEnabled ? 'bg-rakubun-accent/10' : 'bg-rakubun-bg-secondary'}`}>
+                          <Power className={`w-5 h-5 ${notifSettings.emailEnabled ? 'text-rakubun-accent' : 'text-rakubun-text-secondary'}`} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-rakubun-text">
+                            {language === 'en' ? 'Email Notifications' : 'メール通知'}
+                          </h4>
+                          <p className="text-xs text-rakubun-text-secondary mt-0.5">
+                            {language === 'en'
+                              ? 'Enable or disable all email notifications at once'
+                              : 'すべてのメール通知を一括で有効・無効にする'}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={toggleEmailEnabled}
+                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 ${
+                          notifSettings.emailEnabled ? 'bg-rakubun-accent' : 'bg-rakubun-border'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                            notifSettings.emailEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
-                ))}
-                <button className="btn-primary text-sm mt-2">
-                  {language === 'en' ? 'Save Preferences' : '設定を保存'}
-                </button>
-              </div>
+
+                  {/* Individual Notification Preferences */}
+                  <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6 space-y-1">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-sm font-semibold text-rakubun-text">
+                        {language === 'en' ? 'Notification Channels' : '通知チャンネル'}
+                      </h4>
+                      <div className="flex items-center gap-8 pr-1">
+                        <span className="text-[11px] font-medium text-rakubun-text-secondary uppercase tracking-wider w-12 text-center">
+                          {language === 'en' ? 'Email' : 'メール'}
+                        </span>
+                        <span className="text-[11px] font-medium text-rakubun-text-secondary uppercase tracking-wider w-12 text-center">
+                          {language === 'en' ? 'In-App' : 'アプリ内'}
+                        </span>
+                      </div>
+                    </div>
+                    {notificationKeys.map((item) => {
+                      const pref = notifSettings.preferences[item.key];
+                      const emailDisabled = !notifSettings.emailEnabled;
+                      return (
+                        <div key={item.key} className="flex items-center justify-between py-3 border-b border-rakubun-border last:border-0">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-sm font-medium text-rakubun-text">{item.label[language]}</span>
+                            <p className="text-xs text-rakubun-text-secondary mt-0.5">{item.description[language]}</p>
+                          </div>
+                          <div className="flex items-center gap-8 shrink-0">
+                            <div className="w-12 flex justify-center">
+                              <button
+                                onClick={() => toggleNotifPref(item.key, 'email')}
+                                disabled={emailDisabled}
+                                className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 ${
+                                  emailDisabled
+                                    ? 'bg-rakubun-border/50 cursor-not-allowed opacity-50'
+                                    : pref.email
+                                      ? 'bg-rakubun-accent'
+                                      : 'bg-rakubun-border'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                                    pref.email ? 'translate-x-5' : 'translate-x-0.5'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                            <div className="w-12 flex justify-center">
+                              <button
+                                onClick={() => toggleNotifPref(item.key, 'inApp')}
+                                className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 ${
+                                  pref.inApp ? 'bg-rakubun-accent' : 'bg-rakubun-border'
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                                    pref.inApp ? 'translate-x-5' : 'translate-x-0.5'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="pt-4">
+                      <button
+                        onClick={saveNotificationSettings}
+                        disabled={!notifDirty || notifSaving}
+                        className="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {notifSaving ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'en' ? 'Saving...' : '保存中...'}</>
+                        ) : (
+                          <>{language === 'en' ? 'Save Preferences' : '設定を保存'}</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Send Test Email */}
+                  <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10">
+                        <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-rakubun-text">
+                          {language === 'en' ? 'Send Test Email' : 'テストメール送信'}
+                        </h4>
+                        <p className="text-xs text-rakubun-text-secondary mt-0.5">
+                          {language === 'en'
+                            ? 'Verify that email notifications are working correctly'
+                            : 'メール通知が正しく動作しているか確認する'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="email"
+                        value={testEmailAddress}
+                        onChange={(e) => setTestEmailAddress(e.target.value)}
+                        placeholder={language === 'en' ? 'Enter your email address' : 'メールアドレスを入力'}
+                        className="rakubun-input flex-1"
+                      />
+                      <button
+                        onClick={sendTestEmail}
+                        disabled={testEmailSending || !testEmailAddress}
+                        className="btn-primary text-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {testEmailSending ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'en' ? 'Sending...' : '送信中...'}</>
+                        ) : (
+                          <><Send className="w-4 h-4" /> {language === 'en' ? 'Send Test' : 'テスト送信'}</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
@@ -760,10 +1149,10 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Create Key Modal ──────────────────────────────────────── */}
-      {showCreateModal && !showNewKeyResult && (
+      {showCreateModal && !newKeyResult && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCreateModal(false)}>
-          <div className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-8 pt-8 pb-4 shrink-0">
+          <div className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-8 pt-8 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-rakubun-accent/10">
                   <Key className="w-5 h-5 text-rakubun-accent" />
@@ -774,8 +1163,8 @@ export default function SettingsPage() {
                   </h3>
                   <p className="text-sm text-rakubun-text-secondary">
                     {language === 'en'
-                      ? 'Generate a key for AI agents or external integrations.'
-                      : 'AIエージェントまたは外部統合用のキーを生成。'}
+                      ? 'Generate a key for AI agents or external tools.'
+                      : 'AIエージェントまたは外部ツール用のキーを生成。'}
                   </p>
                 </div>
               </div>
@@ -784,16 +1173,18 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-5">
-              {/* Name */}
+            <div className="px-8 pb-8 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-rakubun-text mb-1.5">
                   {language === 'en' ? 'Key Name' : 'キー名'}
                 </label>
                 <input
                   type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
                   placeholder={language === 'en' ? 'e.g. My AI Agent, Content Pipeline' : '例: マイAIエージェント、コンテンツパイプライン'}
                   className="rakubun-input"
+                  autoFocus
                 />
                 <p className="text-xs text-rakubun-text-secondary mt-1">
                   {language === 'en'
@@ -802,99 +1193,29 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              {/* Expiry */}
-              <div>
-                <label className="block text-sm font-medium text-rakubun-text mb-1.5">
-                  {language === 'en' ? 'Expiration' : '有効期限'}
-                </label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {[
-                    { value: 'never', label: { en: 'Never', ja: '無期限' } },
-                    { value: '30d', label: { en: '30 days', ja: '30日' } },
-                    { value: '90d', label: { en: '90 days', ja: '90日' } },
-                    { value: '1y', label: { en: '1 year', ja: '1年' } },
-                    { value: 'custom', label: { en: 'Custom', ja: 'カスタム' } },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setKeyExpiry(opt.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                        keyExpiry === opt.value
-                          ? 'border-rakubun-accent bg-rakubun-accent/5 text-rakubun-accent'
-                          : 'border-rakubun-border text-rakubun-text-secondary hover:border-black/20'
-                      }`}
-                    >
-                      {opt.label[language]}
-                    </button>
-                  ))}
-                </div>
+              <div className="bg-rakubun-bg rounded-xl p-3 text-xs text-rakubun-text-secondary flex items-start gap-2">
+                <Shield className="w-3.5 h-3.5 shrink-0 mt-0.5 text-rakubun-accent" />
+                <span>
+                  {language === 'en'
+                    ? 'This key will have full access to all agent endpoints — publish articles, upload images, manage sites, and more.'
+                    : 'このキーはすべてのエージェントエンドポイントへのフルアクセスを持ちます — 記事公開、画像アップロード、サイト管理など。'}
+                </span>
               </div>
 
-              {/* Permissions */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-rakubun-text">
-                    {language === 'en' ? 'Permissions' : '権限'}
-                  </label>
-                  <button
-                    onClick={() => {
-                      if (selectedPermissions.size === permissionScopes.length) {
-                        setSelectedPermissions(new Set());
-                      } else {
-                        setSelectedPermissions(new Set(permissionScopes.map(p => p.scope)));
-                      }
-                    }}
-                    className="text-xs text-rakubun-accent font-medium hover:underline"
-                  >
-                    {selectedPermissions.size === permissionScopes.length
-                      ? (language === 'en' ? 'Deselect All' : '全解除')
-                      : (language === 'en' ? 'Select All' : '全選択')}
-                  </button>
-                </div>
-                <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
-                  {permissionScopes.map((perm) => (
-                    <label
-                      key={perm.scope}
-                      className={`
-                        flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all
-                        ${selectedPermissions.has(perm.scope)
-                          ? 'border-rakubun-accent/30 bg-rakubun-accent/5'
-                          : 'border-rakubun-border hover:border-rakubun-border bg-rakubun-surface'
-                        }
-                      `}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedPermissions.has(perm.scope)}
-                        onChange={() => togglePermission(perm.scope)}
-                        className="rounded border-black/20 text-rakubun-accent focus:ring-rakubun-accent/20 mt-0.5"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-rakubun-text">{perm.label[language]}</span>
-                          <code className="text-[10px] font-mono text-rakubun-text-secondary bg-rakubun-bg px-1.5 py-0.5 rounded">
-                            {perm.scope}
-                          </code>
-                        </div>
-                        <p className="text-xs text-rakubun-text-secondary mt-0.5">{perm.description[language]}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
               <div className="flex items-center gap-3 pt-2">
                 <button onClick={() => setShowCreateModal(false)} className="flex-1 btn-secondary text-sm">
                   {language === 'en' ? 'Cancel' : 'キャンセル'}
                 </button>
                 <button
-                  onClick={() => setShowNewKeyResult(true)}
-                  disabled={selectedPermissions.size === 0}
+                  onClick={handleCreateKey}
+                  disabled={!newKeyName.trim() || creatingKey}
                   className="flex-1 btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Key className="w-4 h-4" />
-                  {language === 'en' ? 'Create Key' : 'キー作成'}
+                  {creatingKey ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'en' ? 'Creating...' : '作成中...'}</>
+                  ) : (
+                    <><Key className="w-4 h-4" /> {language === 'en' ? 'Create Key' : 'キー作成'}</>
+                  )}
                 </button>
               </div>
             </div>
@@ -903,7 +1224,7 @@ export default function SettingsPage() {
       )}
 
       {/* ── New Key Result Modal ───────────────────────────────────── */}
-      {showCreateModal && showNewKeyResult && (
+      {showCreateModal && newKeyResult && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-lg p-8" onClick={(e) => e.stopPropagation()}>
             <div className="text-center mb-6">
@@ -920,16 +1241,23 @@ export default function SettingsPage() {
               </p>
             </div>
 
+            <div className="bg-rakubun-bg rounded-xl p-4 mb-3">
+              <label className="text-xs font-medium text-rakubun-text-secondary mb-1 block">
+                {language === 'en' ? 'Key Name' : 'キー名'}
+              </label>
+              <p className="text-sm font-medium text-rakubun-text">{newKeyResult.name}</p>
+            </div>
+
             <div className="bg-rakubun-bg rounded-xl p-4 mb-4">
               <label className="text-xs font-medium text-rakubun-text-secondary mb-2 block">
                 {language === 'en' ? 'Your API Key' : 'あなたのAPIキー'}
               </label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-sm font-mono text-rakubun-text bg-rakubun-surface rounded-lg px-3 py-2 border border-rakubun-border select-all">
-                  rbk_live_f8a3k29dm4x7p2ql9vbn6wt5je1ym8c
+                <code className="flex-1 text-sm font-mono text-rakubun-text bg-rakubun-surface rounded-lg px-3 py-2 border border-rakubun-border select-all break-all">
+                  {newKeyResult.key}
                 </code>
                 <button
-                  onClick={() => handleCopy('new-key')}
+                  onClick={() => handleCopy(newKeyResult.key, 'new-key')}
                   className="btn-secondary text-xs py-2 px-3 shrink-0"
                 >
                   {copiedKey === 'new-key' ? (
@@ -951,7 +1279,7 @@ export default function SettingsPage() {
             </div>
 
             <button
-              onClick={() => { setShowCreateModal(false); setShowNewKeyResult(false); }}
+              onClick={() => { setShowCreateModal(false); setNewKeyResult(null); }}
               className="w-full btn-primary text-sm"
             >
               {language === 'en' ? 'Done' : '完了'}
