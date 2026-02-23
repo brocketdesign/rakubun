@@ -676,7 +676,7 @@ export default function CronSchedulerPage() {
               />
               <DetailItem
                 icon={<Timer className="w-4 h-4" />}
-                label="Cron Job ID"
+                label={language === 'en' ? 'Cron Job ID' : 'CronジョブID'}
                 value={
                   <div className="flex items-center gap-1.5">
                     <code className="text-xs font-mono text-rakubun-text bg-rakubun-bg px-1.5 py-0.5 rounded">

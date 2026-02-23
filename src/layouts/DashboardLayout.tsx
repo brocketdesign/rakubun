@@ -118,7 +118,7 @@ export default function DashboardLayout() {
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? (language === 'en' ? 'Expand sidebar' : 'サイドバーを展開') : (language === 'en' ? 'Collapse sidebar' : 'サイドバーを折りたたむ')}
             >
               {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </button>

@@ -49,11 +49,11 @@ const overviewStats = [
 ];
 
 const topArticles = [
-  { title: 'AI Tools for Content Creators', views: '3.2K', site: 'aiweekly.net', change: '+45%' },
-  { title: '10 Best Practices for React Performance', views: '2.8K', site: 'techblog.com', change: '+22%' },
-  { title: 'TypeScript Advanced Patterns', views: '2.1K', site: 'devinsights.io', change: '+18%' },
-  { title: 'Modern CSS Layout Guide', views: '1.9K', site: 'techblog.com', change: '+12%' },
-  { title: 'Web Performance 101', views: '1.5K', site: 'devinsights.io', change: '+8%' },
+  { title: { en: 'AI Tools for Content Creators', ja: 'コンテンツクリエイター向けAIツール' }, views: '3.2K', site: 'aiweekly.net', change: '+45%' },
+  { title: { en: '10 Best Practices for React Performance', ja: 'Reactパフォーマンスのベストプラクティス10選' }, views: '2.8K', site: 'techblog.com', change: '+22%' },
+  { title: { en: 'TypeScript Advanced Patterns', ja: 'TypeScript上級パターン' }, views: '2.1K', site: 'devinsights.io', change: '+18%' },
+  { title: { en: 'Modern CSS Layout Guide', ja: 'モダンCSSレイアウトガイド' }, views: '1.9K', site: 'techblog.com', change: '+12%' },
+  { title: { en: 'Web Performance 101', ja: 'Webパフォーマンス入門' }, views: '1.5K', site: 'devinsights.io', change: '+8%' },
 ];
 
 const sitePerformance = [
@@ -164,7 +164,7 @@ export default function AnalyticsPage() {
             </h3>
             <span className="text-xs text-rakubun-text-secondary flex items-center gap-1">
               <CalendarDays className="w-3 h-3" />
-              Feb 16 – Feb 22, 2026
+              {language === 'en' ? 'Feb 16 – Feb 22, 2026' : '2026年2月16日〜2月22日'}
             </span>
           </div>
           {/* Simple Bar Chart */}
@@ -197,7 +197,7 @@ export default function AnalyticsPage() {
               >
                 <span className="text-xs font-bold text-rakubun-text-secondary w-5">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-rakubun-text truncate">{article.title}</p>
+                  <p className="text-sm font-medium text-rakubun-text truncate">{article.title[language]}</p>
                   <p className="text-xs text-rakubun-text-secondary">{article.site}</p>
                 </div>
                 <div className="text-right shrink-0">

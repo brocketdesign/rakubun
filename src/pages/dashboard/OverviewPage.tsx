@@ -50,9 +50,9 @@ const quickActions = [
 ];
 
 const upcomingSchedule = [
-  { title: 'SEO Guide for Beginners', time: 'Today, 5:00 PM', site: 'techblog.com' },
-  { title: 'React 20 Preview', time: 'Tomorrow, 9:00 AM', site: 'devinsights.io' },
-  { title: 'AI in Healthcare 2026', time: 'Feb 24, 2:00 PM', site: 'aiweekly.net' },
+  { title: { en: 'SEO Guide for Beginners', ja: 'SEO初心者ガイド' }, time: { en: 'Today, 5:00 PM', ja: '今日 17:00' }, site: 'techblog.com' },
+  { title: { en: 'React 20 Preview', ja: 'React 20 プレビュー' }, time: { en: 'Tomorrow, 9:00 AM', ja: '明日 9:00' }, site: 'devinsights.io' },
+  { title: { en: 'AI in Healthcare 2026', ja: '2026年のAI医療' }, time: { en: 'Feb 24, 2:00 PM', ja: '2月24日 14:00' }, site: 'aiweekly.net' },
 ];
 
 const statusConfig = {
@@ -286,10 +286,10 @@ export default function OverviewPage() {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-rakubun-text truncate group-hover:text-rakubun-accent transition-colors">
-                      {item.title}
+                      {item.title[language]}
                     </p>
                     <p className="text-xs text-rakubun-text-secondary">
-                      {item.time} · {item.site}
+                      {item.time[language]} · {item.site}
                     </p>
                   </div>
                 </div>

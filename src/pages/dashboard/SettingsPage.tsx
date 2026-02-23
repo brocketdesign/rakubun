@@ -684,7 +684,7 @@ export default function SettingsPage() {
 
               {/* Base URL */}
               <div className="bg-[#1e1e2e] rounded-2xl p-4 flex items-center gap-3">
-                <span className="text-xs text-gray-400 font-sans font-medium shrink-0">Base URL</span>
+                <span className="text-xs text-gray-400 font-sans font-medium shrink-0">{language === 'en' ? 'Base URL' : 'ベースURL'}</span>
                 <code className="text-sm text-emerald-400 font-mono">{window.location.origin}</code>
                 <button onClick={() => handleCopy(window.location.origin, 'baseurl')} className="ml-auto p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors">
                   {copiedKey === 'baseurl' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1117,10 +1117,10 @@ export default function SettingsPage() {
                     {language === 'en' ? 'Timezone' : 'タイムゾーン'}
                   </label>
                   <select className="rakubun-input">
-                    <option>UTC+9 (Tokyo)</option>
-                    <option>UTC-8 (Los Angeles)</option>
-                    <option>UTC-5 (New York)</option>
-                    <option>UTC+0 (London)</option>
+                    <option>{language === 'en' ? 'UTC+9 (Tokyo)' : 'UTC+9（東京）'}</option>
+                    <option>{language === 'en' ? 'UTC-8 (Los Angeles)' : 'UTC-8（ロサンゼルス）'}</option>
+                    <option>{language === 'en' ? 'UTC-5 (New York)' : 'UTC-5（ニューヨーク）'}</option>
+                    <option>{language === 'en' ? 'UTC+0 (London)' : 'UTC+0（ロンドン）'}</option>
                   </select>
                 </div>
                 <div>

@@ -78,9 +78,9 @@ const statusFilters = ['all', 'published', 'scheduled', 'draft', 'generating'] a
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, lang: 'en' | 'ja' = 'en'): string {
   try {
-    return new Date(iso).toLocaleDateString('en-US', {
+    return new Date(iso).toLocaleDateString(lang === 'ja' ? 'ja-JP' : 'en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -304,7 +304,7 @@ export default function ArticlesPage() {
         // Create new article as draft
         const api = createApiClient(getToken);
         const raw = await api.post<Record<string, unknown>>('/api/articles', {
-          title: editorTitle || 'Untitled Article',
+          title: editorTitle || (language === 'en' ? 'Untitled Article' : '無題の記事'),
           content: editorContent,
           site: editorSite,  // already a site ID
           category: editorCategory,
@@ -343,7 +343,7 @@ export default function ArticlesPage() {
       } else {
         const api = createApiClient(getToken);
         await api.post('/api/articles', {
-          title: editorTitle || 'Untitled Article',
+          title: editorTitle || (language === 'en' ? 'Untitled Article' : '無題の記事'),
           content: editorContent,
           site: siteId,
           category: editorCategory,
@@ -377,7 +377,7 @@ export default function ArticlesPage() {
       } else {
         const api = createApiClient(getToken);
         await api.post('/api/articles', {
-          title: editorTitle || 'Untitled Article',
+          title: editorTitle || (language === 'en' ? 'Untitled Article' : '無題の記事'),
           content: editorContent,
           site: editorSite,  // already a site ID
           category: editorCategory,
@@ -743,7 +743,7 @@ export default function ArticlesPage() {
                   <div className="flex items-center gap-4 mt-3 text-xs text-rakubun-text-secondary">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {formatDate(article.createdAt)}
+                      {formatDate(article.createdAt, language)}
                     </span>
                     {article.wordCount > 0 && (
                       <span>
@@ -889,7 +889,7 @@ export default function ArticlesPage() {
                   {editingArticle && (
                     <p className="text-xs text-rakubun-text-secondary">
                       {language === 'en' ? 'Last updated:' : '最終更新:'}{' '}
-                      {formatDate(editingArticle.updatedAt)}
+                      {formatDate(editingArticle.updatedAt, language)}
                     </p>
                   )}
                 </div>

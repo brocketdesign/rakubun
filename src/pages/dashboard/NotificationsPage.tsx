@@ -18,9 +18,9 @@ type NotificationType = 'article' | 'site' | 'ai' | 'system';
 interface Notification {
   id: string;
   type: NotificationType;
-  title: string;
-  message: string;
-  time: string;
+  title: { en: string; ja: string };
+  message: { en: string; ja: string };
+  time: { en: string; ja: string };
   read: boolean;
   actionUrl?: string;
 }
@@ -29,49 +29,49 @@ const notifications: Notification[] = [
   {
     id: '1',
     type: 'article',
-    title: 'Article Published Successfully',
-    message: '"10 Best Practices for React Performance" has been published on techblog.com',
-    time: '2 hours ago',
+    title: { en: 'Article Published Successfully', ja: '記事が正常に公開されました' },
+    message: { en: '"10 Best Practices for React Performance" has been published on techblog.com', ja: '「Reactパフォーマンスのベストプラクティス10選」がtechblog.comに公開されました' },
+    time: { en: '2 hours ago', ja: '2時間前' },
     read: false,
   },
   {
     id: '2',
     type: 'ai',
-    title: 'AI Generation Complete',
-    message: 'Your article "Web Performance Optimization Guide" has been generated and is ready for review.',
-    time: '3 hours ago',
+    title: { en: 'AI Generation Complete', ja: 'AI生成完了' },
+    message: { en: 'Your article "Web Performance Optimization Guide" has been generated and is ready for review.', ja: '記事「Webパフォーマンス最適化ガイド」が生成され、レビュー準備が整いました。' },
+    time: { en: '3 hours ago', ja: '3時間前' },
     read: false,
   },
   {
     id: '3',
     type: 'site',
-    title: 'Site Connection Warning',
-    message: 'aiweekly.net has not synced in over 2 hours. Please check the connection.',
-    time: '4 hours ago',
+    title: { en: 'Site Connection Warning', ja: 'サイト接続警告' },
+    message: { en: 'aiweekly.net has not synced in over 2 hours. Please check the connection.', ja: 'aiweekly.netが2時間以上同期されていません。接続を確認してください。' },
+    time: { en: '4 hours ago', ja: '4時間前' },
     read: false,
   },
   {
     id: '4',
     type: 'system',
-    title: 'Scheduled Maintenance',
-    message: 'System maintenance is scheduled for Feb 25, 2026 from 2:00-4:00 AM UTC.',
-    time: '1 day ago',
+    title: { en: 'Scheduled Maintenance', ja: '定期メンテナンス' },
+    message: { en: 'System maintenance is scheduled for Feb 25, 2026 from 2:00-4:00 AM UTC.', ja: 'システムメンテナンスが2026年2月25日 UTC 2:00〜4:00に予定されています。' },
+    time: { en: '1 day ago', ja: '1日前' },
     read: true,
   },
   {
     id: '5',
     type: 'article',
-    title: 'Article Scheduled',
-    message: '"Getting Started with TypeScript" is scheduled to publish tomorrow at 9:00 AM.',
-    time: '1 day ago',
+    title: { en: 'Article Scheduled', ja: '記事が予約されました' },
+    message: { en: '"Getting Started with TypeScript" is scheduled to publish tomorrow at 9:00 AM.', ja: '「TypeScript入門」が明日午前9時に公開予定です。' },
+    time: { en: '1 day ago', ja: '1日前' },
     read: true,
   },
   {
     id: '6',
     type: 'ai',
-    title: 'Analysis Report Ready',
-    message: 'Site analysis for devinsights.io is complete. SEO score improved to 79.',
-    time: '2 days ago',
+    title: { en: 'Analysis Report Ready', ja: '分析レポート完了' },
+    message: { en: 'Site analysis for devinsights.io is complete. SEO score improved to 79.', ja: 'devinsights.ioのサイト分析が完了しました。SEOスコアが79に改善。' },
+    time: { en: '2 days ago', ja: '2日前' },
     read: true,
   },
 ];
@@ -215,18 +215,18 @@ export default function NotificationsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className={`text-sm font-medium ${isUnread ? 'text-rakubun-text' : 'text-rakubun-text-secondary'}`}>
-                      {notification.title}
+                      {notification.title[language]}
                     </h4>
                     {isUnread && (
                       <span className="w-2 h-2 rounded-full bg-rakubun-accent shrink-0" />
                     )}
                   </div>
                   <p className="text-sm text-rakubun-text-secondary mt-0.5">
-                    {notification.message}
+                    {notification.message[language]}
                   </p>
                   <span className="text-xs text-rakubun-text-secondary/60 mt-1.5 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {notification.time}
+                    {notification.time[language]}
                   </span>
                 </div>
                 <button
