@@ -6,6 +6,101 @@ export interface WordPressSite {
   applicationPassword: string;
 }
 
+// ─── Reliability helpers ────────────────────────────────────────────────────
+
+/** Default timeout (ms) for WordPress REST API calls */
+const WP_DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Default timeout (ms) for image download/upload operations */
+const WP_IMAGE_TIMEOUT_MS = 60_000;
+
+/** Maximum number of automatic retries for transient failures */
+const WP_MAX_RETRIES = 2;
+
+/** Classify whether an error is transient (worth retrying) */
+function isTransientError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === 'AbortError') return true;
+  if (error instanceof TypeError) return true; // network-level failure
+  if (error && typeof error === 'object' && 'code' in error) {
+    const code = (error as { code?: string }).code;
+    if (['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'EPIPE'].includes(code || '')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Whether an HTTP status code indicates a transient server-side issue */
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status === 502 || status === 503 || status === 504;
+}
+
+interface FetchWithRetryOptions {
+  /** Timeout in ms (default: WP_DEFAULT_TIMEOUT_MS) */
+  timeoutMs?: number;
+  /** Max retries on transient failures (default: WP_MAX_RETRIES) */
+  maxRetries?: number;
+  /** Label used in log messages */
+  label?: string;
+}
+
+/**
+ * Wrapper around `fetch` that adds:
+ * - Per-request AbortController timeout
+ * - Automatic retries with exponential backoff for transient network /
+ *   server errors (429, 502, 503, 504, ECONNRESET, etc.)
+ * - Structured logging via `[WP]` prefix
+ */
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit = {},
+  opts: FetchWithRetryOptions = {},
+): Promise<Response> {
+  const { timeoutMs = WP_DEFAULT_TIMEOUT_MS, maxRetries = WP_MAX_RETRIES, label = 'request' } = opts;
+
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(timer);
+
+      // If the server returned a retryable status and we have attempts left, retry
+      if (isRetryableStatus(response.status) && attempt < maxRetries) {
+        const backoff = Math.min(1000 * 2 ** attempt, 8000);
+        console.warn(
+          `[WP] ${label} received ${response.status}, retrying in ${backoff}ms (attempt ${attempt + 1}/${maxRetries})`,
+        );
+        await new Promise((r) => setTimeout(r, backoff));
+        continue;
+      }
+
+      return response;
+    } catch (error) {
+      clearTimeout(timer);
+      lastError = error;
+
+      if (isTransientError(error) && attempt < maxRetries) {
+        const backoff = Math.min(1000 * 2 ** attempt, 8000);
+        console.warn(
+          `[WP] ${label} transient error, retrying in ${backoff}ms (attempt ${attempt + 1}/${maxRetries}):`,
+          error instanceof Error ? error.message : error,
+        );
+        await new Promise((r) => setTimeout(r, backoff));
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  // Should not reach here, but just in case
+  throw lastError;
+}
+
 /**
  * Convert markdown content to HTML for WordPress.
  * Keeps content that is already HTML unchanged.
@@ -31,9 +126,12 @@ export async function uploadImageToWordPress(
   }
 
   try {
-    const imageResponse = await fetch(imageUrl);
+    const imageResponse = await fetchWithRetry(imageUrl, {}, {
+      timeoutMs: WP_IMAGE_TIMEOUT_MS,
+      label: 'downloadImage',
+    });
     if (!imageResponse.ok) {
-      console.error('[WP] Failed to download image from URL:', imageUrl);
+      console.error('[WP] Failed to download image from URL:', imageUrl, 'status:', imageResponse.status);
       return null;
     }
     const imageBuffer = await imageResponse.arrayBuffer();
@@ -45,7 +143,7 @@ export async function uploadImageToWordPress(
     const mediaEndpoint = `${baseUrl.replace(/\/$/, '')}/wp-json/wp/v2/media`;
     const authHeader = 'Basic ' + Buffer.from(`${site.username}:${site.applicationPassword}`).toString('base64');
 
-    const wpResponse = await fetch(mediaEndpoint, {
+    const wpResponse = await fetchWithRetry(mediaEndpoint, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
@@ -53,7 +151,7 @@ export async function uploadImageToWordPress(
         'Content-Type': contentType,
       },
       body: imageBuffer,
-    });
+    }, { timeoutMs: WP_IMAGE_TIMEOUT_MS, label: 'uploadImage' });
 
     if (!wpResponse.ok) {
       const errorText = await wpResponse.text();
@@ -65,7 +163,8 @@ export async function uploadImageToWordPress(
     console.log('[WP] Image uploaded, ID:', wpData.id, 'URL:', wpData.source_url);
     return { id: wpData.id, sourceUrl: wpData.source_url };
   } catch (error) {
-    console.error('[WP] Error uploading image:', error);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+    console.error('[WP] Error uploading image:', isTimeout ? 'TIMEOUT' : error);
     return null;
   }
 }
@@ -102,7 +201,7 @@ export async function uploadBase64ImageToWordPress(
     const mediaEndpoint = `${baseUrl.replace(/\/$/, '')}/wp-json/wp/v2/media`;
     const authHeader = 'Basic ' + Buffer.from(`${site.username}:${site.applicationPassword}`).toString('base64');
 
-    const wpResponse = await fetch(mediaEndpoint, {
+    const wpResponse = await fetchWithRetry(mediaEndpoint, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
@@ -110,7 +209,7 @@ export async function uploadBase64ImageToWordPress(
         'Content-Type': contentType,
       },
       body: imageBuffer,
-    });
+    }, { timeoutMs: WP_IMAGE_TIMEOUT_MS, label: 'uploadBase64Image' });
 
     if (!wpResponse.ok) {
       const errorText = await wpResponse.text();
@@ -123,23 +222,24 @@ export async function uploadBase64ImageToWordPress(
     // Set alt text if provided
     if (altText && wpData.id) {
       try {
-        await fetch(`${mediaEndpoint}/${wpData.id}`, {
+        await fetchWithRetry(`${mediaEndpoint}/${wpData.id}`, {
           method: 'POST',
           headers: {
             'Authorization': authHeader,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ alt_text: altText }),
-        });
-      } catch {
-        // Non-critical, continue
+        }, { timeoutMs: WP_DEFAULT_TIMEOUT_MS, maxRetries: 1, label: 'setAltText' });
+      } catch (e) {
+        console.warn('[WP] Non-critical: failed to set alt text:', e instanceof Error ? e.message : e);
       }
     }
 
     console.log('[WP] Base64 image uploaded, ID:', wpData.id, 'URL:', wpData.source_url);
     return { id: wpData.id, sourceUrl: wpData.source_url };
   } catch (error) {
-    console.error('[WP] Error uploading base64 image:', error);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+    console.error('[WP] Error uploading base64 image:', isTimeout ? 'TIMEOUT' : error);
     return null;
   }
 }
@@ -212,14 +312,14 @@ export async function publishToWordPress(
     }
 
     console.log('[WP] Sending request...');
-    const response = await fetch(endpoint, {
+    const response = await fetchWithRetry(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': authHeader,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-    });
+    }, { timeoutMs: WP_DEFAULT_TIMEOUT_MS, label: 'publishPost' });
 
     console.log('[WP] Response status:', response.status, response.statusText);
 
@@ -236,7 +336,8 @@ export async function publishToWordPress(
       url: data.link,
     };
   } catch (error) {
-    console.error('[WP] Network/fetch error:', error);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+    console.error('[WP] Network/fetch error:', isTimeout ? 'TIMEOUT – WordPress did not respond within 30s' : error);
     return null;
   }
 }
@@ -263,12 +364,12 @@ export async function getWordPressPostStatus(
       'Basic ' +
       Buffer.from(`${site.username}:${site.applicationPassword}`).toString('base64');
 
-    const response = await fetch(endpoint, {
+    const response = await fetchWithRetry(endpoint, {
       method: 'GET',
       headers: {
         Authorization: authHeader,
       },
-    });
+    }, { timeoutMs: WP_DEFAULT_TIMEOUT_MS, label: 'getPostStatus' });
 
     if (!response.ok) {
       console.error('[WP] getPostStatus error:', response.status, response.statusText);
@@ -281,7 +382,8 @@ export async function getWordPressPostStatus(
       link: data.link || '',
     };
   } catch (error) {
-    console.error('[WP] getPostStatus network error:', error);
+    const isTimeout = error instanceof DOMException && error.name === 'AbortError';
+    console.error('[WP] getPostStatus network error:', isTimeout ? 'TIMEOUT' : error);
     return null;
   }
 }

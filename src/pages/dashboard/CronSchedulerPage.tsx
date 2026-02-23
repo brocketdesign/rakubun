@@ -106,109 +106,137 @@ function AnalyzingStep({ language }: { language: 'en' | 'ja' }) {
 
 function ScheduleRow({
   item,
+  index,
   language,
-  editing,
-  onEdit,
-  onSave,
-  onCancel,
-  editTime,
-  setEditTime,
-  editArticleType,
-  setEditArticleType,
-  editEnabled,
-  setEditEnabled,
+  editable,
+  onUpdate,
 }: {
   item: CronDaySchedule;
+  index: number;
   language: 'en' | 'ja';
-  editing: boolean;
-  onEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  editTime: string;
-  setEditTime: (v: string) => void;
-  editArticleType: string;
-  setEditArticleType: (v: string) => void;
-  editEnabled: boolean;
-  setEditEnabled: (v: boolean) => void;
+  editable: boolean;
+  onUpdate: (index: number, updates: Partial<CronDaySchedule>) => void;
 }) {
+  const [editingTime, setEditingTime] = useState(false);
+  const [editingType, setEditingType] = useState(false);
+  const [localTime, setLocalTime] = useState(item.time);
+  const [localType, setLocalType] = useState(item.articleType);
   const dayLabel = language === 'en' ? item.day : daysOfWeekJa[daysOfWeek.indexOf(item.day)];
+
+  // Sync local state when item changes externally
+  useEffect(() => {
+    setLocalTime(item.time);
+  }, [item.time]);
+  useEffect(() => {
+    setLocalType(item.articleType);
+  }, [item.articleType]);
+
+  const commitTime = () => {
+    if (localTime && localTime !== item.time) {
+      onUpdate(index, { time: localTime });
+    }
+    setEditingTime(false);
+  };
+
+  const commitType = () => {
+    if (localType !== item.articleType) {
+      onUpdate(index, { articleType: localType });
+    }
+    setEditingType(false);
+  };
 
   return (
     <tr
       className={`border-b border-rakubun-border/50 transition-colors ${
         !item.enabled ? 'opacity-50' : ''
-      } ${editing ? 'bg-rakubun-accent/5' : 'hover:bg-rakubun-bg-secondary/50'}`}
+      } hover:bg-rakubun-bg-secondary/50`}
     >
+      {/* Day */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          {editing ? (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={editEnabled}
-                onChange={(e) => setEditEnabled(e.target.checked)}
-                className="w-4 h-4 rounded border-rakubun-border text-rakubun-accent focus:ring-rakubun-accent"
-              />
-              <span className="font-medium text-rakubun-text">{dayLabel}</span>
-            </label>
+          {editable && (
+            <input
+              type="checkbox"
+              checked={item.enabled}
+              onChange={(e) => onUpdate(index, { enabled: e.target.checked })}
+              className="w-4 h-4 rounded border-rakubun-border text-rakubun-accent focus:ring-rakubun-accent cursor-pointer"
+            />
+          )}
+          {editable ? (
+            <select
+              value={item.day}
+              onChange={(e) => onUpdate(index, { day: e.target.value })}
+              className="font-medium text-rakubun-text bg-transparent border-none cursor-pointer hover:text-rakubun-accent focus:outline-none focus:ring-2 focus:ring-rakubun-accent/50 rounded px-1 py-0.5 -ml-1 appearance-none pr-5 bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%239ca3af%22%20stroke-width%3D%222%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%2F%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_2px_center] bg-no-repeat"
+            >
+              {daysOfWeek.map((d, i) => (
+                <option key={d} value={d}>
+                  {language === 'en' ? d : daysOfWeekJa[i]}
+                </option>
+              ))}
+            </select>
           ) : (
             <span className="font-medium text-rakubun-text">{dayLabel}</span>
           )}
         </div>
       </td>
+
+      {/* Time */}
       <td className="px-4 py-3">
-        {editing ? (
+        {editable && editingTime ? (
           <input
             type="time"
-            value={editTime}
-            onChange={(e) => setEditTime(e.target.value)}
-            className="px-2 py-1 rounded border border-rakubun-border bg-rakubun-bg text-rakubun-text text-sm focus:outline-none focus:ring-2 focus:ring-rakubun-accent/50"
+            value={localTime}
+            onChange={(e) => setLocalTime(e.target.value)}
+            onBlur={commitTime}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitTime();
+              if (e.key === 'Escape') { setLocalTime(item.time); setEditingTime(false); }
+            }}
+            autoFocus
+            className="px-2 py-1 rounded border border-rakubun-accent/50 bg-rakubun-bg text-rakubun-text text-sm focus:outline-none focus:ring-2 focus:ring-rakubun-accent/50"
           />
-        ) : (
-          <div className="flex items-center gap-1.5 text-sm text-rakubun-text">
-            <Clock className="w-3.5 h-3.5 text-rakubun-text-secondary" />
-            {formatTimeDisplay(item.time)} JST
-          </div>
-        )}
-      </td>
-      <td className="px-4 py-3">
-        {editing ? (
-          <input
-            type="text"
-            value={editArticleType}
-            onChange={(e) => setEditArticleType(e.target.value)}
-            className="w-full px-2 py-1 rounded border border-rakubun-border bg-rakubun-bg text-rakubun-text text-sm focus:outline-none focus:ring-2 focus:ring-rakubun-accent/50"
-          />
-        ) : (
-          <span className="text-sm text-rakubun-text">{item.articleType}</span>
-        )}
-      </td>
-      <td className="px-4 py-3 text-right">
-        {editing ? (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              onClick={onSave}
-              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-colors"
-              title={language === 'en' ? 'Save' : '保存'}
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onCancel}
-              className="p-1.5 rounded-lg text-rakubun-text-secondary hover:bg-rakubun-bg-secondary transition-colors"
-              title={language === 'en' ? 'Cancel' : 'キャンセル'}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
         ) : (
           <button
-            onClick={onEdit}
-            className="p-1.5 rounded-lg text-rakubun-text-secondary hover:text-rakubun-accent hover:bg-rakubun-bg-secondary transition-colors"
-            title={language === 'en' ? 'Edit' : '編集'}
+            type="button"
+            onClick={() => editable && setEditingTime(true)}
+            className={`flex items-center gap-1.5 text-sm text-rakubun-text ${
+              editable
+                ? 'cursor-pointer hover:text-rakubun-accent rounded px-1.5 py-0.5 -ml-1.5 hover:bg-rakubun-accent/5 transition-colors'
+                : ''
+            }`}
           >
-            <Pencil className="w-3.5 h-3.5" />
+            <Clock className="w-3.5 h-3.5 text-rakubun-text-secondary" />
+            {formatTimeDisplay(item.time)} JST
           </button>
+        )}
+      </td>
+
+      {/* Article Type */}
+      <td className="px-4 py-3">
+        {editable && editingType ? (
+          <input
+            type="text"
+            value={localType}
+            onChange={(e) => setLocalType(e.target.value)}
+            onBlur={commitType}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitType();
+              if (e.key === 'Escape') { setLocalType(item.articleType); setEditingType(false); }
+            }}
+            autoFocus
+            className="w-full px-2 py-1 rounded border border-rakubun-accent/50 bg-rakubun-bg text-rakubun-text text-sm focus:outline-none focus:ring-2 focus:ring-rakubun-accent/50"
+          />
+        ) : (
+          <span
+            onClick={() => editable && setEditingType(true)}
+            className={`text-sm text-rakubun-text ${
+              editable
+                ? 'cursor-pointer hover:text-rakubun-accent rounded px-1.5 py-0.5 -ml-1.5 hover:bg-rakubun-accent/5 transition-colors inline-block'
+                : ''
+            }`}
+          >
+            {item.articleType}
+          </span>
         )}
       </td>
     </tr>
@@ -242,10 +270,6 @@ export default function CronSchedulerPage() {
   const [editJobWordMin, setEditJobWordMin] = useState(1000);
   const [editJobWordMax, setEditJobWordMax] = useState(1500);
   const [editJobEmail, setEditJobEmail] = useState('');
-  const [editJobRowIndex, setEditJobRowIndex] = useState<number | null>(null);
-  const [editJobRowTime, setEditJobRowTime] = useState('');
-  const [editJobRowType, setEditJobRowType] = useState('');
-  const [editJobRowEnabled, setEditJobRowEnabled] = useState(true);
   const [savingJob, setSavingJob] = useState(false);
 
   // Delete confirmation
@@ -352,7 +376,6 @@ export default function CronSchedulerPage() {
     setEditJobWordMin(job.wordCountMin);
     setEditJobWordMax(job.wordCountMax);
     setEditJobEmail(job.emailNotification);
-    setEditJobRowIndex(null);
   };
 
   const handleSaveJobEdits = async (jobId: string) => {
@@ -371,7 +394,12 @@ export default function CronSchedulerPage() {
 
   const handleCancelJobEdit = () => {
     setEditingJobId(null);
-    setEditJobRowIndex(null);
+  };
+
+  const handleUpdateScheduleRow = (index: number, updates: Partial<CronDaySchedule>) => {
+    const updated = [...editJobSchedule];
+    updated[index] = { ...updated[index], ...updates };
+    setEditJobSchedule(updated);
   };
 
   // ─── Render Job Card ─────────────────────────────────────────────────
@@ -517,48 +545,24 @@ export default function CronSchedulerPage() {
                 <th className="px-4 py-2.5 text-left text-xs font-semibold text-rakubun-text-secondary uppercase tracking-wider">
                   {language === 'en' ? 'Article Type' : '記事タイプ'}
                 </th>
-                <th className="px-4 py-2.5 text-right text-xs font-semibold text-rakubun-text-secondary uppercase tracking-wider w-20">
-                  {/* Actions column */}
-                </th>
+                {!isEditing && (
+                  <th className="px-4 py-2.5 text-right text-xs font-semibold text-rakubun-text-secondary uppercase tracking-wider w-20">
+                    {/* spacer column when not editing */}
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {schedule.map((item, idx) => {
-                const isEditingRow = isEditing && editJobRowIndex === idx;
-
-                return (
-                  <ScheduleRow
-                    key={idx}
-                    item={item}
-                    language={language}
-                    editing={isEditingRow}
-                    editTime={isEditingRow ? editJobRowTime : ''}
-                    setEditTime={setEditJobRowTime}
-                    editArticleType={isEditingRow ? editJobRowType : ''}
-                    setEditArticleType={setEditJobRowType}
-                    editEnabled={isEditingRow ? editJobRowEnabled : item.enabled}
-                    setEditEnabled={setEditJobRowEnabled}
-                    onEdit={() => {
-                      setEditJobRowIndex(idx);
-                      setEditJobRowTime(item.time);
-                      setEditJobRowType(item.articleType);
-                      setEditJobRowEnabled(item.enabled);
-                    }}
-                    onSave={() => {
-                      const updated = [...editJobSchedule];
-                      updated[idx] = {
-                        ...updated[idx],
-                        time: editJobRowTime,
-                        articleType: editJobRowType,
-                        enabled: editJobRowEnabled,
-                      };
-                      setEditJobSchedule(updated);
-                      setEditJobRowIndex(null);
-                    }}
-                    onCancel={() => setEditJobRowIndex(null)}
-                  />
-                );
-              })}
+              {schedule.map((item, idx) => (
+                <ScheduleRow
+                  key={idx}
+                  item={item}
+                  index={idx}
+                  language={language}
+                  editable={isEditing}
+                  onUpdate={handleUpdateScheduleRow}
+                />
+              ))}
             </tbody>
           </table>
         </div>

@@ -7,6 +7,7 @@ import {
   publishToWordPress,
   uploadImageToWordPress,
   uploadBase64ImageToWordPress,
+  fetchWithRetry,
 } from './lib/wordpress.js';
 
 export const config = {
@@ -430,7 +431,7 @@ async function handlePublish(req: VercelRequest, res: VercelResponse) {
           try {
             const baseUrl = wpSite.url.startsWith('http') ? wpSite.url : `https://${wpSite.url}`;
             const authHeader = 'Basic ' + Buffer.from(`${wpSite.username}:${wpSite.applicationPassword}`).toString('base64');
-            await fetch(`${baseUrl.replace(/\/$/, '')}/wp-json/wp/v2/posts/${wpResult.wpPostId}`, {
+            await fetchWithRetry(`${baseUrl.replace(/\/$/, '')}/wp-json/wp/v2/posts/${wpResult.wpPostId}`, {
               method: 'POST',
               headers: {
                 'Authorization': authHeader,
@@ -441,9 +442,9 @@ async function handlePublish(req: VercelRequest, res: VercelResponse) {
                 ...(categoryId ? { categories: [categoryId] } : {}),
                 ...(tags && tags.length > 0 ? { tags: tags } : {}),
               }),
-            });
+            }, { timeoutMs: 20000, maxRetries: 1, label: 'setFeaturedMedia' });
           } catch (e) {
-            console.error('[Agent] Failed to set featured media / categories:', e);
+            console.error('[Agent] Failed to set featured media / categories:', e instanceof Error ? e.message : e);
           }
         }
 
@@ -539,9 +540,10 @@ async function handleAgentSites(req: VercelRequest, res: VercelResponse) {
         let page = 1;
         let hasMore = true;
         while (hasMore) {
-          const catRes = await fetch(
+          const catRes = await fetchWithRetry(
             `${baseUrl.replace(/\/$/, '')}/wp-json/wp/v2/categories?per_page=100&page=${page}`,
             { headers: { Authorization: authHeader } },
+            { timeoutMs: 15000, maxRetries: 1, label: `agentFetchCategories(page=${page})` },
           );
           if (!catRes.ok) break;
           const batch = (await catRes.json()) as any[];

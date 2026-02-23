@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
+import { fetchWithRetry } from './lib/wordpress.js';
 import { randomUUID } from 'crypto';
 
 export const config = {
@@ -240,9 +241,10 @@ async function handleGenerateSchedule(req: VercelRequest, res: VercelResponse) {
         const authHeader =
           'Basic ' +
           Buffer.from(`${siteDoc.username}:${siteDoc.applicationPassword}`).toString('base64');
-        const catResponse = await fetch(
+        const catResponse = await fetchWithRetry(
           `${baseUrl}/wp-json/wp/v2/categories?per_page=100`,
           { headers: { Authorization: authHeader } },
+          { timeoutMs: 15000, maxRetries: 1, label: 'cronJobFetchCategories' },
         );
         if (catResponse.ok) {
           const cats = (await catResponse.json()) as { name: string; count: number; slug: string }[];

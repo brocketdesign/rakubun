@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
+import { fetchWithRetry } from './lib/wordpress.js';
 
 // ─── Favicon fetching ────────────────────────────────────────────────────────
 
@@ -10,16 +11,17 @@ async function fetchFavicon(siteUrl: string): Promise<string> {
 
   // 1. Try WordPress REST API root (includes site_icon_url in WP 5.4+)
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    const resp = await fetch(`${baseUrl}/wp-json/`, { signal: controller.signal });
-    clearTimeout(timeout);
+    const resp = await fetchWithRetry(
+      `${baseUrl}/wp-json/`,
+      {},
+      { timeoutMs: 8000, maxRetries: 1, label: 'fetchFavicon' },
+    );
     if (resp.ok) {
       const data = (await resp.json()) as { site_icon_url?: string };
       if (data.site_icon_url) return data.site_icon_url;
     }
-  } catch {
-    // ignore – try next method
+  } catch (e) {
+    console.warn('[Sites] Favicon WP-JSON lookup failed:', e instanceof Error ? e.message : e);
   }
 
   // 2. Fallback: use Google's favicon service
@@ -267,21 +269,23 @@ async function handleCategories(req: VercelRequest, res: VercelResponse, id: str
     const categories: { id: number; name: string; slug: string; count: number; parent: number }[] = [];
     let page = 1;
     const perPage = 100;
+    const maxPages = 10; // safety limit to avoid infinite loops
 
-    while (true) {
-      const response = await fetch(
+    while (page <= maxPages) {
+      const response = await fetchWithRetry(
         `${baseUrl}/wp-json/wp/v2/categories?per_page=${perPage}&page=${page}`,
         {
           headers: {
             Authorization: authHeader,
           },
         },
+        { timeoutMs: 15000, maxRetries: 1, label: `fetchCategories(page=${page})` },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[Categories] WordPress API error:', response.status, errorText);
-        return res.status(502).json({ error: 'Failed to fetch categories from WordPress' });
+        return res.status(502).json({ error: `Failed to fetch categories from WordPress (HTTP ${response.status})` });
       }
 
       const data = (await response.json()) as {
