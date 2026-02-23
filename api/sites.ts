@@ -3,6 +3,30 @@ import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 
+// ─── Favicon fetching ────────────────────────────────────────────────────────
+
+async function fetchFavicon(siteUrl: string): Promise<string> {
+  const baseUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+
+  // 1. Try WordPress REST API root (includes site_icon_url in WP 5.4+)
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const resp = await fetch(`${baseUrl}/wp-json/`, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (resp.ok) {
+      const data = (await resp.json()) as { site_icon_url?: string };
+      if (data.site_icon_url) return data.site_icon_url;
+    }
+  } catch {
+    // ignore – try next method
+  }
+
+  // 2. Fallback: use Google's favicon service
+  const domain = baseUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+}
+
 const DEFAULT_SETTINGS = {
   autoSync: true,
   syncInterval: 30,
@@ -82,6 +106,15 @@ async function handleSitesIndex(req: VercelRequest, res: VercelResponse) {
 
       const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
       const now = Date.now();
+
+      // Fetch real favicon from the WordPress site
+      let favicon: string;
+      try {
+        favicon = await fetchFavicon(cleanUrl);
+      } catch {
+        favicon = '🌐';
+      }
+
       const doc = {
         userId,
         name,
@@ -93,7 +126,7 @@ async function handleSitesIndex(req: VercelRequest, res: VercelResponse) {
         lastSync: new Date(now).toISOString(),
         lastSyncTimestamp: now,
         wpVersion: '6.7',
-        favicon: '🌐',
+        favicon,
         settings: { ...DEFAULT_SETTINGS },
         createdAt: new Date(now),
       };
@@ -364,6 +397,20 @@ async function handleSync(req: VercelRequest, res: VercelResponse, id: string) {
     const collection = db.collection('sites');
     const now = Date.now();
 
+    // Look up the site first to get its URL for favicon fetching
+    const site = await collection.findOne({ _id: new ObjectId(id), userId });
+    if (!site) {
+      return res.status(404).json({ error: 'Site not found' });
+    }
+
+    // Fetch latest favicon
+    let favicon: string;
+    try {
+      favicon = await fetchFavicon(site.url);
+    } catch {
+      favicon = site.favicon || '\uD83C\uDF10';
+    }
+
     const result = await collection.findOneAndUpdate(
       { _id: new ObjectId(id), userId },
       {
@@ -371,6 +418,7 @@ async function handleSync(req: VercelRequest, res: VercelResponse, id: string) {
           status: 'connected',
           lastSync: new Date(now).toISOString(),
           lastSyncTimestamp: now,
+          favicon,
         },
       },
       { returnDocument: 'after' },
@@ -387,6 +435,7 @@ async function handleSync(req: VercelRequest, res: VercelResponse, id: string) {
       status: result.status,
       lastSync: result.lastSync,
       lastSyncTimestamp: result.lastSyncTimestamp,
+      favicon: result.favicon,
     });
   } catch (err) {
     if (err instanceof AuthError) {

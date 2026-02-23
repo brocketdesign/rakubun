@@ -23,6 +23,9 @@ import { useLanguage } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import DarkModeSwitch from '../components/DarkModeSwitch';
 import { sitesActions } from '../stores/sitesStore';
+import { schedulesActions } from '../stores/schedulesStore';
+import { cronJobsActions } from '../stores/cronJobsStore';
+import { articlesActions } from '../stores/articlesStore';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -70,10 +73,19 @@ export default function DashboardLayout() {
   const { signOut } = useClerk();
   const { getToken } = useAuth();
 
-  // Pre-load sites as soon as the dashboard mounts
+  // Pre-load stores as soon as the dashboard mounts
   useEffect(() => {
     if (!sitesActions.isLoaded() && !sitesActions.isLoading()) {
       sitesActions.loadSites(getToken);
+    }
+    if (!schedulesActions.isLoaded()) {
+      schedulesActions.loadSchedules(getToken);
+    }
+    if (!cronJobsActions.isLoaded() && !cronJobsActions.isLoading()) {
+      cronJobsActions.loadCronJobs(getToken);
+    }
+    if (!articlesActions.isLoaded()) {
+      articlesActions.loadArticles(getToken);
     }
   }, [getToken]);
 

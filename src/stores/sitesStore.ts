@@ -146,6 +146,7 @@ export const sitesActions = {
       status: 'connected',
       lastSync: 'Just now',
       lastSyncTimestamp: (raw.lastSyncTimestamp as number) || Date.now(),
+      favicon: (raw.favicon as string) || sites[idx].favicon,
     };
     sites = [...sites];
     sites[idx] = updated;

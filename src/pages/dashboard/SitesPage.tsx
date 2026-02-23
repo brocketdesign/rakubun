@@ -22,6 +22,8 @@ import {
   Tag,
   Image,
   Sparkles,
+  Calendar,
+  Timer,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
@@ -40,6 +42,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '../../components/ui/tooltip';
+import { useSchedules, schedulesActions } from '../../stores/schedulesStore';
+import { useCronJobs, cronJobsActions } from '../../stores/cronJobsStore';
 
 const statusConfig = {
   connected: {
@@ -828,6 +838,8 @@ export default function SitesPage() {
   const { language } = useLanguage();
   const { getToken } = useAuth();
   const sites = useSites();
+  const schedules = useSchedules();
+  const cronJobs = useCronJobs();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [settingsSite, setSettingsSite] = useState<Site | null>(null);
@@ -854,6 +866,12 @@ export default function SitesPage() {
     } else {
       setInitialLoading(false);
     }
+  }, [getToken]);
+
+  // Load schedules & cron jobs so indicator dots can show
+  useEffect(() => {
+    if (!schedulesActions.isLoaded()) schedulesActions.loadSchedules(getToken);
+    if (!cronJobsActions.isLoaded()) cronJobsActions.loadCronJobs(getToken);
   }, [getToken]);
 
   // Refresh relative times every 30s
@@ -931,20 +949,94 @@ export default function SitesPage() {
         </button>
       </div>
 
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-rakubun-text-secondary">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500" />
+          {language === 'en' ? 'Cron Job' : 'クロンジョブ'}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" />
+          {language === 'en' ? 'Scheduler' : 'スケジューラー'}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-500" />
+          {language === 'en' ? 'Has Articles' : '記事あり'}
+        </span>
+      </div>
+
       {/* Sites Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {sites.map((site) => {
           const statusCfg = statusConfig[site.status];
           const isSyncing = syncingIds.has(site.id);
+          const hasCronJob = cronJobs.some((c) => c.siteId === site.id && c.status === 'active');
+          const hasSchedule = schedules.some((s) => s.siteId === site.id && s.status === 'active');
+          const hasArticles = site.articlesGenerated > 0;
           return (
             <div
               key={site.id}
-              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 group"
+              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 group relative"
             >
+              {/* Status indicator dots */}
+              {(hasCronJob || hasSchedule || hasArticles) && (
+                <TooltipProvider delayDuration={200}>
+                  <div className="absolute top-3 right-14 flex items-center gap-1.5">
+                    {hasCronJob && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500/15 dark:bg-emerald-500/20 cursor-default">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {language === 'en' ? 'Active Cron Job' : 'クロンジョブ稼働中'}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    {hasSchedule && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500/15 dark:bg-blue-500/20 cursor-default">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 ring-2 ring-blue-500/20" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {language === 'en' ? 'Active Schedule' : 'スケジュール稼働中'}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                    {hasArticles && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500/15 dark:bg-amber-500/20 cursor-default">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {language === 'en'
+                            ? `${site.articlesGenerated} article${site.articlesGenerated !== 1 ? 's' : ''} generated`
+                            : `${site.articlesGenerated}件の記事を生成済み`}
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
+                </TooltipProvider>
+              )}
+
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-rakubun-bg-secondary flex items-center justify-center text-lg">
-                    {site.favicon}
+                  <div className="w-10 h-10 rounded-xl bg-rakubun-bg-secondary flex items-center justify-center text-lg overflow-hidden">
+                    {site.favicon.startsWith('http') ? (
+                      <img
+                        src={site.favicon}
+                        alt={site.name}
+                        className="w-full h-full object-cover rounded-xl"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; e.currentTarget.parentElement!.textContent = '🌐'; }}
+                      />
+                    ) : (
+                      site.favicon
+                    )}
                   </div>
                   <div>
                     <h3 className="font-medium text-rakubun-text">{site.name}</h3>

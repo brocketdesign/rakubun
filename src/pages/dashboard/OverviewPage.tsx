@@ -20,6 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { useConnectedSitesCount, useTotalArticlesGenerated, sitesActions, useSites } from '../../stores/sitesStore';
 import { useArticles, useArticlesLoading, articlesActions } from '../../stores/articlesStore';
+import OnboardingChecklist from '../../components/OnboardingChecklist';
 
 function formatRelativeTime(dateString: string, lang: 'en' | 'ja'): string {
   const now = Date.now();
@@ -146,6 +147,9 @@ export default function OverviewPage() {
             : '今日のサイトの状況です。'}
         </p>
       </div>
+
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
