@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 import { fetchWithRetry } from './lib/wordpress.js';
+import { enforceSiteLimit, FeatureGateError } from './lib/subscription.js';
 
 // ─── Favicon fetching ────────────────────────────────────────────────────────
 
@@ -101,6 +102,9 @@ async function handleSitesIndex(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
+      // Enforce site limit based on subscription plan
+      await enforceSiteLimit(userId);
+
       const { name, url, username, applicationPassword } = req.body || {};
       if (!name || !url || !username || !applicationPassword) {
         return res.status(400).json({ error: 'name, url, username, and applicationPassword are required' });
@@ -146,6 +150,9 @@ async function handleSitesIndex(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
+    }
+    if (err instanceof FeatureGateError) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
     }
     console.error(err);
     return res.status(500).json({ error: 'Internal server error' });

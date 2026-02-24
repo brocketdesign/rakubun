@@ -156,7 +156,14 @@
 
   /* Section pinned */
   .section-pinned {
-    @apply w-screen h-screen relative overflow-hidden;
+    @apply w-screen min-h-screen relative overflow-hidden;
+  }
+
+  /* On small screens, give more room for text + card stacking */
+  @media (max-width: 1023px) {
+    .section-pinned {
+      min-height: 100vh;
+    }
   }
 
   /* Micro card */

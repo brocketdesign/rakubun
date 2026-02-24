@@ -137,11 +137,11 @@ export default function OverviewPage() {
   return (
     <div className="space-y-6 max-w-[1400px]">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-rakubun-accent to-blue-400 rounded-2xl p-6 text-white">
-        <h2 className="text-2xl font-heading font-bold">
+      <div className="bg-gradient-to-r from-rakubun-accent to-blue-400 rounded-2xl p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl font-heading font-bold">
           {language === 'en' ? 'Welcome back!' : 'おかえりなさい！'}
         </h2>
-        <p className="mt-1 text-white/80 text-sm">
+        <p className="mt-1 text-white/80 text-xs sm:text-sm">
           {language === 'en'
             ? 'Here\'s what\'s happening with your sites today.'
             : '今日のサイトの状況です。'}

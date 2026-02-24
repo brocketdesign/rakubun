@@ -26,6 +26,9 @@ import { useSites, sitesActions } from '../../stores/sitesStore';
 import { SiteSelector } from '../../components/SiteSelector';
 import { useArticles, articlesActions } from '../../stores/articlesStore';
 import { useSchedules, schedulesActions } from '../../stores/schedulesStore';
+import { usePlanLimits, useUsage } from '../../stores/subscriptionStore';
+import { UsageMeter } from '../../components/UpgradePrompt';
+import { ApiError } from '../../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -124,6 +127,8 @@ export default function SchedulerPage() {
   const sites = useSites();
   const allArticles = useArticles();
   const schedules = useSchedules();
+  const limits = usePlanLimits();
+  const usage = useUsage();
 
   // ─── Calendar State ─────────────────────────────────────────────────
   const now = new Date();
@@ -461,13 +466,21 @@ export default function SchedulerPage() {
       date: t.date,
       time: t.time,
     }));
-    const result = await schedulesActions.createSchedule(getToken, autoSiteId, topics);
-    if (result) {
-      setShowAutoConfirm(true);
-      setTimeout(() => {
-        setShowAutoConfirm(false);
-        setShowAutoSchedule(false);
-      }, 2000);
+    try {
+      const result = await schedulesActions.createSchedule(getToken, autoSiteId, topics);
+      if (result) {
+        setShowAutoConfirm(true);
+        setTimeout(() => {
+          setShowAutoConfirm(false);
+          setShowAutoSchedule(false);
+        }, 2000);
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setAutoError(language === 'en' ? 'Schedule limit reached. Please upgrade your plan.' : 'スケジュール数の上限に達しました。プランをアップグレードしてください。');
+      } else {
+        setAutoError(language === 'en' ? 'Failed to create schedule.' : 'スケジュールの作成に失敗しました。');
+      }
     }
   };
 
@@ -582,18 +595,18 @@ export default function SchedulerPage() {
   return (
     <div className="space-y-6 max-w-[1400px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
             {language === 'en' ? 'Scheduler' : 'スケジューラー'}
           </h2>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Schedule and manage your article publishing calendar.'
               : '記事公開カレンダーのスケジュール管理。'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button className="btn-secondary text-sm" onClick={openAutoSchedule}>
             <Repeat className="w-4 h-4" />
             {language === 'en' ? 'Auto Schedule' : '自動スケジュール'}
@@ -604,6 +617,13 @@ export default function SchedulerPage() {
           </button>
         </div>
       </div>
+
+      {/* Usage Meter */}
+      <UsageMeter
+        label={language === 'en' ? 'Scheduled articles' : 'スケジュール済み記事'}
+        used={usage.schedulesCount}
+        limit={limits.maxSchedules}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Calendar */}

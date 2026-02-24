@@ -136,6 +136,8 @@ export const articlesActions = {
       return article;
     } catch (err) {
       console.error('Failed to generate article:', err);
+      // Re-throw 403 (feature gate) errors so pages can handle them
+      if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) throw err;
       return null;
     } finally {
       generating = false;

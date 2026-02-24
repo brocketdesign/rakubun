@@ -10,6 +10,22 @@ body {
   overflow-x: hidden;
 }
 
+/* Responsive typography foundation */
+@media (max-width: 640px) {
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+  }
+}
+
+/* Safe area padding for mobile devices with notches */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* Pin spacer fix for GSAP */
 .pin-spacer {
   pointer-events: none !important;

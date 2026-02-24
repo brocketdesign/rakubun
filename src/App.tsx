@@ -13,6 +13,7 @@ import CronSchedulerPage from './pages/dashboard/CronSchedulerPage';
 import AnalyticsPage from './pages/dashboard/AnalyticsPage';
 import NotificationsPage from './pages/dashboard/NotificationsPage';
 import SettingsPage from './pages/dashboard/SettingsPage';
+import BillingPage from './pages/dashboard/BillingPage';
 import DocumentationPage from './pages/dashboard/DocumentationPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -61,6 +62,7 @@ function App() {
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="billing" element={<BillingPage />} />
           <Route path="docs" element={<DocumentationPage />} />
         </Route>
       </Routes>

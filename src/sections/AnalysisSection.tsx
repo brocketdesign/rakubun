@@ -131,9 +131,9 @@ const AnalysisSection = ({ className = '' }: AnalysisSectionProps) => {
           ref={cardRef}
           className="rakubun-card w-[92vw] lg:w-[60vw] max-w-[900px] h-[50vh] lg:h-[55vh] relative overflow-hidden mt-[25vh] lg:mt-0"
         >
-          <div className="absolute inset-0 flex">
+          <div className="absolute inset-0 flex flex-col-reverse md:flex-row">
             {/* Left: Photo */}
-            <div ref={photoRef} className="w-[55%] h-full relative">
+            <div ref={photoRef} className="w-full md:w-[55%] h-1/2 md:h-full relative">
               <img
                 src="/images/analysis_workspace.jpg"
                 alt="Person working"

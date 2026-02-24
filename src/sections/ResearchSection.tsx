@@ -133,11 +133,11 @@ const ResearchSection = ({ className = '' }: ResearchSectionProps) => {
           ref={cardRef}
           className="rakubun-card w-[92vw] lg:w-[60vw] max-w-[900px] h-[50vh] lg:h-[55vh] relative overflow-hidden mt-[25vh] lg:mt-0"
         >
-          <div className="absolute inset-0 flex">
+          <div className="absolute inset-0 flex flex-col md:flex-row">
             {/* Left: Topics UI */}
             <div
               ref={topicsRef}
-              className="w-[45%] h-full p-6 lg:p-8 flex flex-col justify-center"
+              className="w-full md:w-[45%] h-1/2 md:h-full p-4 sm:p-6 lg:p-8 flex flex-col justify-center overflow-y-auto"
             >
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-rakubun-accent" />
@@ -170,7 +170,7 @@ const ResearchSection = ({ className = '' }: ResearchSectionProps) => {
             </div>
 
             {/* Right: Photo */}
-            <div ref={photoRef} className="flex-1 h-full relative">
+            <div ref={photoRef} className="flex-1 h-1/2 md:h-full relative">
               <img
                 src="/images/research_workspace.jpg"
                 alt="Overhead workspace"

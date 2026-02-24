@@ -48,6 +48,9 @@ import {
 } from '../../components/ui/tooltip';
 import { useSchedules, schedulesActions } from '../../stores/schedulesStore';
 import { useCronJobs, cronJobsActions } from '../../stores/cronJobsStore';
+import { usePlanLimits, useUsage } from '../../stores/subscriptionStore';
+import { UsageMeter } from '../../components/UpgradePrompt';
+import { ApiError } from '../../lib/api';
 
 const statusConfig = {
   connected: {
@@ -838,6 +841,8 @@ export default function SitesPage() {
   const sites = useSites();
   const schedules = useSchedules();
   const cronJobs = useCronJobs();
+  const limits = usePlanLimits();
+  const usage = useUsage();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [settingsSite, setSettingsSite] = useState<Site | null>(null);
@@ -888,8 +893,12 @@ export default function SitesPage() {
       setAddForm({ name: '', url: '', username: '', applicationPassword: '' });
       setAddError('');
       setShowAddModal(false);
-    } catch {
-      setAddError(language === 'en' ? 'Failed to connect site. Please try again.' : 'サイトの接続に失敗しました。再度お試しください。');
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setAddError(language === 'en' ? 'Site limit reached. Please upgrade your plan.' : 'サイト数の上限に達しました。プランをアップグレードしてください。');
+      } else {
+        setAddError(language === 'en' ? 'Failed to connect site. Please try again.' : 'サイトの接続に失敗しました。再度お試しください。');
+      }
     }
   };
 
@@ -930,22 +939,29 @@ export default function SitesPage() {
   return (
     <div className="space-y-6 max-w-[1200px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
             {language === 'en' ? 'WordPress Sites' : 'WordPressサイト'}
           </h2>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Manage your connected WordPress sites via Application Password.'
               : 'アプリケーションパスワードで接続されたWordPressサイトを管理。'}
           </p>
         </div>
-        <button onClick={() => setShowAddModal(true)} className="btn-primary text-sm">
+        <button onClick={() => setShowAddModal(true)} className="btn-primary text-sm shrink-0 self-start sm:self-auto">
           <Plus className="w-4 h-4" />
           {language === 'en' ? 'Add Site' : 'サイト追加'}
         </button>
       </div>
+
+      {/* Usage Meter */}
+      <UsageMeter
+        label={language === 'en' ? 'Sites' : 'サイト'}
+        used={usage.sitesCount}
+        limit={limits.maxSites}
+      />
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-rakubun-text-secondary">

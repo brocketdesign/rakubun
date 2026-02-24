@@ -119,11 +119,11 @@ const ConnectSection = ({ className = '' }: ConnectSectionProps) => {
           ref={cardRef}
           className="rakubun-card w-[92vw] lg:w-[60vw] max-w-[900px] h-[50vh] lg:h-[55vh] relative overflow-hidden mt-[25vh] lg:mt-0"
         >
-          <div className="absolute inset-0 flex">
+          <div className="absolute inset-0 flex flex-col md:flex-row">
             {/* Left: Connection UI */}
             <div
               ref={uiRef}
-              className="w-[45%] h-full p-6 lg:p-8 flex flex-col justify-center"
+              className="w-full md:w-[45%] h-1/2 md:h-full p-4 sm:p-6 lg:p-8 flex flex-col justify-center overflow-y-auto"
             >
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-rakubun-text">
@@ -169,7 +169,7 @@ const ConnectSection = ({ className = '' }: ConnectSectionProps) => {
             </div>
 
             {/* Right: Photo */}
-            <div ref={photoRef} className="flex-1 h-full relative">
+            <div ref={photoRef} className="flex-1 h-1/2 md:h-full relative">
               <img
                 src="/images/connect_workspace.jpg"
                 alt="Typing on laptop"

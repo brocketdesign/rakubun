@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
+import { enforceScheduleLimit, FeatureGateError } from './lib/subscription.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = (req.query._action as string) || '';
@@ -48,6 +49,9 @@ async function handleSchedulesIndex(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
+      // Enforce schedule limit based on subscription plan
+      await enforceScheduleLimit(userId);
+
       const { siteId, topics } = req.body || {};
 
       if (!siteId || !Array.isArray(topics) || topics.length === 0) {
@@ -85,6 +89,9 @@ async function handleSchedulesIndex(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
+    }
+    if (err instanceof FeatureGateError) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
     }
     console.error(err);
     return res.status(500).json({ error: 'Internal server error' });

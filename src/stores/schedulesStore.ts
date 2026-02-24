@@ -93,6 +93,7 @@ export const schedulesActions = {
       return schedule;
     } catch (err) {
       console.error('Failed to create schedule:', err);
+      if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 403) throw err;
       return null;
     }
   },

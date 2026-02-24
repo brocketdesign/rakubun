@@ -46,6 +46,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../../components/ui/dropdown-menu';
+import { usePlanLimits, useUsage } from '../../stores/subscriptionStore';
+import { UsageMeter } from '../../components/UpgradePrompt';
+import { ApiError } from '../../lib/api';
 
 // ─── Status config ──────────────────────────────────────────────────────────────
 
@@ -112,6 +115,8 @@ export default function ArticlesPage() {
   const isLoading = useArticlesLoading();
   const isGeneratingGlobal = useArticlesGenerating();
   const sites = useSites();
+  const limits = usePlanLimits();
+  const usage = useUsage();
 
   // List state
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -138,6 +143,7 @@ export default function ArticlesPage() {
   const [generateThumbnail, setGenerateThumbnail] = useState(false);
   const [imageCount, setImageCount] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState('');
 
   // Delete confirm state
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -398,6 +404,7 @@ export default function ArticlesPage() {
   const handleGenerate = useCallback(async () => {
     if (!prompt) return;
     setIsGenerating(true);
+    setGenerateError('');
     try {
       const article = await articlesActions.generateArticle(getToken, {
         prompt,
@@ -414,10 +421,16 @@ export default function ArticlesPage() {
         setEditingArticle(article);
         setShowGeneratePanel(false);
       }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        setGenerateError(language === 'en' ? 'Article limit reached. Please upgrade your plan.' : '記事数の上限に達しました。プランをアップグレードしてください。');
+      } else {
+        setGenerateError(language === 'en' ? 'Failed to generate article.' : '記事の生成に失敗しました。');
+      }
     } finally {
       setIsGenerating(false);
     }
-  }, [prompt, useWebSearch, imageCount, generateThumbnail, editorSite, editorCategory, getToken]);
+  }, [prompt, useWebSearch, imageCount, generateThumbnail, editorSite, editorCategory, getToken, language]);
 
   const handleDelete = useCallback(
     async (id: string) => {
@@ -488,18 +501,18 @@ export default function ArticlesPage() {
   return (
     <div className="space-y-6 max-w-[1400px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
             {language === 'en' ? 'Articles' : '記事'}
           </h2>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Create, edit, and manage your AI-generated articles.'
               : 'AI生成記事の作成、編集、管理。'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={handleSyncStatuses}
             disabled={isSyncing}
@@ -515,6 +528,13 @@ export default function ArticlesPage() {
           </button>
         </div>
       </div>
+
+      {/* Usage Meter */}
+      <UsageMeter
+        label={language === 'en' ? 'Articles this month' : '今月の記事'}
+        used={usage.articlesThisPeriod}
+        limit={limits.maxArticlesPerMonth}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -869,10 +889,10 @@ export default function ArticlesPage() {
 
       {/* Article Editor Modal */}
       {showEditor && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-rakubun-surface rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-rakubun-surface rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-5xl max-h-[95vh] sm:max-h-[92vh] flex flex-col overflow-hidden">
             {/* Editor Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-rakubun-border shrink-0">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-rakubun-border shrink-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-rakubun-accent/10">
                   <FileText className="w-4 h-4 text-rakubun-accent" />
@@ -1014,6 +1034,14 @@ export default function ArticlesPage() {
                         </button>
                       </div>
                     </div>
+
+                    {/* Generate Error */}
+                    {generateError && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                        <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                        <span className="text-sm text-red-600 dark:text-red-400">{generateError}</span>
+                      </div>
+                    )}
 
                     {/* Options Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

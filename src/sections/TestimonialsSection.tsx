@@ -68,10 +68,10 @@ const TestimonialsSection = () => {
       ref={sectionRef}
       className="relative bg-rakubun-bg-secondary py-20 lg:py-28"
     >
-      <div className="max-w-[1100px] mx-auto px-6 lg:px-8">
+      <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-12 lg:mb-16">
-          <h2 className="text-3xl lg:text-[42px] font-heading font-bold text-rakubun-text">
+        <div ref={headerRef} className="text-center mb-10 sm:mb-12 lg:mb-16">
+          <h2 className="text-2xl sm:text-3xl lg:text-[42px] font-heading font-bold text-rakubun-text">
             {t.testimonials.headline}
           </h2>
         </div>

@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 import { publishToWordPress, uploadImageToWordPress, getWordPressPostStatus, type WordPressSite } from './lib/wordpress.js';
+import { enforceArticleLimit, incrementArticleUsage, FeatureGateError } from './lib/subscription.js';
 
 export const config = {
   maxDuration: 60,
@@ -393,6 +394,9 @@ async function handleGenerate(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'prompt is required' });
     }
 
+    // Enforce article generation limit based on subscription plan
+    await enforceArticleLimit(userId);
+
     const db = await getDb();
     const collection = db.collection('articles');
     const sitesCollection = db.collection('sites');
@@ -584,6 +588,9 @@ Make it at least 800 words.`,
         }
       }
 
+      // Increment subscription article usage counter
+      await incrementArticleUsage(userId);
+
       return res.status(200).json({
         id: articleId.toString(),
         title,
@@ -625,6 +632,9 @@ Make it at least 800 words.`,
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
+    }
+    if (err instanceof FeatureGateError) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
     }
     console.error(err);
     return res.status(500).json({ error: 'Internal server error' });

@@ -24,6 +24,7 @@ import {
   useResearchSavedIds,
   researchActions,
 } from '../../stores/researchStore';
+import UpgradePrompt from '../../components/UpgradePrompt';
 
 const quickTopics = [
   { en: 'AI Trends', ja: 'AIトレンド' },
@@ -85,14 +86,15 @@ export default function ResearchPage() {
     activeTab === 'saved' ? results.filter((r) => savedIds.has(r.id)) : results;
 
   return (
+    <UpgradePrompt feature={language === 'en' ? 'Web Research' : 'ウェブリサーチ'} requiredPlan="premium" variant="overlay">
     <div className="space-y-6 max-w-[1400px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
             {language === 'en' ? 'Web Research' : 'ウェブリサーチ'}
           </h2>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Discover trending content for your blog. Select a site or enter a topic.'
               : 'ブログのトレンドコンテンツを発見。サイトを選択するかトピックを入力。'}
@@ -342,5 +344,6 @@ export default function ResearchPage() {
         </div>
       )}
     </div>
+    </UpgradePrompt>
   );
 }

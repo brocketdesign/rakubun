@@ -6,6 +6,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/stripe/:action", "destination": "/api/stripe?_action=:action" },
     { "source": "/api/agent/:action", "destination": "/api/agent?_action=:action" },
     { "source": "/api/articles/:action", "destination": "/api/articles?_action=:action" },
     { "source": "/api/cron-jobs/:action", "destination": "/api/cron-jobs?_action=:action" },

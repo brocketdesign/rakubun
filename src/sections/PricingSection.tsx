@@ -1,8 +1,10 @@
-import { useRef, useLayoutEffect } from 'react';
+import { useRef, useLayoutEffect, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Check, Zap } from 'lucide-react';
+import { Check, Zap, Loader2 } from 'lucide-react';
 import { useLanguage } from '../i18n';
+import { useAuth } from '@clerk/clerk-react';
+import { subscriptionActions, STRIPE_PRICES } from '../stores/subscriptionStore';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -11,6 +13,32 @@ const PricingSection = () => {
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
+  const { isSignedIn, getToken } = useAuth();
+  const [loadingPlan, setLoadingPlan] = useState<number | null>(null);
+
+  // Map plan index → stripe price ID
+  const planPriceIds = [null, STRIPE_PRICES.basic_monthly, STRIPE_PRICES.premium_monthly];
+
+  const handlePlanClick = async (planIndex: number) => {
+    if (planIndex === 0) {
+      // Free plan → sign up
+      window.location.href = '/sign-up';
+      return;
+    }
+    if (!isSignedIn) {
+      window.location.href = '/sign-up';
+      return;
+    }
+    const priceId = planPriceIds[planIndex];
+    if (!priceId) return;
+    setLoadingPlan(planIndex);
+    try {
+      const url = await subscriptionActions.createCheckout(getToken, priceId);
+      if (url) window.location.href = url;
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   useLayoutEffect(() => {
     const ctx = gsap.context(() => {
@@ -59,6 +87,7 @@ const PricingSection = () => {
   const plans = t.pricing.plans.map((plan, i) => ({
     ...plan,
     highlighted: i === 1,
+    index: i,
   }));
 
   return (
@@ -67,13 +96,13 @@ const PricingSection = () => {
       id="pricing"
       className="relative bg-rakubun-bg py-20 lg:py-28"
     >
-      <div className="max-w-[1000px] mx-auto px-6 lg:px-8">
+      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-12 lg:mb-16">
-          <h2 className="text-3xl lg:text-[42px] font-heading font-bold text-rakubun-text">
+        <div ref={headerRef} className="text-center mb-10 sm:mb-12 lg:mb-16">
+          <h2 className="text-2xl sm:text-3xl lg:text-[42px] font-heading font-bold text-rakubun-text">
             {t.pricing.headline}
           </h2>
-          <p className="text-base lg:text-lg text-rakubun-text-secondary mt-4 max-w-xl mx-auto">
+          <p className="text-sm sm:text-base lg:text-lg text-rakubun-text-secondary mt-3 sm:mt-4 max-w-xl mx-auto">
             {t.pricing.description}
           </p>
         </div>
@@ -81,7 +110,7 @@ const PricingSection = () => {
         {/* Pricing Cards */}
         <div
           ref={cardsRef}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8"
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 lg:gap-8"
         >
           {plans.map((plan) => (
             <div
@@ -131,12 +160,15 @@ const PricingSection = () => {
               </ul>
 
               <button
-                className={`w-full py-3 rounded-xl font-medium text-sm transition-all duration-200 ${
+                onClick={() => handlePlanClick(plan.index)}
+                disabled={loadingPlan === plan.index}
+                className={`w-full py-3 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 ${
                   plan.highlighted
                     ? 'btn-primary'
                     : 'btn-secondary'
                 }`}
               >
+                {loadingPlan === plan.index && <Loader2 className="w-4 h-4 animate-spin" />}
                 {plan.cta}
               </button>
             </div>

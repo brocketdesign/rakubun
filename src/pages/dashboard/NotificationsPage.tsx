@@ -118,9 +118,9 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6 max-w-[900px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text flex items-center gap-2">
             {language === 'en' ? 'Notifications' : '通知'}
             {unreadCount > 0 && (
               <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
@@ -134,7 +134,7 @@ export default function NotificationsPage() {
               : 'コンテンツパイプラインとサイトの状況を確認。'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={markAllRead}
             className="btn-secondary text-sm"

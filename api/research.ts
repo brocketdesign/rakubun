@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
+import { enforceResearchAccess, FeatureGateError } from './lib/subscription.js';
 
 const FIRECRAWL_API = 'https://api.firecrawl.dev/v1';
 
@@ -79,6 +80,9 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
 
   try {
     const userId = await authenticateRequest(req);
+
+    // Research is a premium-only feature
+    await enforceResearchAccess(userId);
 
     const { query, siteId } = req.body || {};
     if (!query && !siteId) {
@@ -189,6 +193,9 @@ async function handleSearch(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
+    }
+    if (err instanceof FeatureGateError) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
     }
     console.error('Research search error:', err);
     return res.status(500).json({ error: 'Internal server error' });

@@ -5,6 +5,7 @@ import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 import { fetchWithRetry } from './lib/wordpress.js';
 import { randomUUID } from 'crypto';
+import { enforceCronJobAccess, FeatureGateError } from './lib/subscription.js';
 
 export const config = {
   maxDuration: 60,
@@ -61,6 +62,9 @@ async function handleCronJobsIndex(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
+      // Cron jobs require Basic plan or higher
+      await enforceCronJobAccess(userId);
+
       const {
         siteId,
         siteName,
@@ -112,6 +116,9 @@ async function handleCronJobsIndex(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
+    }
+    if (err instanceof FeatureGateError) {
+      return res.status(err.status).json({ error: err.message, code: err.code });
     }
     console.error('[CronJobs]', err);
     return res.status(500).json({ error: 'Internal server error' });

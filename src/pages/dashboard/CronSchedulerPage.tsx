@@ -742,15 +742,15 @@ export default function CronSchedulerPage() {
   const activeJobs = cronJobs.filter((j) => j.status !== 'draft');
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-3 sm:p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-rakubun-text flex items-center gap-2">
-            <Timer className="w-7 h-7 text-rakubun-accent" />
+          <h1 className="text-lg sm:text-2xl font-bold text-rakubun-text flex items-center gap-2">
+            <Timer className="w-6 sm:w-7 h-6 sm:h-7 text-rakubun-accent" />
             {language === 'en' ? 'Cron Job Scheduler' : 'Cronジョブスケジューラー'}
           </h1>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Manage automated publishing schedules for your sites'
               : 'サイトの自動公開スケジュールを管理'}
@@ -759,7 +759,7 @@ export default function CronSchedulerPage() {
         <button
           onClick={() => setShowCreateModal(true)}
           disabled={availableSites.length === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-rakubun-accent text-white rounded-lg hover:bg-rakubun-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-rakubun-accent text-white rounded-lg hover:bg-rakubun-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shrink-0 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           {language === 'en' ? 'New Schedule' : '新規スケジュール'}

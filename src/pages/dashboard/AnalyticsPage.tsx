@@ -12,6 +12,7 @@ import {
   Download,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
+import UpgradePrompt from '../../components/UpgradePrompt';
 
 const overviewStats = [
   {
@@ -91,20 +92,21 @@ export default function AnalyticsPage() {
   const data = language === 'en' ? chartData : chartDataJa;
 
   return (
+    <UpgradePrompt feature={language === 'en' ? 'Analytics' : 'アナリティクス'} requiredPlan="basic" variant="overlay">
     <div className="space-y-6 max-w-[1400px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
             {language === 'en' ? 'Analytics' : 'アナリティクス'}
           </h2>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Track your content performance across all connected sites.'
               : 'すべての接続サイトのコンテンツパフォーマンスを追跡。'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <div className="flex items-center gap-1 bg-rakubun-bg-secondary rounded-xl p-1">
             {[
               { value: '7d', label: { en: '7D', ja: '7日' } },
@@ -114,7 +116,7 @@ export default function AnalyticsPage() {
               <button
                 key={range.value}
                 onClick={() => setTimeRange(range.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   timeRange === range.value
                     ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                     : 'text-rakubun-text-secondary hover:text-rakubun-text'
@@ -124,7 +126,7 @@ export default function AnalyticsPage() {
               </button>
             ))}
           </div>
-          <button className="btn-secondary text-sm">
+          <button className="btn-secondary text-sm hidden sm:inline-flex">
             <Download className="w-4 h-4" />
             {language === 'en' ? 'Export' : 'エクスポート'}
           </button>
@@ -269,5 +271,6 @@ export default function AnalyticsPage() {
         </div>
       </div>
     </div>
+    </UpgradePrompt>
   );
 }

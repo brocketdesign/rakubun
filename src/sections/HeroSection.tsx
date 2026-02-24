@@ -125,14 +125,14 @@ const HeroSection = ({ className = '' }: HeroSectionProps) => {
         {/* Main Hero Card */}
         <div
           ref={cardRef}
-          className="rakubun-card w-[92vw] lg:w-[78vw] max-w-[1180px] h-[75vh] lg:h-[62vh] relative overflow-hidden"
+          className="rakubun-card w-[92vw] lg:w-[78vw] max-w-[1180px] h-[80vh] sm:h-[75vh] lg:h-[62vh] relative overflow-hidden"
         >
           {/* Content Area */}
           <div className="absolute inset-0 flex flex-col lg:flex-row">
             {/* Left: Text Content */}
-            <div className="flex-1 p-6 lg:p-10 lg:pl-[6%] flex flex-col justify-center">
-              <div ref={headlineRef} className="space-y-4 lg:space-y-6">
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-[52px] font-heading font-bold text-rakubun-text leading-tight">
+            <div className="flex-1 p-5 sm:p-6 lg:p-10 lg:pl-[6%] flex flex-col justify-center">
+              <div ref={headlineRef} className="space-y-3 sm:space-y-4 lg:space-y-6">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-[52px] font-heading font-bold text-rakubun-text leading-tight">
                   {headlineWords.map((word, i) => (
                     <span key={i} className="word inline-block mr-[0.3em]">
                       {word}

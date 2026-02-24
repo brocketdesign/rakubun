@@ -18,7 +18,11 @@ import {
   LogOut,
   Plus,
   ChevronsUpDown,
+  Menu,
+  X,
+  Crown,
 } from 'lucide-react';
+import { useIsMobile } from '../hooks/use-mobile';
 import { useLanguage } from '../i18n';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import DarkModeSwitch from '../components/DarkModeSwitch';
@@ -26,6 +30,7 @@ import { sitesActions } from '../stores/sitesStore';
 import { schedulesActions } from '../stores/schedulesStore';
 import { cronJobsActions } from '../stores/cronJobsStore';
 import { articlesActions } from '../stores/articlesStore';
+import { subscriptionActions, useCurrentPlan, PLAN_DISPLAY } from '../stores/subscriptionStore';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -46,6 +51,7 @@ const navItems = [
   { path: '/dashboard/analytics', icon: BarChart3, labelKey: 'analytics' as const },
   { path: '/dashboard/notifications', icon: Bell, labelKey: 'notifications' as const },
   { path: '/dashboard/settings', icon: Settings, labelKey: 'settings' as const },
+  { path: '/dashboard/billing', icon: Crown, labelKey: 'billing' as const },
   { path: '/dashboard/docs', icon: BookOpen, labelKey: 'docs' as const },
 ];
 
@@ -60,18 +66,23 @@ const dashboardLabels: Record<string, { en: string; ja: string }> = {
   analytics: { en: 'Analytics', ja: 'アナリティクス' },
   notifications: { en: 'Notifications', ja: '通知' },
   settings: { en: 'Settings', ja: '設定' },
+  billing: { en: 'Billing', ja: '請求' },
   docs: { en: 'Documentation', ja: 'ドキュメント' },
 };
 
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useUser();
   const { signOut } = useClerk();
   const { getToken } = useAuth();
+  const isMobile = useIsMobile();
+  const currentPlan = useCurrentPlan();
+  const planDisplay = PLAN_DISPLAY[currentPlan];
 
   // Pre-load stores as soon as the dashboard mounts
   useEffect(() => {
@@ -86,6 +97,9 @@ export default function DashboardLayout() {
     }
     if (!articlesActions.isLoaded()) {
       articlesActions.loadArticles(getToken);
+    }
+    if (!subscriptionActions.isLoaded() && !subscriptionActions.isLoading()) {
+      subscriptionActions.loadSubscription(getToken);
     }
   }, [getToken]);
 
@@ -107,49 +121,78 @@ export default function DashboardLayout() {
     signOut().then(() => navigate('/'));
   };
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // On mobile, always show expanded sidebar
+  const sidebarCollapsed = isMobile ? false : collapsed;
+
   return (
     <SidebarCtx.Provider value={{ collapsed, setCollapsed }}>
       <div className="flex h-screen bg-rakubun-bg overflow-hidden">
+        {/* Mobile Overlay Backdrop */}
+        {mobileMenuOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
         {/* Sidebar */}
         <aside
           className={`
-            ${collapsed ? 'w-[68px]' : 'w-[260px]'}
+            ${sidebarCollapsed ? 'md:w-[68px]' : 'md:w-[260px]'}
+            w-[260px]
+            fixed inset-y-0 left-0 z-50
+            md:static md:z-auto
+            transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
             flex flex-col border-r border-rakubun-border bg-rakubun-surface
             transition-all duration-300 ease-in-out shrink-0
           `}
         >
           {/* Sidebar Header */}
-          <div className={`flex items-center ${collapsed ? 'justify-center' : 'justify-between'} h-16 px-4 border-b border-rakubun-border`}>
-            {!collapsed && (
-              <button onClick={() => navigate('/')} className="flex items-center gap-2 group">
+          <div className={`flex items-center ${sidebarCollapsed ? 'md:justify-center' : 'justify-between'} h-16 px-4 border-b border-rakubun-border`}>
+            {(!sidebarCollapsed || isMobile) && (
+              <button onClick={() => { navigate('/'); setMobileMenuOpen(false); }} className="flex items-center gap-2 group">
                 <span className="font-heading text-xl font-bold text-rakubun-text group-hover:text-rakubun-accent transition-colors">
                   RakuBun
                 </span>
               </button>
             )}
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
-              title={collapsed ? (language === 'en' ? 'Expand sidebar' : 'サイドバーを展開') : (language === 'en' ? 'Collapse sidebar' : 'サイドバーを折りたたむ')}
-            >
-              {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            </button>
+            {/* Close button on mobile, collapse on desktop */}
+            {isMobile ? (
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setCollapsed(!collapsed)}
+                className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
+                title={collapsed ? (language === 'en' ? 'Expand sidebar' : 'サイドバーを展開') : (language === 'en' ? 'Collapse sidebar' : 'サイドバーを折りたたむ')}
+              >
+                {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+              </button>
+            )}
           </div>
 
           {/* Quick Action */}
-          <div className={`px-3 pt-4 pb-2 ${collapsed ? 'px-2' : ''}`}>
+          <div className={`px-3 pt-4 pb-2 ${sidebarCollapsed ? 'md:px-2' : ''}`}>
             <button
               className={`
                 w-full flex items-center gap-2 px-3 py-2 rounded-xl
                 bg-rakubun-accent text-white text-sm font-medium
                 hover:bg-rakubun-accent/90 transition-all duration-200
                 shadow-sm hover:shadow-md
-                ${collapsed ? 'justify-center px-0' : ''}
+                ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''}
               `}
-              onClick={() => navigate('/dashboard/articles?new=true')}
+              onClick={() => { navigate('/dashboard/articles?new=true'); setMobileMenuOpen(false); }}
             >
               <Plus className="w-4 h-4 shrink-0" />
-              {!collapsed && <span>{language === 'en' ? 'New Article' : '新しい記事'}</span>}
+              {(!sidebarCollapsed || isMobile) && <span>{language === 'en' ? 'New Article' : '新しい記事'}</span>}
             </button>
           </div>
 
@@ -162,6 +205,7 @@ export default function DashboardLayout() {
                   key={item.path}
                   to={item.path}
                   end={item.end}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={({ isActive }) => `
                     flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
                     transition-all duration-200 group relative
@@ -169,23 +213,23 @@ export default function DashboardLayout() {
                       ? 'bg-rakubun-accent/8 text-rakubun-accent'
                       : 'text-rakubun-text-secondary hover:bg-rakubun-bg-secondary hover:text-rakubun-text'
                     }
-                    ${collapsed ? 'justify-center px-0' : ''}
+                    ${sidebarCollapsed && !isMobile ? 'justify-center px-0' : ''}
                   `}
                 >
                   {({ isActive }) => (
                     <>
                       <item.icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-rakubun-accent' : ''}`} />
-                      {!collapsed && <span>{label}</span>}
+                      {(!sidebarCollapsed || isMobile) && <span>{label}</span>}
                       {item.labelKey === 'notifications' && (
                         <span className={`
-                          ${collapsed ? 'absolute -top-0.5 -right-0.5' : 'ml-auto'}
+                          ${sidebarCollapsed && !isMobile ? 'absolute -top-0.5 -right-0.5' : 'ml-auto'}
                           bg-red-500 text-white text-[10px] font-bold
                           w-5 h-5 flex items-center justify-center rounded-full
                         `}>
                           3
                         </span>
                       )}
-                      {collapsed && (
+                      {sidebarCollapsed && !isMobile && (
                         <div className="
                           absolute left-full ml-2 px-2.5 py-1 rounded-lg
                           bg-rakubun-text text-white text-xs font-medium
@@ -204,12 +248,12 @@ export default function DashboardLayout() {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className={`border-t border-rakubun-border p-3 space-y-2 ${collapsed ? 'px-2' : ''}`}>
+          <div className={`border-t border-rakubun-border p-3 space-y-2 ${sidebarCollapsed && !isMobile ? 'px-2' : ''}`}>
             {/* Dark mode toggle */}
-            <DarkModeSwitch collapsed={collapsed} showLabel />
+            <DarkModeSwitch collapsed={sidebarCollapsed && !isMobile} showLabel />
 
             {/* Language */}
-            {!collapsed && (
+            {(!sidebarCollapsed || isMobile) && (
               <div className="px-3 py-1">
                 <LanguageSwitcher />
               </div>
@@ -222,7 +266,7 @@ export default function DashboardLayout() {
                 className={`
                   w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
                   hover:bg-rakubun-bg-secondary transition-colors cursor-pointer
-                  ${collapsed ? 'justify-center px-0' : ''}
+                  ${sidebarCollapsed && !isMobile ? 'justify-center px-0' : ''}
                 `}
               >
                 {avatarUrl ? (
@@ -232,10 +276,15 @@ export default function DashboardLayout() {
                     {initials}
                   </div>
                 )}
-                {!collapsed && (
+                {(!sidebarCollapsed || isMobile) && (
                   <>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-rakubun-text truncate">{displayName}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium text-rakubun-text truncate">{displayName}</p>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${planDisplay.badge}`}>
+                          {planDisplay.name[language]}
+                        </span>
+                      </div>
                       <p className="text-xs text-rakubun-text-secondary truncate">{email}</p>
                     </div>
                     <ChevronsUpDown className="w-4 h-4 text-rakubun-text-secondary shrink-0" />
@@ -245,7 +294,7 @@ export default function DashboardLayout() {
 
               {/* User dropdown */}
               {showUserMenu && (
-                <div className={`absolute ${collapsed ? 'left-full ml-2' : 'left-0 right-0'} bottom-full mb-2 bg-rakubun-surface border border-rakubun-border rounded-xl shadow-lg py-1 z-50`}>
+                <div className={`absolute ${sidebarCollapsed && !isMobile ? 'left-full ml-2' : 'left-0 right-0'} bottom-full mb-2 bg-rakubun-surface border border-rakubun-border rounded-xl shadow-lg py-1 z-50`}>
                   <button
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
@@ -262,13 +311,20 @@ export default function DashboardLayout() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Top Bar */}
-          <header className="h-16 border-b border-rakubun-border bg-rakubun-surface/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0">
-            <div className="flex items-center gap-4">
-              <h1 className="text-lg font-heading font-semibold text-rakubun-text">
+          <header className="h-14 md:h-16 border-b border-rakubun-border bg-rakubun-surface/80 backdrop-blur-xl flex items-center justify-between px-4 md:px-6 shrink-0">
+            <div className="flex items-center gap-3">
+              {/* Mobile hamburger */}
+              <button
+                className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <h1 className="text-base md:text-lg font-heading font-semibold text-rakubun-text truncate">
                 {pageTitle}
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               {/* Search */}
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-rakubun-bg rounded-lg border border-rakubun-border">
                 <Search className="w-4 h-4 text-rakubun-text-secondary" />
@@ -303,7 +359,7 @@ export default function DashboardLayout() {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
             <Outlet />
           </main>
         </div>

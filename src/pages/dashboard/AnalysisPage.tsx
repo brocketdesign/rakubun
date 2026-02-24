@@ -15,6 +15,7 @@ import { useLanguage } from '../../i18n';
 import { useAuth } from '@clerk/clerk-react';
 import { useSites, sitesActions } from '../../stores/sitesStore';
 import { SiteSelector } from '../../components/SiteSelector';
+import UpgradePrompt from '../../components/UpgradePrompt';
 
 const analysisReports = [
   {
@@ -123,20 +124,21 @@ export default function AnalysisPage() {
   }, [getToken]);
 
   return (
+    <UpgradePrompt feature={language === 'en' ? 'AI Site Analysis' : 'AIサイト分析'} requiredPlan="premium" variant="overlay">
     <div className="space-y-6 max-w-[1400px]">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-heading font-bold text-rakubun-text">
+          <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
             {language === 'en' ? 'AI Site Analysis' : 'AIサイト分析'}
           </h2>
-          <p className="text-sm text-rakubun-text-secondary mt-1">
+          <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
               ? 'Analyze your sites to understand tone, structure, and SEO performance.'
               : 'トーン、構造、SEOパフォーマンスを理解するためにサイトを分析。'}
           </p>
         </div>
-        <button className="btn-primary text-sm">
+        <button className="btn-primary text-sm shrink-0 self-start sm:self-auto">
           <Play className="w-4 h-4" />
           {language === 'en' ? 'Run Analysis' : '分析を実行'}
         </button>
@@ -164,11 +166,11 @@ export default function AnalysisPage() {
 
       {/* Reports */}
       <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-rakubun-border">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-5 py-4 border-b border-rakubun-border">
           <h3 className="font-heading font-semibold text-rakubun-text">
             {language === 'en' ? 'Analysis Reports' : '分析レポート'}
           </h3>
-          <div className="w-[220px]">
+          <div className="w-full sm:w-[220px]">
             <SiteSelector
               value={selectedSite}
               onChange={setSelectedSite}
@@ -183,11 +185,11 @@ export default function AnalysisPage() {
           {analysisReports.map((report) => (
             <div
               key={report.id}
-              className="px-5 py-4 hover:bg-rakubun-bg/50 transition-colors cursor-pointer"
+              className="px-4 sm:px-5 py-4 hover:bg-rakubun-bg/50 transition-colors cursor-pointer"
             >
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3 min-w-[200px]">
-                  <Globe className="w-4 h-4 text-rakubun-text-secondary" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                <div className="flex items-center gap-3 sm:min-w-[200px]">
+                  <Globe className="w-4 h-4 text-rakubun-text-secondary shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-rakubun-text">{report.site}</p>
                     <p className="text-xs text-rakubun-text-secondary">{report.date}</p>
@@ -196,15 +198,15 @@ export default function AnalysisPage() {
 
                 {report.status === 'completed' ? (
                   <>
-                    <div className="flex items-center gap-6 flex-1">
+                    <div className="flex items-center gap-3 sm:gap-6 flex-1 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <ScoreRing value={report.seoScore!} size={48} strokeWidth={4} />
+                        <ScoreRing value={report.seoScore!} size={40} strokeWidth={4} />
                         <div>
                           <p className="text-xs font-medium text-rakubun-text">SEO</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <ScoreRing value={report.toneMatch!} size={48} strokeWidth={4} color="#8B5CF6" />
+                        <ScoreRing value={report.toneMatch!} size={40} strokeWidth={4} color="#8B5CF6" />
                         <div>
                           <p className="text-xs font-medium text-rakubun-text">
                             {language === 'en' ? 'Tone' : 'トーン'}
@@ -212,14 +214,14 @@ export default function AnalysisPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <ScoreRing value={report.structureScore!} size={48} strokeWidth={4} color="#10B981" />
+                        <ScoreRing value={report.structureScore!} size={40} strokeWidth={4} color="#10B981" />
                         <div>
                           <p className="text-xs font-medium text-rakubun-text">
                             {language === 'en' ? 'Structure' : '構造'}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-auto">
+                      <div className="flex items-center gap-2 sm:ml-auto">
                         <span className="status-badge status-badge-warning">
                           <AlertTriangle className="w-3 h-3" />
                           {report.contentGaps} {language === 'en' ? 'gaps' : 'ギャップ'}
@@ -240,7 +242,7 @@ export default function AnalysisPage() {
                   <div className="flex-1 flex items-center gap-3">
                     <div className="flex items-center gap-2 text-sm text-rakubun-accent">
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      <span>{language === 'en' ? 'Analysis in progress...' : '分析中...'}</span>
+                      <span className="text-xs sm:text-sm">{language === 'en' ? 'Analysis in progress...' : '分析中...'}</span>
                     </div>
                     <div className="flex-1 bg-rakubun-bg-secondary rounded-full h-2 max-w-xs">
                       <div className="bg-rakubun-accent rounded-full h-2 w-3/5 animate-pulse" />

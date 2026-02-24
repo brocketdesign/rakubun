@@ -442,36 +442,38 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-[1100px]">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-heading font-bold text-rakubun-text">
+        <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
           {language === 'en' ? 'Settings' : '設定'}
         </h2>
-        <p className="text-sm text-rakubun-text-secondary mt-1">
+        <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
           {language === 'en'
             ? 'Manage your account, dashboard API keys, and preferences.'
             : 'アカウント、ダッシュボードAPIキー、設定の管理。'}
         </p>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
         {/* Settings Tabs */}
-        <div className="w-[200px] shrink-0 space-y-1">
-          {settingsTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                transition-all duration-200
-                ${activeTab === tab.id
-                  ? 'bg-rakubun-accent/8 text-rakubun-accent'
-                  : 'text-rakubun-text-secondary hover:bg-rakubun-bg-secondary hover:text-rakubun-text'
-                }
-              `}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span>{tab.label[language]}</span>
-            </button>
-          ))}
+        <div className="md:w-[200px] shrink-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto pb-2 md:pb-0 -mx-1 px-1 md:mx-0 md:px-0">
+            {settingsTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-2 md:gap-3 px-3 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-medium
+                  transition-all duration-200 whitespace-nowrap md:w-full
+                  ${activeTab === tab.id
+                    ? 'bg-rakubun-accent/8 text-rakubun-accent'
+                    : 'text-rakubun-text-secondary hover:bg-rakubun-bg-secondary hover:text-rakubun-text'
+                  }
+                `}
+              >
+                <tab.icon className="w-4 h-4 shrink-0" />
+                <span>{tab.label[language]}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -480,18 +482,18 @@ export default function SettingsPage() {
           {/* ── API Keys Tab ─────────────────────────────────────── */}
           {activeTab === 'api-keys' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="font-heading font-semibold text-rakubun-text">
                     {language === 'en' ? 'API Keys' : 'APIキー'}
                   </h3>
-                  <p className="text-sm text-rakubun-text-secondary mt-0.5">
+                  <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-0.5">
                     {language === 'en'
                       ? 'Create keys to let AI agents, automations, or external tools access your RakuBun dashboard via the API.'
                       : 'AIエージェント、自動化、外部ツールがAPI経由でRakuBunダッシュボードにアクセスするためのキーを作成。'}
                   </p>
                 </div>
-                <button onClick={() => { setShowCreateModal(true); setNewKeyResult(null); setNewKeyName(''); }} className="btn-primary text-sm">
+                <button onClick={() => { setShowCreateModal(true); setNewKeyResult(null); setNewKeyName(''); }} className="btn-primary text-sm shrink-0 self-start sm:self-auto">
                   <Plus className="w-4 h-4" />
                   {language === 'en' ? 'Create Key' : 'キー作成'}
                 </button>

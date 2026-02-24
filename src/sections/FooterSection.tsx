@@ -46,18 +46,18 @@ const FooterSection = () => {
       id="footer"
       className="relative bg-[#0E1116] text-white py-16 lg:py-20"
     >
-      <div ref={contentRef} className="max-w-[1100px] mx-auto px-6 lg:px-8">
+      <div ref={contentRef} className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
         {/* CTA Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-[48px] font-heading font-bold">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl lg:text-[48px] font-heading font-bold">
             {t.footer.headline}
           </h2>
-          <p className="text-base text-[#A9B3C2] mt-4 max-w-md mx-auto">
+          <p className="text-sm sm:text-base text-[#A9B3C2] mt-3 sm:mt-4 max-w-md mx-auto">
             {t.footer.description}
           </p>
 
           {/* Email Form */}
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mt-6 sm:mt-8">
             <input
               type="email"
               placeholder={t.footer.emailPlaceholder}
