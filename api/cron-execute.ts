@@ -49,6 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const cronJobsCol = db.collection('cronJobs');
     const articlesCol = db.collection('articles');
     const sitesCol = db.collection('sites');
+    const schedulesCol = db.collection('schedules');
 
     const now = new Date();
     const currentDay = DAY_NAMES[now.getUTCDay()];
@@ -57,6 +58,317 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`[Cron] Running at ${now.toISOString()} — day=${currentDay}, hour=${currentHour}:${String(currentMinute).padStart(2, '0')} UTC`);
 
+    const results: Array<{ cronJobId: string; topic: string; status: string; articleId?: string; error?: string }> = [];
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PART 1: Process due SCHEDULED articles (publish to WordPress)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    try {
+      const dueArticles = await articlesCol
+        .find({
+          status: 'scheduled',
+          scheduledAt: { $lte: now.toISOString() },
+        })
+        .toArray();
+
+      if (dueArticles.length > 0) {
+        console.log(`[Cron] Found ${dueArticles.length} due scheduled article(s) to publish`);
+      }
+
+      for (const article of dueArticles) {
+        try {
+          let siteDoc = null;
+          if (article.site && ObjectId.isValid(article.site)) {
+            siteDoc = await sitesCol.findOne({ _id: new ObjectId(article.site) });
+          }
+
+          // If we already have a wpPostId, the article is already on WordPress (possibly as 'future').
+          // WordPress auto-publishes 'future' posts, so we just update our local status.
+          if (article.wpPostId) {
+            await articlesCol.updateOne(
+              { _id: article._id },
+              {
+                $set: {
+                  status: 'published',
+                  publishedAt: now.toISOString(),
+                  updatedAt: now.toISOString(),
+                },
+              },
+            );
+            console.log(`[Cron] Marked article ${article._id} as published (already on WP as post ${article.wpPostId})`);
+            results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
+            continue;
+          }
+
+          // Article not yet on WordPress — publish it now
+          if (siteDoc && siteDoc.username && siteDoc.applicationPassword) {
+            const wpResult = await publishToWordPress(
+              {
+                url: siteDoc.url,
+                username: siteDoc.username,
+                applicationPassword: siteDoc.applicationPassword,
+              },
+              {
+                title: article.title,
+                content: article.content,
+                excerpt: article.excerpt,
+                status: 'publish',
+                date: now.toISOString(),
+                thumbnailUrl: article.thumbnailUrl || undefined,
+              },
+            );
+
+            if (wpResult) {
+              await articlesCol.updateOne(
+                { _id: article._id },
+                {
+                  $set: {
+                    status: 'published',
+                    publishedAt: now.toISOString(),
+                    updatedAt: now.toISOString(),
+                    wpPostId: wpResult.wpPostId,
+                    wpUrl: wpResult.url,
+                  },
+                },
+              );
+              console.log(`[Cron] Published scheduled article ${article._id} to WP: ${wpResult.url}`);
+              results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
+            } else {
+              console.error(`[Cron] Failed to publish scheduled article ${article._id} to WordPress`);
+              results.push({ cronJobId: 'scheduled', topic: article.title, status: 'error', error: 'WordPress publish failed' });
+            }
+          } else {
+            // No WP credentials — just mark as published locally
+            await articlesCol.updateOne(
+              { _id: article._id },
+              {
+                $set: {
+                  status: 'published',
+                  publishedAt: now.toISOString(),
+                  updatedAt: now.toISOString(),
+                },
+              },
+            );
+            console.log(`[Cron] Marked article ${article._id} as published (no WP credentials)`);
+            results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
+          }
+
+          // Send email notification if the article has a userId with an email preference
+          // (We don't have email on the article, so skip notification for now)
+        } catch (articleErr) {
+          console.error(`[Cron] Error publishing scheduled article ${article._id}:`, articleErr);
+          results.push({
+            cronJobId: 'scheduled',
+            topic: article.title || 'Unknown',
+            status: 'error',
+            error: articleErr instanceof Error ? articleErr.message : 'Unknown error',
+          });
+        }
+      }
+    } catch (scheduledErr) {
+      console.error('[Cron] Error processing scheduled articles:', scheduledErr);
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PART 2: Process due SCHEDULE PLAN topics (generate + publish)
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    try {
+      const activeSchedules = await schedulesCol
+        .find({ status: 'active' })
+        .toArray();
+
+      for (const schedule of activeSchedules) {
+        const topics: Array<{ title: string; description: string; date: string; time: string; generated?: boolean }> = schedule.topics || [];
+        let modified = false;
+
+        for (const topic of topics) {
+          if (!topic.date || topic.generated) continue;
+
+          // Build the topic's target datetime
+          const topicDateTime = new Date(`${topic.date}T${topic.time || '09:00'}:00Z`);
+          if (isNaN(topicDateTime.getTime())) continue;
+
+          // Only process if the topic's time is due (past or within current hour)
+          if (topicDateTime > now) continue;
+
+          // Check dedup: don't generate if an article with this exact plan title already exists
+          const existing = await articlesCol.findOne({
+            userId: schedule.userId,
+            title: topic.title,
+            schedulePlanGenerated: true,
+          });
+          if (existing) {
+            topic.generated = true;
+            modified = true;
+            console.log(`[Cron] Plan topic "${topic.title}" already generated, skipping`);
+            continue;
+          }
+
+          // Load the site
+          let siteDoc = null;
+          if (schedule.siteId && ObjectId.isValid(schedule.siteId)) {
+            try {
+              siteDoc = await sitesCol.findOne({ _id: new ObjectId(schedule.siteId) });
+            } catch {
+              console.error(`[Cron] Invalid siteId ${schedule.siteId} on schedule ${schedule._id}`);
+            }
+          }
+
+          if (!siteDoc) {
+            console.error(`[Cron] Site not found for schedule ${schedule._id}, skipping topic "${topic.title}"`);
+            results.push({ cronJobId: `plan-${schedule._id}`, topic: topic.title, status: 'error', error: 'Site not found' });
+            continue;
+          }
+
+          try {
+            console.log(`[Cron] Generating article for plan topic: "${topic.title}"`);
+
+            // Generate article
+            const articleResult = await generateArticle({
+              articleType: topic.title,
+              siteUrl: siteDoc.url || '',
+              siteName: siteDoc.name || '',
+              language: siteDoc.language || 'ja',
+              wordCountMin: 1000,
+              wordCountMax: 1500,
+              style: '',
+            });
+
+            // Generate images
+            const imageUrls: string[] = [];
+            let thumbnailUrl = '';
+            if (process.env.GROK_API_KEY) {
+              try {
+                const grokClient = new OpenAI({
+                  apiKey: process.env.GROK_API_KEY,
+                  baseURL: 'https://api.x.ai/v1',
+                });
+
+                // Thumbnail
+                try {
+                  const thumbRes = await grokClient.images.generate({
+                    model: 'grok-imagine-image',
+                    prompt: `A professional blog post thumbnail image for: ${articleResult.title}`,
+                  });
+                  if (thumbRes.data?.[0]?.url) {
+                    let finalThumbUrl = thumbRes.data[0].url;
+                    if (siteDoc.username && siteDoc.applicationPassword) {
+                      const wpMedia = await uploadImageToWordPress(
+                        { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+                        finalThumbUrl,
+                      );
+                      if (wpMedia) finalThumbUrl = wpMedia.sourceUrl;
+                    }
+                    thumbnailUrl = finalThumbUrl;
+                  }
+                } catch (thumbErr) {
+                  console.error('[Cron] Plan topic thumbnail error:', thumbErr);
+                }
+              } catch (imgError) {
+                console.error('[Cron] Plan topic image generation error:', imgError);
+              }
+            }
+
+            // Publish to WordPress
+            let wpPostId: number | undefined;
+            let wpUrl: string | undefined;
+            if (siteDoc.username && siteDoc.applicationPassword) {
+              const wpResult = await publishToWordPress(
+                {
+                  url: siteDoc.url,
+                  username: siteDoc.username,
+                  applicationPassword: siteDoc.applicationPassword,
+                },
+                {
+                  title: articleResult.title,
+                  content: articleResult.content,
+                  excerpt: articleResult.excerpt,
+                  status: 'publish',
+                  date: now.toISOString(),
+                  thumbnailUrl: thumbnailUrl || undefined,
+                },
+              );
+              if (wpResult) {
+                wpPostId = wpResult.wpPostId;
+                wpUrl = wpResult.url;
+              }
+            }
+
+            // Save article to DB
+            const wordCount = articleResult.content
+              .replace(/[#*_~`>\-|]/g, '')
+              .split(/\s+/)
+              .filter((w: string) => w.length > 0).length;
+
+            const articleDoc = {
+              userId: schedule.userId,
+              title: articleResult.title,
+              excerpt: articleResult.excerpt,
+              content: articleResult.content,
+              site: schedule.siteId,
+              category: topic.title,
+              status: wpPostId ? 'published' : 'draft',
+              wordCount,
+              seoScore: 0,
+              views: 0,
+              thumbnailUrl,
+              imageUrls,
+              scheduledAt: null,
+              publishedAt: wpPostId ? now.toISOString() : null,
+              createdAt: now.toISOString(),
+              updatedAt: now.toISOString(),
+              wpPostId: wpPostId || null,
+              wpUrl: wpUrl || null,
+              schedulePlanGenerated: true,
+            };
+
+            const insertResult = await articlesCol.insertOne(articleDoc);
+            topic.generated = true;
+            modified = true;
+
+            console.log(`[Cron] Plan topic article saved: ${insertResult.insertedId} — "${articleResult.title}"`);
+            results.push({
+              cronJobId: `plan-${schedule._id}`,
+              topic: topic.title,
+              status: 'success',
+              articleId: insertResult.insertedId.toString(),
+            });
+          } catch (topicErr) {
+            console.error(`[Cron] Error generating plan topic "${topic.title}":`, topicErr);
+            results.push({
+              cronJobId: `plan-${schedule._id}`,
+              topic: topic.title,
+              status: 'error',
+              error: topicErr instanceof Error ? topicErr.message : 'Unknown error',
+            });
+          }
+        }
+
+        // Persist the generated flag updates back to the schedule
+        if (modified) {
+          await schedulesCol.updateOne(
+            { _id: schedule._id },
+            { $set: { topics, updatedAt: now.toISOString() } },
+          );
+        }
+
+        // If all topics are generated, mark the schedule as completed
+        if (topics.length > 0 && topics.every(t => t.generated)) {
+          await schedulesCol.updateOne(
+            { _id: schedule._id },
+            { $set: { status: 'completed', updatedAt: now.toISOString() } },
+          );
+          console.log(`[Cron] Schedule ${schedule._id} completed — all topics generated`);
+        }
+      }
+    } catch (planErr) {
+      console.error('[Cron] Error processing schedule plans:', planErr);
+    }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // PART 3: Process recurring CRON JOBS
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     // Find all active cron jobs
     const activeCronJobs = await cronJobsCol
       .find({ status: 'active' })
@@ -64,12 +376,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (activeCronJobs.length === 0) {
       console.log('[Cron] No active cron jobs found.');
-      return res.status(200).json({ message: 'No active cron jobs', processed: 0 });
+    } else {
+      console.log(`[Cron] Found ${activeCronJobs.length} active cron job(s)`);
     }
-
-    console.log(`[Cron] Found ${activeCronJobs.length} active cron job(s)`);
-
-    const results: Array<{ cronJobId: string; topic: string; status: string; articleId?: string; error?: string }> = [];
 
     for (const cronJob of activeCronJobs) {
       const schedule: Array<{ day: string; time: string; articleType: string; enabled: boolean }> = cronJob.schedule || [];

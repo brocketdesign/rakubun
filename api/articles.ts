@@ -288,10 +288,15 @@ async function handleArticleById(req: VercelRequest, res: VercelResponse, id: st
 
       if (!result) return res.status(404).json({ error: 'Article not found' });
 
-      if (publishToBlog && result.site && ObjectId.isValid(result.site)) {
+      // Determine if we need to sync with WordPress:
+      // 1. Explicit publishToBlog request, OR
+      // 2. scheduledAt was changed on an article that already has a wpPostId (reschedule sync)
+      const needsWpSync = publishToBlog || (scheduledAt !== undefined && result.wpPostId);
+
+      if (needsWpSync && result.site && ObjectId.isValid(result.site)) {
         const sitesCollection = db.collection('sites');
         const siteDoc = await sitesCollection.findOne({ _id: new ObjectId(result.site), userId });
-        if (siteDoc) {
+        if (siteDoc && siteDoc.username && siteDoc.applicationPassword) {
           const now = new Date();
           let wpStatus: 'publish' | 'draft' | 'future' = blogStatus === 'draft' ? 'draft' : 'publish';
           let wpDate: string | undefined = undefined;
