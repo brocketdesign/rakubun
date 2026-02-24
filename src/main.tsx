@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.tsx'
 import { LanguageProvider } from './i18n'
 import { ThemeProvider } from './hooks/useTheme'
+import { clerkAppearance } from './lib/clerkTheme'
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
@@ -14,7 +15,7 @@ if (!CLERK_PUBLISHABLE_KEY) {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} appearance={clerkAppearance}>
       <ThemeProvider>
         <LanguageProvider>
           <App />

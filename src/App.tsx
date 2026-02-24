@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { SignIn, SignUp } from '@clerk/clerk-react';
+import { clerkAppearance } from './lib/clerkTheme';
 import LandingPage from './pages/LandingPage';
 import DashboardLayout from './layouts/DashboardLayout';
 import OverviewPage from './pages/dashboard/OverviewPage';
@@ -28,7 +29,7 @@ function App() {
           path="/sign-in/*"
           element={
             <div className="flex items-center justify-center min-h-screen bg-rakubun-bg">
-              <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/dashboard" />
+              <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" afterSignInUrl="/dashboard" appearance={clerkAppearance} />
             </div>
           }
         />
@@ -36,7 +37,7 @@ function App() {
           path="/sign-up/*"
           element={
             <div className="flex items-center justify-center min-h-screen bg-rakubun-bg">
-              <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" afterSignUpUrl="/dashboard" />
+              <SignUp routing="path" path="/sign-up" signInUrl="/sign-in" afterSignUpUrl="/dashboard" appearance={clerkAppearance} />
             </div>
           }
         />
