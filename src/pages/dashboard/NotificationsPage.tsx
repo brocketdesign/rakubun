@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   CheckCheck,
@@ -10,110 +12,109 @@ import {
   Trash2,
   Settings,
   Info,
+  CalendarDays,
+  Loader2,
+  RefreshCw,
+  MailCheck,
+  MailX,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLanguage } from '../../i18n';
+import {
+  useNotifications,
+  useUnreadCount,
+  useNotificationsLoading,
+  notificationsActions,
+  type NotificationType,
+} from '../../stores/notificationsStore';
 
-type NotificationType = 'article' | 'site' | 'ai' | 'system';
+// ─── Type styling ───────────────────────────────────────────────────────────────
 
-interface Notification {
-  id: string;
-  type: NotificationType;
-  title: { en: string; ja: string };
-  message: { en: string; ja: string };
-  time: { en: string; ja: string };
-  read: boolean;
-  actionUrl?: string;
-}
-
-const notifications: Notification[] = [
-  {
-    id: '1',
-    type: 'article',
-    title: { en: 'Article Published Successfully', ja: '記事が正常に公開されました' },
-    message: { en: '"10 Best Practices for React Performance" has been published on techblog.com', ja: '「Reactパフォーマンスのベストプラクティス10選」がtechblog.comに公開されました' },
-    time: { en: '2 hours ago', ja: '2時間前' },
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'ai',
-    title: { en: 'AI Generation Complete', ja: 'AI生成完了' },
-    message: { en: 'Your article "Web Performance Optimization Guide" has been generated and is ready for review.', ja: '記事「Webパフォーマンス最適化ガイド」が生成され、レビュー準備が整いました。' },
-    time: { en: '3 hours ago', ja: '3時間前' },
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'site',
-    title: { en: 'Site Connection Warning', ja: 'サイト接続警告' },
-    message: { en: 'aiweekly.net has not synced in over 2 hours. Please check the connection.', ja: 'aiweekly.netが2時間以上同期されていません。接続を確認してください。' },
-    time: { en: '4 hours ago', ja: '4時間前' },
-    read: false,
-  },
-  {
-    id: '4',
-    type: 'system',
-    title: { en: 'Scheduled Maintenance', ja: '定期メンテナンス' },
-    message: { en: 'System maintenance is scheduled for Feb 25, 2026 from 2:00-4:00 AM UTC.', ja: 'システムメンテナンスが2026年2月25日 UTC 2:00〜4:00に予定されています。' },
-    time: { en: '1 day ago', ja: '1日前' },
-    read: true,
-  },
-  {
-    id: '5',
-    type: 'article',
-    title: { en: 'Article Scheduled', ja: '記事が予約されました' },
-    message: { en: '"Getting Started with TypeScript" is scheduled to publish tomorrow at 9:00 AM.', ja: '「TypeScript入門」が明日午前9時に公開予定です。' },
-    time: { en: '1 day ago', ja: '1日前' },
-    read: true,
-  },
-  {
-    id: '6',
-    type: 'ai',
-    title: { en: 'Analysis Report Ready', ja: '分析レポート完了' },
-    message: { en: 'Site analysis for devinsights.io is complete. SEO score improved to 79.', ja: 'devinsights.ioのサイト分析が完了しました。SEOスコアが79に改善。' },
-    time: { en: '2 days ago', ja: '2日前' },
-    read: true,
-  },
-];
-
-const typeConfig = {
-  article: { icon: FileText, color: 'text-blue-600 bg-blue-50' },
-  site: { icon: Globe, color: 'text-amber-600 bg-amber-50' },
-  ai: { icon: Sparkles, color: 'text-purple-600 bg-purple-50' },
-  system: { icon: Info, color: 'text-gray-600 bg-gray-50' },
+const typeConfig: Record<NotificationType, { icon: typeof FileText; color: string }> = {
+  article: { icon: FileText, color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10' },
+  site: { icon: Globe, color: 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10' },
+  ai: { icon: Sparkles, color: 'text-purple-600 bg-purple-50 dark:text-purple-400 dark:bg-purple-500/10' },
+  system: { icon: Info, color: 'text-gray-600 bg-gray-50 dark:text-gray-400 dark:bg-gray-500/10' },
+  schedule: { icon: CalendarDays, color: 'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10' },
 };
 
-const filterOptions = [
+const filterOptions: { value: string; label: { en: string; ja: string } }[] = [
   { value: 'all', label: { en: 'All', ja: '全て' } },
   { value: 'unread', label: { en: 'Unread', ja: '未読' } },
   { value: 'article', label: { en: 'Articles', ja: '記事' } },
   { value: 'ai', label: { en: 'AI', ja: 'AI' } },
   { value: 'site', label: { en: 'Sites', ja: 'サイト' } },
+  { value: 'schedule', label: { en: 'Schedule', ja: 'スケジュール' } },
   { value: 'system', label: { en: 'System', ja: 'システム' } },
 ];
 
+// ─── Relative time helper ───────────────────────────────────────────────────────
+
+function relativeTime(ts: number, lang: 'en' | 'ja'): string {
+  const diff = Date.now() - ts;
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+
+  if (lang === 'ja') {
+    if (minutes < 1) return 'たった今';
+    if (minutes < 60) return `${minutes}分前`;
+    if (hours < 24) return `${hours}時間前`;
+    if (days < 7) return `${days}日前`;
+    return new Date(ts).toLocaleDateString('ja-JP');
+  }
+
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────────
+
 export default function NotificationsPage() {
   const { language } = useLanguage();
+  const { getToken } = useAuth();
+  const navigate = useNavigate();
+  const notifications = useNotifications();
+  const unreadCount = useUnreadCount();
+  const loading = useNotificationsLoading();
   const [activeFilter, setActiveFilter] = useState('all');
-  const [readItems, setReadItems] = useState<Set<string>>(
-    new Set(notifications.filter(n => n.read).map(n => n.id))
-  );
+  const [deleting, setDeleting] = useState<string | null>(null);
 
-  const markRead = (id: string) => {
-    setReadItems(prev => new Set([...prev, id]));
+  // Load notifications on mount & filter change
+  const load = useCallback(() => {
+    notificationsActions.loadNotifications(getToken, activeFilter);
+  }, [getToken, activeFilter]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleMarkRead = async (id: string) => {
+    await notificationsActions.markRead(getToken, id);
   };
 
-  const markAllRead = () => {
-    setReadItems(new Set(notifications.map(n => n.id)));
+  const handleMarkAllRead = async () => {
+    await notificationsActions.markAllRead(getToken);
+    toast.success(language === 'en' ? 'All notifications marked as read' : '全て既読にしました');
   };
 
-  const filteredNotifications = notifications.filter(n => {
-    if (activeFilter === 'unread') return !readItems.has(n.id);
-    if (activeFilter !== 'all') return n.type === activeFilter;
-    return true;
-  });
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeleting(id);
+    await notificationsActions.deleteNotification(getToken, id);
+    toast.success(language === 'en' ? 'Notification deleted' : '通知を削除しました');
+    setDeleting(null);
+  };
 
-  const unreadCount = notifications.filter(n => !readItems.has(n.id)).length;
+  const handleNotificationClick = (notification: (typeof notifications)[0]) => {
+    handleMarkRead(notification.id);
+    if (notification.actionUrl) {
+      navigate(notification.actionUrl);
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-[900px]">
@@ -136,23 +137,33 @@ export default function NotificationsPage() {
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
-            onClick={markAllRead}
+            onClick={load}
+            className="p-2 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors"
+            title={language === 'en' ? 'Refresh' : '更新'}
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={handleMarkAllRead}
             className="btn-secondary text-sm"
             disabled={unreadCount === 0}
           >
             <CheckCheck className="w-4 h-4" />
             {language === 'en' ? 'Mark All Read' : '全て既読'}
           </button>
-          <button className="p-2 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors">
+          <button
+            onClick={() => navigate('/dashboard/settings?tab=notifications')}
+            className="p-2 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary transition-colors"
+          >
             <Settings className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Email Notification Banner */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-100 p-4 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-500/10 dark:to-purple-500/10 rounded-2xl border border-blue-100 dark:border-blue-500/20 p-4 flex items-center gap-4">
         <div className="p-2.5 rounded-xl bg-rakubun-surface/80">
-          <Mail className="w-5 h-5 text-blue-600" />
+          <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         </div>
         <div className="flex-1">
           <p className="text-sm font-medium text-rakubun-text">
@@ -160,22 +171,66 @@ export default function NotificationsPage() {
           </p>
           <p className="text-xs text-rakubun-text-secondary">
             {language === 'en'
-              ? 'Get important updates delivered to your inbox.'
-              : '重要な更新をメールで受け取る。'}
+              ? 'Get important updates delivered to your inbox via rakubun.com.'
+              : '重要な更新をrakubun.comからメールで受け取る。'}
           </p>
         </div>
-        <button className="btn-secondary text-xs py-1.5">
+        <button
+          onClick={() => navigate('/dashboard/settings?tab=notifications')}
+          className="btn-secondary text-xs py-1.5"
+        >
           {language === 'en' ? 'Configure' : '設定'}
         </button>
       </div>
 
+      {/* Notification Preferences Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="bg-rakubun-surface rounded-xl border border-rakubun-border p-3 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-red-50 dark:bg-red-500/10">
+            <Bell className="w-4 h-4 text-red-500" />
+          </div>
+          <div>
+            <p className="text-lg font-heading font-bold text-rakubun-text">{unreadCount}</p>
+            <p className="text-xs text-rakubun-text-secondary">
+              {language === 'en' ? 'Unread' : '未読'}
+            </p>
+          </div>
+        </div>
+        <div className="bg-rakubun-surface rounded-xl border border-rakubun-border p-3 flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-500/10">
+            <MailCheck className="w-4 h-4 text-blue-500" />
+          </div>
+          <div>
+            <p className="text-lg font-heading font-bold text-rakubun-text">
+              {notifications.filter((n) => n.read).length}
+            </p>
+            <p className="text-xs text-rakubun-text-secondary">
+              {language === 'en' ? 'Read' : '既読'}
+            </p>
+          </div>
+        </div>
+        <div className="bg-rakubun-surface rounded-xl border border-rakubun-border p-3 flex items-center gap-3 col-span-2 sm:col-span-1">
+          <div className="p-2 rounded-lg bg-gray-50 dark:bg-gray-500/10">
+            <MailX className="w-4 h-4 text-gray-500" />
+          </div>
+          <div>
+            <p className="text-lg font-heading font-bold text-rakubun-text">
+              {notifications.length}
+            </p>
+            <p className="text-xs text-rakubun-text-secondary">
+              {language === 'en' ? 'Total' : '合計'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Filters */}
-      <div className="flex items-center gap-1 bg-rakubun-bg-secondary rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 bg-rakubun-bg-secondary rounded-xl p-1 w-fit overflow-x-auto">
         {filterOptions.map((filter) => (
           <button
             key={filter.value}
             onClick={() => setActiveFilter(filter.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
               activeFilter === filter.value
                 ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                 : 'text-rakubun-text-secondary hover:text-rakubun-text'
@@ -188,36 +243,49 @@ export default function NotificationsPage() {
 
       {/* Notifications List */}
       <div className="space-y-2">
-        {filteredNotifications.length === 0 ? (
+        {loading && notifications.length === 0 ? (
+          <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-12 flex items-center justify-center">
+            <Loader2 className="w-6 h-6 animate-spin text-rakubun-accent" />
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-12 text-center">
             <Bell className="w-8 h-8 text-rakubun-text-secondary mx-auto mb-3 opacity-40" />
-            <p className="text-sm text-rakubun-text-secondary">
-              {language === 'en' ? 'No notifications to show.' : '表示する通知はありません。'}
+            <p className="text-sm font-medium text-rakubun-text">
+              {language === 'en' ? 'No notifications' : '通知はありません'}
+            </p>
+            <p className="text-xs text-rakubun-text-secondary mt-1">
+              {language === 'en'
+                ? "You're all caught up! We'll notify you when something happens."
+                : '全て確認済みです。何か起きたらお知らせします。'}
             </p>
           </div>
         ) : (
-          filteredNotifications.map((notification) => {
-            const isUnread = !readItems.has(notification.id);
-            const config = typeConfig[notification.type];
+          notifications.map((notification) => {
+            const config = typeConfig[notification.type] || typeConfig.system;
+            const Icon = config.icon;
             return (
               <div
                 key={notification.id}
-                onClick={() => markRead(notification.id)}
+                onClick={() => handleNotificationClick(notification)}
                 className={`
                   bg-rakubun-surface rounded-2xl border border-rakubun-border p-4 flex items-start gap-4
                   hover:shadow-md transition-all duration-300 cursor-pointer group
-                  ${isUnread ? 'border-l-4 border-l-rakubun-accent' : ''}
+                  ${!notification.read ? 'border-l-4 border-l-rakubun-accent' : ''}
                 `}
               >
                 <div className={`p-2 rounded-xl ${config.color} shrink-0`}>
-                  <config.icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h4 className={`text-sm font-medium ${isUnread ? 'text-rakubun-text' : 'text-rakubun-text-secondary'}`}>
+                    <h4
+                      className={`text-sm font-medium ${
+                        !notification.read ? 'text-rakubun-text' : 'text-rakubun-text-secondary'
+                      }`}
+                    >
                       {notification.title[language]}
                     </h4>
-                    {isUnread && (
+                    {!notification.read && (
                       <span className="w-2 h-2 rounded-full bg-rakubun-accent shrink-0" />
                     )}
                   </div>
@@ -226,14 +294,19 @@ export default function NotificationsPage() {
                   </p>
                   <span className="text-xs text-rakubun-text-secondary/60 mt-1.5 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {notification.time[language]}
+                    {relativeTime(notification.createdAt, language)}
                   </span>
                 </div>
                 <button
-                  onClick={(e) => { e.stopPropagation(); }}
-                  className="p-1.5 rounded-lg hover:bg-red-50 text-rakubun-text-secondary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+                  onClick={(e) => handleDelete(e, notification.id)}
+                  disabled={deleting === notification.id}
+                  className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-rakubun-text-secondary hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  {deleting === notification.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             );

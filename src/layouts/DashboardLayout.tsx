@@ -31,6 +31,7 @@ import { schedulesActions } from '../stores/schedulesStore';
 import { cronJobsActions } from '../stores/cronJobsStore';
 import { articlesActions } from '../stores/articlesStore';
 import { subscriptionActions, useCurrentPlan, PLAN_DISPLAY } from '../stores/subscriptionStore';
+import { notificationsActions, useUnreadCount } from '../stores/notificationsStore';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -83,6 +84,7 @@ export default function DashboardLayout() {
   const isMobile = useIsMobile();
   const currentPlan = useCurrentPlan();
   const planDisplay = PLAN_DISPLAY[currentPlan];
+  const notifUnreadCount = useUnreadCount();
 
   // Pre-load stores as soon as the dashboard mounts
   useEffect(() => {
@@ -101,6 +103,12 @@ export default function DashboardLayout() {
     if (!subscriptionActions.isLoaded() && !subscriptionActions.isLoading()) {
       subscriptionActions.loadSubscription(getToken);
     }
+    notificationsActions.loadUnreadCount(getToken);
+    // Poll unread count every 60s
+    const interval = setInterval(() => {
+      notificationsActions.loadUnreadCount(getToken);
+    }, 60000);
+    return () => clearInterval(interval);
   }, [getToken]);
 
   // Get current page title
@@ -220,13 +228,13 @@ export default function DashboardLayout() {
                     <>
                       <item.icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? 'text-rakubun-accent' : ''}`} />
                       {(!sidebarCollapsed || isMobile) && <span>{label}</span>}
-                      {item.labelKey === 'notifications' && (
+                      {item.labelKey === 'notifications' && notifUnreadCount > 0 && (
                         <span className={`
                           ${sidebarCollapsed && !isMobile ? 'absolute -top-0.5 -right-0.5' : 'ml-auto'}
                           bg-red-500 text-white text-[10px] font-bold
                           w-5 h-5 flex items-center justify-center rounded-full
                         `}>
-                          3
+                          {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
                         </span>
                       )}
                       {sidebarCollapsed && !isMobile && (
@@ -344,7 +352,11 @@ export default function DashboardLayout() {
                 className="relative p-2 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                {notifUnreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                    {notifUnreadCount > 99 ? '99+' : notifUnreadCount}
+                  </span>
+                )}
               </button>
 
               {/* User Avatar */}

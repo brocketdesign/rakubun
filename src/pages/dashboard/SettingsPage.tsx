@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import {
   Settings,
@@ -299,7 +300,20 @@ const settingsTabs = [
 export default function SettingsPage() {
   const { language } = useLanguage();
   const { getToken } = useAuth();
-  const [activeTab, setActiveTab] = useState('api-keys');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get('tab');
+    return tab && ['api-keys', 'api-docs', 'profile', 'notifications', 'general'].includes(tab) ? tab : 'api-keys';
+  });
+
+  // Keep URL in sync when tab changes
+  useEffect(() => {
+    if (activeTab !== 'api-keys') {
+      setSearchParams({ tab: activeTab }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  }, [activeTab, setSearchParams]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newKeyResult, setNewKeyResult] = useState<NewApiKeyResult | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);

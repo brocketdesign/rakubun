@@ -5,6 +5,7 @@ import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 import { publishToWordPress, uploadImageToWordPress, getWordPressPostStatus, type WordPressSite } from './lib/wordpress.js';
 import { enforceArticleLimit, incrementArticleUsage, FeatureGateError } from './lib/subscription.js';
+import { createNotification } from './notifications.js';
 
 export const config = {
   maxDuration: 60,
@@ -179,6 +180,25 @@ async function handleArticlesIndex(req: VercelRequest, res: VercelResponse) {
         } catch (e) {
           console.error('Failed to increment articlesGenerated:', e);
         }
+      }
+
+      // Fire notification for published articles
+      if (doc.wpPostId || status === 'published') {
+        createNotification(userId, 'article', {
+          en: 'Article Published Successfully',
+          ja: '記事が正常に公開されました',
+        }, {
+          en: `"${doc.title}" has been published.`,
+          ja: `「${doc.title}」が公開されました。`,
+        }, { actionUrl: `/dashboard/articles` }).catch(() => {});
+      } else if (status === 'scheduled') {
+        createNotification(userId, 'schedule', {
+          en: 'Article Scheduled',
+          ja: '記事が予約されました',
+        }, {
+          en: `"${doc.title}" is scheduled for publishing.`,
+          ja: `「${doc.title}」が公開予約されました。`,
+        }, { actionUrl: `/dashboard/articles` }).catch(() => {});
       }
 
       return res.status(201).json({
@@ -590,6 +610,15 @@ Make it at least 800 words.`,
 
       // Increment subscription article usage counter
       await incrementArticleUsage(userId);
+
+      // Notify: AI generation complete
+      createNotification(userId, 'ai', {
+        en: 'AI Generation Complete',
+        ja: 'AI生成完了',
+      }, {
+        en: `Your article "${title}" has been generated and is ready for review.`,
+        ja: `記事「${title}」が生成され、レビュー準備が整いました。`,
+      }, { actionUrl: `/dashboard/articles` }).catch(() => {});
 
       return res.status(200).json({
         id: articleId.toString(),

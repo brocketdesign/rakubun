@@ -6,6 +6,7 @@ import {
   publishToWordPress,
   uploadImageToWordPress,
 } from './lib/wordpress.js';
+import { createNotification } from './notifications.js';
 
 export const config = {
   maxDuration: 300, // 5 minute max for cron
@@ -664,6 +665,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             );
           }
 
+          // ── Step 6: Create in-app notification ──────────────────────
+          createNotification(cronJob.userId, 'article', {
+            en: 'Cron: Article Published',
+            ja: 'Cron: 記事が公開されました',
+          }, {
+            en: `"${articleResult.title}" was automatically published to ${cronJob.siteName || siteDoc.name || 'your site'}.`,
+            ja: `「${articleResult.title}」が${cronJob.siteName || siteDoc.name || 'サイト'}に自動公開されました。`,
+          }, { actionUrl: '/dashboard/articles' }).catch(() => {});
+
           results.push({
             cronJobId: cronJob._id.toHexString(),
             topic: slot.articleType,
@@ -784,7 +794,7 @@ async function sendNotificationEmail(
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     await resend.emails.send({
-      from: 'RakuBun <onboarding@resend.dev>',
+      from: 'RakuBun <notifications@rakubun.com>',
       to: email,
       subject: `✅ New article published: ${articleTitle}`,
       html: `

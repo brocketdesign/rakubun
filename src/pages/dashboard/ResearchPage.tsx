@@ -14,6 +14,11 @@ import {
   Zap,
   Loader2,
   AlertCircle,
+  Globe,
+  Flame,
+  FileSearch,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useLanguage } from '../../i18n';
 import { useSites, sitesActions } from '../../stores/sitesStore';
@@ -22,6 +27,8 @@ import {
   useResearchResults,
   useResearchLoading,
   useResearchSavedIds,
+  useDeepResearchLoading,
+  useDeepResearchReport,
   researchActions,
 } from '../../stores/researchStore';
 import UpgradePrompt from '../../components/UpgradePrompt';
@@ -42,11 +49,15 @@ export default function ResearchPage() {
   const results = useResearchResults();
   const isLoading = useResearchLoading();
   const savedIds = useResearchSavedIds();
+  const isDeepLoading = useDeepResearchLoading();
+  const deepReport = useDeepResearchReport();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'discover' | 'saved'>('discover');
   const [hasSearched, setHasSearched] = useState(false);
+  const [showDeepResearch, setShowDeepResearch] = useState(false);
+  const [providerFilter, setProviderFilter] = useState<'all' | 'openai' | 'firecrawl'>('all');
 
   // Load user's sites on mount
   useEffect(() => {
@@ -59,6 +70,7 @@ export default function ResearchPage() {
     if (!searchQuery.trim() && !selectedSiteId) return;
     setHasSearched(true);
     setActiveTab('discover');
+    setProviderFilter('all');
     await researchActions.search(getToken, {
       query: searchQuery.trim() || undefined,
       siteId: selectedSiteId || undefined,
@@ -70,6 +82,7 @@ export default function ResearchPage() {
       setSearchQuery(topic);
       setHasSearched(true);
       setActiveTab('discover');
+      setProviderFilter('all');
       researchActions.search(getToken, {
         query: topic,
         siteId: selectedSiteId || undefined,
@@ -78,12 +91,29 @@ export default function ResearchPage() {
     [getToken, selectedSiteId],
   );
 
+  const handleDeepResearch = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+    setShowDeepResearch(true);
+    await researchActions.deepResearch(getToken, {
+      query: searchQuery.trim(),
+      siteId: selectedSiteId || undefined,
+    });
+  }, [getToken, searchQuery, selectedSiteId]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSearch();
   };
 
+  const filteredResults = results.filter((r) => {
+    if (providerFilter !== 'all' && r.provider !== providerFilter) return false;
+    return true;
+  });
+
   const displayedResults =
-    activeTab === 'saved' ? results.filter((r) => savedIds.has(r.id)) : results;
+    activeTab === 'saved' ? filteredResults.filter((r) => savedIds.has(r.id)) : filteredResults;
+
+  const openaiCount = results.filter((r) => r.provider === 'openai').length;
+  const firecrawlCount = results.filter((r) => r.provider === 'firecrawl').length;
 
   return (
     <UpgradePrompt feature={language === 'en' ? 'Web Research' : 'ウェブリサーチ'} requiredPlan="premium" variant="overlay">
@@ -96,8 +126,8 @@ export default function ResearchPage() {
           </h2>
           <p className="text-xs sm:text-sm text-rakubun-text-secondary mt-1">
             {language === 'en'
-              ? 'Discover trending content for your blog. Select a site or enter a topic.'
-              : 'ブログのトレンドコンテンツを発見。サイトを選択するかトピックを入力。'}
+              ? 'Discover trending content using AI-powered web search. Select a site or enter a topic.'
+              : 'AI検索でトレンドコンテンツを発見。サイトを選択するかトピックを入力。'}
           </p>
         </div>
         <button
@@ -204,8 +234,13 @@ export default function ResearchPage() {
           <Loader2 className="w-8 h-8 text-rakubun-accent animate-spin" />
           <p className="text-sm text-rakubun-text-secondary">
             {language === 'en'
-              ? 'Searching the web for trending content…'
-              : 'ウェブでトレンドコンテンツを検索中…'}
+              ? 'Searching the web with AI (OpenAI + Firecrawl)…'
+              : 'AIでウェブ検索中（OpenAI + Firecrawl）…'}
+          </p>
+          <p className="text-xs text-rakubun-text-secondary/60">
+            {language === 'en'
+              ? 'This may take 10-20 seconds as we search multiple sources'
+              : '複数のソースを検索するため10〜20秒かかる場合があります'}
           </p>
         </div>
       )}
@@ -219,6 +254,16 @@ export default function ResearchPage() {
               ? 'Select one of your blogs above to discover trending content tailored to its niche, or enter a topic to search.'
               : '上でブログを選択して、そのニッチに合ったトレンドコンテンツを発見するか、トピックを入力して検索してください。'}
           </p>
+          <div className="flex items-center gap-4 mt-2">
+            <span className="inline-flex items-center gap-1.5 text-xs text-rakubun-text-secondary/70">
+              <Globe className="w-3.5 h-3.5 text-emerald-500" />
+              OpenAI Web Search
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-xs text-rakubun-text-secondary/70">
+              <Flame className="w-3.5 h-3.5 text-orange-500" />
+              Firecrawl Search
+            </span>
+          </div>
         </div>
       )}
 
@@ -234,42 +279,147 @@ export default function ResearchPage() {
         </div>
       )}
 
+      {/* Deep Research Button + Report */}
+      {hasSearched && searchQuery.trim() && (
+        <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border overflow-hidden">
+          <button
+            onClick={() => {
+              if (!deepReport && !isDeepLoading) {
+                handleDeepResearch();
+              } else {
+                setShowDeepResearch(!showDeepResearch);
+              }
+            }}
+            disabled={isDeepLoading}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-rakubun-bg/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10">
+                <FileSearch className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-sm font-semibold text-rakubun-text">
+                  {language === 'en' ? 'Deep Research' : 'ディープリサーチ'}
+                </h3>
+                <p className="text-xs text-rakubun-text-secondary">
+                  {language === 'en'
+                    ? 'Get an in-depth AI analysis with sources, trends, and content ideas'
+                    : 'ソース、トレンド、コンテンツアイデアを含むAI詳細分析を取得'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isDeepLoading && <Loader2 className="w-4 h-4 animate-spin text-purple-500" />}
+              {!isDeepLoading && !deepReport && (
+                <span className="text-xs font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30 px-3 py-1 rounded-full">
+                  {language === 'en' ? 'Analyze' : '分析'}
+                </span>
+              )}
+              {deepReport && (showDeepResearch ? <ChevronUp className="w-4 h-4 text-rakubun-text-secondary" /> : <ChevronDown className="w-4 h-4 text-rakubun-text-secondary" />)}
+            </div>
+          </button>
+
+          {isDeepLoading && (
+            <div className="px-5 pb-5">
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30">
+                <Loader2 className="w-5 h-5 animate-spin text-purple-500 shrink-0" />
+                <p className="text-sm text-purple-700 dark:text-purple-300">
+                  {language === 'en'
+                    ? 'Running deep research with AI web search… This may take 30-60 seconds.'
+                    : 'AIウェブ検索でディープリサーチ実行中… 30〜60秒かかる場合があります。'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {showDeepResearch && deepReport && (
+            <div className="px-5 pb-5">
+              <div className="prose prose-sm dark:prose-invert max-w-none bg-rakubun-bg rounded-xl p-5 border border-rakubun-border/50 overflow-auto max-h-[600px]">
+                <div dangerouslySetInnerHTML={{ __html: formatMarkdown(deepReport) }} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs and Results */}
       {!isLoading && results.length > 0 && (
         <div>
-          <div className="flex items-center gap-1 mb-4 bg-rakubun-bg-secondary rounded-xl p-1 w-fit">
-            <button
-              onClick={() => setActiveTab('discover')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'discover'
-                  ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
-                  : 'text-rakubun-text-secondary hover:text-rakubun-text'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <Newspaper className="w-4 h-4" />
-                {language === 'en' ? 'Results' : '結果'}
-                <span className="bg-rakubun-accent/10 text-rakubun-accent text-xs px-1.5 py-0.5 rounded-full font-bold">
-                  {results.length}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1 bg-rakubun-bg-secondary rounded-xl p-1 w-fit">
+              <button
+                onClick={() => setActiveTab('discover')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'discover'
+                    ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
+                    : 'text-rakubun-text-secondary hover:text-rakubun-text'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <Newspaper className="w-4 h-4" />
+                  {language === 'en' ? 'Results' : '結果'}
+                  <span className="bg-rakubun-accent/10 text-rakubun-accent text-xs px-1.5 py-0.5 rounded-full font-bold">
+                    {results.length}
+                  </span>
                 </span>
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab('saved')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'saved'
-                  ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
-                  : 'text-rakubun-text-secondary hover:text-rakubun-text'
-              }`}
-            >
-              <span className="flex items-center gap-2">
-                <BookmarkCheck className="w-4 h-4" />
-                {language === 'en' ? 'Saved' : '保存済み'}
-                <span className="bg-rakubun-accent/10 text-rakubun-accent text-xs px-1.5 py-0.5 rounded-full font-bold">
-                  {savedIds.size}
+              </button>
+              <button
+                onClick={() => setActiveTab('saved')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'saved'
+                    ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
+                    : 'text-rakubun-text-secondary hover:text-rakubun-text'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <BookmarkCheck className="w-4 h-4" />
+                  {language === 'en' ? 'Saved' : '保存済み'}
+                  <span className="bg-rakubun-accent/10 text-rakubun-accent text-xs px-1.5 py-0.5 rounded-full font-bold">
+                    {savedIds.size}
+                  </span>
                 </span>
-              </span>
-            </button>
+              </button>
+            </div>
+
+            {/* Provider filter pills */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setProviderFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  providerFilter === 'all'
+                    ? 'bg-rakubun-accent/10 text-rakubun-accent border border-rakubun-accent/20'
+                    : 'text-rakubun-text-secondary hover:bg-rakubun-bg-secondary border border-transparent'
+                }`}
+              >
+                {language === 'en' ? 'All' : 'すべて'} ({results.length})
+              </button>
+              {openaiCount > 0 && (
+                <button
+                  onClick={() => setProviderFilter('openai')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all inline-flex items-center gap-1.5 ${
+                    providerFilter === 'openai'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                      : 'text-rakubun-text-secondary hover:bg-rakubun-bg-secondary border border-transparent'
+                  }`}
+                >
+                  <Globe className="w-3 h-3" />
+                  OpenAI ({openaiCount})
+                </button>
+              )}
+              {firecrawlCount > 0 && (
+                <button
+                  onClick={() => setProviderFilter('firecrawl')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all inline-flex items-center gap-1.5 ${
+                    providerFilter === 'firecrawl'
+                      ? 'bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800'
+                      : 'text-rakubun-text-secondary hover:bg-rakubun-bg-secondary border border-transparent'
+                  }`}
+                >
+                  <Flame className="w-3 h-3" />
+                  Firecrawl ({firecrawlCount})
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -289,6 +439,19 @@ export default function ResearchPage() {
                 <div className="flex items-start gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
+                      {/* Provider badge */}
+                      {result.provider === 'openai' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded">
+                          <Globe className="w-2.5 h-2.5" />
+                          AI
+                        </span>
+                      )}
+                      {result.provider === 'firecrawl' && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 px-1.5 py-0.5 rounded">
+                          <Flame className="w-2.5 h-2.5" />
+                          FC
+                        </span>
+                      )}
                       <span className="text-xs font-medium text-rakubun-accent">{result.source}</span>
                       <span className="text-xs text-rakubun-text-secondary">·</span>
                       <span className="text-xs text-rakubun-text-secondary flex items-center gap-1">
@@ -346,4 +509,29 @@ export default function ResearchPage() {
     </div>
     </UpgradePrompt>
   );
+}
+
+// Simple markdown-to-HTML helper for deep research reports
+function formatMarkdown(md: string): string {
+  return md
+    // Headers
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-rakubun-accent hover:underline">$1</a>')
+    // Unordered lists
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+    // Numbered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+    // Paragraphs
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/^(?!<[hul])(.+)$/gm, '<p>$1</p>')
+    // Clean up empty paragraphs
+    .replace(/<p>\s*<\/p>/g, '');
 }

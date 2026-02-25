@@ -11,12 +11,15 @@ export interface ResearchResult {
   summary: string;
   date: string;
   relevance: number;
+  provider?: 'openai' | 'firecrawl';
 }
 
 // ─── Store (singleton, external to React) ──────────────────────────────────────
 
 let results: ResearchResult[] = [];
 let loading = false;
+let deepResearchLoading = false;
+let deepResearchReport = '';
 let lastQuery = '';
 let savedIds: Set<string> = new Set();
 const listeners: Set<() => void> = new Set();
@@ -46,6 +49,14 @@ function getLastQuerySnapshot(): string {
 
 function getSavedIdsSnapshot(): Set<string> {
   return savedIds;
+}
+
+function getDeepResearchLoadingSnapshot(): boolean {
+  return deepResearchLoading;
+}
+
+function getDeepResearchReportSnapshot(): string {
+  return deepResearchReport;
 }
 
 // ─── Actions ──────────────────────────────────────────────────────────────────
@@ -79,6 +90,31 @@ export const researchActions = {
     }
   },
 
+  async deepResearch(
+    getToken: GetToken,
+    params: { query: string; siteId?: string },
+  ): Promise<void> {
+    deepResearchLoading = true;
+    deepResearchReport = '';
+    emitChange();
+
+    try {
+      const api = createApiClient(getToken);
+      const data = await api.post<{
+        report: string;
+        query: string;
+      }>('/api/research/deep-research', params);
+
+      deepResearchReport = data.report;
+    } catch (err) {
+      console.error('Deep research failed:', err);
+      deepResearchReport = '';
+    } finally {
+      deepResearchLoading = false;
+      emitChange();
+    }
+  },
+
   toggleSave(id: string) {
     const next = new Set(savedIds);
     if (next.has(id)) next.delete(id);
@@ -94,6 +130,11 @@ export const researchActions = {
   clearResults() {
     results = [];
     lastQuery = '';
+    emitChange();
+  },
+
+  clearDeepResearch() {
+    deepResearchReport = '';
     emitChange();
   },
 };
@@ -114,4 +155,12 @@ export function useResearchLastQuery(): string {
 
 export function useResearchSavedIds(): Set<string> {
   return useSyncExternalStore(subscribe, getSavedIdsSnapshot);
+}
+
+export function useDeepResearchLoading(): boolean {
+  return useSyncExternalStore(subscribe, getDeepResearchLoadingSnapshot);
+}
+
+export function useDeepResearchReport(): string {
+  return useSyncExternalStore(subscribe, getDeepResearchReportSnapshot);
 }
