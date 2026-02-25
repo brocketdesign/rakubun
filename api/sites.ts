@@ -30,6 +30,48 @@ async function fetchFavicon(siteUrl: string): Promise<string> {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
 }
 
+// ─── WordPress language detection ───────────────────────────────────────────
+
+/**
+ * Fetch the content language configured in the WordPress site.
+ * Uses the authenticated `/wp-json/wp/v2/settings` endpoint which returns the
+ * `language` field (e.g. "ja", "en_US", "fr_FR").  The value is normalised to a
+ * two-letter ISO 639-1 code so it can be used directly in our settings.
+ *
+ * Falls back to `'en'` if the API call fails or the language is empty.
+ */
+async function fetchWordPressLanguage(
+  siteUrl: string,
+  username: string,
+  applicationPassword: string,
+): Promise<string> {
+  const baseUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+  const authHeader =
+    'Basic ' + Buffer.from(`${username}:${applicationPassword}`).toString('base64');
+
+  try {
+    const resp = await fetchWithRetry(
+      `${baseUrl}/wp-json/wp/v2/settings`,
+      { headers: { Authorization: authHeader } },
+      { timeoutMs: 10_000, maxRetries: 1, label: 'fetchWPLanguage' },
+    );
+
+    if (resp.ok) {
+      const data = (await resp.json()) as { language?: string };
+      if (data.language) {
+        // WordPress stores e.g. "ja", "en_US", "fr_FR" – normalise to 2-letter code
+        const lang = data.language.split(/[_-]/)[0].toLowerCase();
+        console.log(`[Sites] Detected WordPress language: ${data.language} → ${lang}`);
+        return lang;
+      }
+    }
+  } catch (e) {
+    console.warn('[Sites] WP language detection failed:', e instanceof Error ? e.message : e);
+  }
+
+  return 'en';
+}
+
 const DEFAULT_SETTINGS = {
   autoSync: true,
   syncInterval: 30,
@@ -113,13 +155,15 @@ async function handleSitesIndex(req: VercelRequest, res: VercelResponse) {
       const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
       const now = Date.now();
 
-      // Fetch real favicon from the WordPress site
+      // Fetch real favicon and detect content language from the WordPress site
       let favicon: string;
       try {
         favicon = await fetchFavicon(cleanUrl);
       } catch {
         favicon = '🌐';
       }
+
+      const detectedLanguage = await fetchWordPressLanguage(cleanUrl, username, applicationPassword);
 
       const doc = {
         userId,
@@ -133,7 +177,7 @@ async function handleSitesIndex(req: VercelRequest, res: VercelResponse) {
         lastSyncTimestamp: now,
         wpVersion: '6.7',
         favicon,
-        settings: { ...DEFAULT_SETTINGS },
+        settings: { ...DEFAULT_SETTINGS, language: detectedLanguage },
         createdAt: new Date(now),
       };
 

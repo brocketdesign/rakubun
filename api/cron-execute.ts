@@ -16,6 +16,52 @@ export const config = {
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /**
+ * Get the current day name and hour in a given IANA timezone.
+ * Falls back to UTC if the timezone is invalid.
+ */
+function getNowInTimezone(now: Date, timezone: string): { day: string; hour: number } {
+  try {
+    const dayFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'long' });
+    const hourFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', hour12: false });
+
+    const day = dayFormatter.format(now); // e.g. "Wednesday"
+    const hourStr = hourFormatter.format(now); // e.g. "14" or "24" (midnight as 24 in some locales)
+    let hour = parseInt(hourStr, 10);
+    if (hour === 24) hour = 0;
+
+    return { day, hour };
+  } catch {
+    // Invalid timezone — fall back to UTC
+    return { day: DAY_NAMES[now.getUTCDay()], hour: now.getUTCHours() };
+  }
+}
+
+/**
+ * Determine the IANA timezone for a cron job, using the site's timezone setting
+ * or inferring from the cron job's language. Defaults to UTC.
+ */
+function resolveTimezone(cronJob: Record<string, any>, siteDoc: Record<string, any> | null): string {
+  // 1. Use site's timezone if it's a valid non-UTC value
+  const siteTz = siteDoc?.settings?.timezone;
+  if (siteTz && siteTz !== 'UTC' && siteTz !== 'utc') {
+    return siteTz;
+  }
+
+  // 2. Use cron job's timezone if stored
+  if (cronJob.timezone && cronJob.timezone !== 'UTC') {
+    return cronJob.timezone;
+  }
+
+  // 3. Infer from language — Japanese users almost certainly mean JST
+  const lang = (cronJob.language || '').toLowerCase();
+  if (lang.includes('ja') || lang === 'japanese') {
+    return 'Asia/Tokyo';
+  }
+
+  return 'UTC';
+}
+
+/**
  * Vercel cron handler — called every hour to process due scheduled articles.
  *
  * Flow:
@@ -383,9 +429,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const cronJob of activeCronJobs) {
       const schedule: Array<{ day: string; time: string; articleType: string; enabled: boolean }> = cronJob.schedule || [];
 
-      // Find slots that match today's day
+      // Load the site credentials early so we can resolve timezone
+      let cronSiteDoc: Record<string, any> | null = null;
+      try {
+        cronSiteDoc = await sitesCol.findOne({ _id: new ObjectId(cronJob.siteId) });
+      } catch {
+        // Will be handled below when siteDoc is needed
+      }
+
+      // Resolve the timezone for this cron job (e.g. Asia/Tokyo for Japanese sites)
+      const tz = resolveTimezone(cronJob, cronSiteDoc);
+      const { day: localDay, hour: localHour } = getNowInTimezone(now, tz);
+
+      console.log(`[Cron] Job ${cronJob._id} (${cronJob.siteName}) — tz=${tz}, localDay=${localDay}, localHour=${localHour}`);
+
+      // Find slots that match today's day in the LOCAL timezone
       const todaySlots = schedule.filter(
-        (slot) => slot.enabled !== false && slot.day.toLowerCase() === currentDay.toLowerCase(),
+        (slot) => slot.enabled !== false && slot.day.toLowerCase() === localDay.toLowerCase(),
       );
 
       if (todaySlots.length === 0) continue;
@@ -394,20 +454,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Parse the slot's scheduled time
         const [slotHour, slotMinute] = (slot.time || '09:00').split(':').map(Number);
 
-        // Only process if we are within the same hour as the scheduled time
+        // Only process if we are within the same hour as the scheduled time (in LOCAL timezone)
         // This gives a 59-minute window so the hourly cron won't miss it
-        if (currentHour !== slotHour) continue;
+        if (localHour !== slotHour) continue;
 
         // Check if we already processed this slot today (dedup)
-        const todayStart = new Date(now);
-        todayStart.setUTCHours(0, 0, 0, 0);
-        const todayEnd = new Date(now);
-        todayEnd.setUTCHours(23, 59, 59, 999);
+        // "Today" is based on the LOCAL timezone so we don't miss or double-process across date boundaries
+        const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now); // YYYY-MM-DD
+        const todayLocalStart = new Date(`${localDateStr}T00:00:00.000Z`);
+        const todayLocalEnd = new Date(`${localDateStr}T23:59:59.999Z`);
 
         const existing = await articlesCol.findOne({
           cronJobId: cronJob._id.toHexString(),
           cronSlotDay: slot.day,
-          createdAt: { $gte: todayStart.toISOString(), $lte: todayEnd.toISOString() },
+          createdAt: { $gte: todayLocalStart.toISOString(), $lte: todayLocalEnd.toISOString() },
         });
 
         if (existing) {
@@ -416,15 +476,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        // Load the site credentials
-        let siteDoc;
-        try {
-          siteDoc = await sitesCol.findOne({ _id: new ObjectId(cronJob.siteId) });
-        } catch {
-          console.error(`[Cron] Invalid siteId ${cronJob.siteId}`);
-          results.push({ cronJobId: cronJob._id.toHexString(), topic: slot.articleType, status: 'error', error: 'Invalid site ID' });
-          continue;
-        }
+        // Use the site doc we already loaded for timezone resolution
+        const siteDoc = cronSiteDoc;
 
         if (!siteDoc) {
           console.error(`[Cron] Site not found: ${cronJob.siteId}`);
