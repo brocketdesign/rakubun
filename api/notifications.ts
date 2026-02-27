@@ -21,6 +21,8 @@ export interface InAppNotification {
 
 export interface NotificationSettings {
   emailEnabled: boolean;
+  primaryEmail: string; // Clerk user's email
+  additionalEmail: string; // Optional additional email for notifications
   preferences: {
     articlePublished: { email: boolean; inApp: boolean };
     aiGenerationComplete: { email: boolean; inApp: boolean };
@@ -33,6 +35,8 @@ export interface NotificationSettings {
 
 const DEFAULT_SETTINGS: NotificationSettings = {
   emailEnabled: true,
+  primaryEmail: '',
+  additionalEmail: '',
   preferences: {
     articlePublished: { email: true, inApp: true },
     aiGenerationComplete: { email: false, inApp: true },
@@ -238,7 +242,12 @@ async function handleSendNotification(req: VercelRequest, res: VercelResponse) {
     // Load user settings
     const settingsDoc = await db.collection('notification_settings').findOne({ userId });
     const settings: NotificationSettings = settingsDoc
-      ? { emailEnabled: settingsDoc.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled, preferences: { ...DEFAULT_SETTINGS.preferences, ...settingsDoc.preferences } }
+      ? { 
+          emailEnabled: settingsDoc.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled,
+          primaryEmail: settingsDoc.primaryEmail || '',
+          additionalEmail: settingsDoc.additionalEmail || '',
+          preferences: { ...DEFAULT_SETTINGS.preferences, ...settingsDoc.preferences },
+        }
       : DEFAULT_SETTINGS;
 
     const prefKey = TYPE_TO_PREF[type as NotificationType] || 'systemUpdates';
@@ -294,20 +303,28 @@ async function handleSettings(req: VercelRequest, res: VercelResponse) {
 
     if (req.method === 'GET') {
       const doc = await collection.findOne({ userId });
-      const settings: NotificationSettings = doc
-        ? {
-            emailEnabled: doc.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled,
-            preferences: { ...DEFAULT_SETTINGS.preferences, ...doc.preferences },
-          }
-        : DEFAULT_SETTINGS;
+      let settings: NotificationSettings;
+      if (doc) {
+        settings = {
+          emailEnabled: doc.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled,
+          primaryEmail: doc.primaryEmail || '',
+          additionalEmail: doc.additionalEmail || '',
+          preferences: { ...DEFAULT_SETTINGS.preferences, ...doc.preferences },
+        };
+      } else {
+        // No settings yet - try to get primary email from Clerk
+        settings = { ...DEFAULT_SETTINGS };
+      }
       return res.status(200).json({ settings });
     }
 
     if (req.method === 'PUT') {
-      const { emailEnabled, preferences } = req.body || {};
+      const { emailEnabled, primaryEmail, additionalEmail, preferences } = req.body || {};
 
       const update: Record<string, unknown> = { userId, updatedAt: Date.now() };
       if (typeof emailEnabled === 'boolean') update.emailEnabled = emailEnabled;
+      if (typeof primaryEmail === 'string') update.primaryEmail = primaryEmail;
+      if (typeof additionalEmail === 'string') update.additionalEmail = additionalEmail;
       if (preferences && typeof preferences === 'object') update.preferences = preferences;
 
       await collection.updateOne(
@@ -319,6 +336,8 @@ async function handleSettings(req: VercelRequest, res: VercelResponse) {
       const doc = await collection.findOne({ userId });
       const settings: NotificationSettings = {
         emailEnabled: doc?.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled,
+        primaryEmail: doc?.primaryEmail || '',
+        additionalEmail: doc?.additionalEmail || '',
         preferences: { ...DEFAULT_SETTINGS.preferences, ...doc?.preferences },
       };
       return res.status(200).json({ settings });
@@ -384,6 +403,35 @@ async function handleTestEmail(req: VercelRequest, res: VercelResponse) {
   }
 }
 
+// ─── Helper: send email to multiple recipients ──────────────────────────────
+
+async function sendEmailToRecipients(
+  emails: string[],
+  title: string,
+  message: string,
+  actionUrl?: string,
+): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set, skipping email notification');
+    return;
+  }
+
+  const validEmails = emails.filter(e => e && e.includes('@'));
+  if (validEmails.length === 0) return;
+
+  try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: RESEND_FROM,
+      to: validEmails,
+      subject: `RakuBun — ${title}`,
+      html: buildEmailHtml(title, message, actionUrl ? `https://rakubun.com${actionUrl}` : undefined),
+    });
+  } catch (emailErr) {
+    console.error('Failed to send notification email:', emailErr);
+  }
+}
+
 // ─── Helper: create notification from other API endpoints ───────────────────
 
 export async function createNotification(
@@ -391,7 +439,7 @@ export async function createNotification(
   type: NotificationType,
   title: { en: string; ja: string },
   message: { en: string; ja: string },
-  options?: { actionUrl?: string; recipientEmail?: string },
+  options?: { actionUrl?: string; recipientEmails?: string[] },
 ): Promise<void> {
   try {
     const db = await getDb();
@@ -399,7 +447,12 @@ export async function createNotification(
     // Load user settings
     const settingsDoc = await db.collection('notification_settings').findOne({ userId });
     const settings: NotificationSettings = settingsDoc
-      ? { emailEnabled: settingsDoc.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled, preferences: { ...DEFAULT_SETTINGS.preferences, ...settingsDoc.preferences } }
+      ? { 
+          emailEnabled: settingsDoc.emailEnabled ?? DEFAULT_SETTINGS.emailEnabled,
+          primaryEmail: settingsDoc.primaryEmail || '',
+          additionalEmail: settingsDoc.additionalEmail || '',
+          preferences: { ...DEFAULT_SETTINGS.preferences, ...settingsDoc.preferences },
+        }
       : DEFAULT_SETTINGS;
 
     const prefKey = TYPE_TO_PREF[type] || 'systemUpdates';
@@ -419,18 +472,20 @@ export async function createNotification(
       await db.collection('notifications').insertOne(doc);
     }
 
-    // Send email if enabled and address provided
-    if (settings.emailEnabled && pref.email && options?.recipientEmail) {
-      try {
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        await resend.emails.send({
-          from: RESEND_FROM,
-          to: options.recipientEmail,
-          subject: `RakuBun — ${title.en}`,
-          html: buildEmailHtml(title.en, message.en, options.actionUrl ? `https://rakubun.com${options.actionUrl}` : undefined),
-        });
-      } catch (emailErr) {
-        console.error('Failed to send notification email:', emailErr);
+    // Send email if enabled
+    if (settings.emailEnabled && pref.email) {
+      // Collect emails: primary + additional + any override emails
+      const emails: string[] = [];
+      if (settings.primaryEmail) emails.push(settings.primaryEmail);
+      if (settings.additionalEmail) emails.push(settings.additionalEmail);
+      if (options?.recipientEmails) {
+        for (const email of options.recipientEmails) {
+          if (email && !emails.includes(email)) emails.push(email);
+        }
+      }
+
+      if (emails.length > 0) {
+        await sendEmailToRecipients(emails, title.en, message.en, options?.actionUrl);
       }
     }
   } catch (err) {

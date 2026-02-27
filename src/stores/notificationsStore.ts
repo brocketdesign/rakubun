@@ -31,6 +31,8 @@ export interface NotificationPreferences {
 
 export interface NotificationSettings {
   emailEnabled: boolean;
+  primaryEmail: string;
+  additionalEmail: string;
   preferences: NotificationPreferences;
 }
 
@@ -175,6 +177,17 @@ async function saveSettings(getToken: GetToken, newSettings: NotificationSetting
   return data.settings;
 }
 
+async function updateEmailSettings(getToken: GetToken, primaryEmail: string, additionalEmail: string): Promise<NotificationSettings> {
+  const api = createApiClient(getToken);
+  const data = await api.put<{ settings: NotificationSettings }>('/api/notifications/settings', { 
+    primaryEmail, 
+    additionalEmail 
+  });
+  settings = data.settings;
+  emitChange();
+  return data.settings;
+}
+
 async function sendTestEmail(getToken: GetToken, email: string): Promise<void> {
   const api = createApiClient(getToken);
   await api.post('/api/notifications/test-email', { email });
@@ -198,6 +211,7 @@ export const notificationsActions = {
   deleteNotification,
   loadSettings,
   saveSettings,
+  updateEmailSettings,
   sendTestEmail,
   isLoaded,
   isLoading,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import {
   Settings,
   Key,
@@ -55,11 +55,15 @@ interface NotificationPreferences {
 
 interface NotificationSettings {
   emailEnabled: boolean;
+  primaryEmail: string;
+  additionalEmail: string;
   preferences: NotificationPreferences;
 }
 
 const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   emailEnabled: true,
+  primaryEmail: '',
+  additionalEmail: '',
   preferences: {
     articlePublished: { email: true, inApp: true },
     aiGenerationComplete: { email: false, inApp: true },
@@ -300,6 +304,7 @@ const settingsTabs = [
 export default function SettingsPage() {
   const { language } = useLanguage();
   const { getToken } = useAuth();
+  const { user } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get('tab');
@@ -341,19 +346,32 @@ export default function SettingsPage() {
   const [notifDirty, setNotifDirty] = useState(false);
   const [testEmailSending, setTestEmailSending] = useState(false);
   const [testEmailAddress, setTestEmailAddress] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+
+  // Get primary email from Clerk user
+  const primaryEmailFromClerk = user?.primaryEmailAddress?.emailAddress || '';
 
   const fetchNotificationSettings = useCallback(async () => {
     setNotifLoading(true);
     try {
       const api = createApiClient(getToken);
       const data = await api.get<{ settings: NotificationSettings }>('/api/notifications/settings');
-      setNotifSettings(data.settings);
+      // If no primary email in settings, use the one from Clerk
+      const settings = data.settings;
+      if (!settings.primaryEmail && primaryEmailFromClerk) {
+        settings.primaryEmail = primaryEmailFromClerk;
+      }
+      setNotifSettings(settings);
     } catch {
-      // Use defaults on error
+      // Use defaults on error, but set primary email from Clerk
+      setNotifSettings(prev => ({
+        ...prev,
+        primaryEmail: primaryEmailFromClerk,
+      }));
     } finally {
       setNotifLoading(false);
     }
-  }, [getToken]);
+  }, [getToken, primaryEmailFromClerk]);
 
   useEffect(() => {
     if (activeTab === 'notifications') {
@@ -374,6 +392,31 @@ export default function SettingsPage() {
     } finally {
       setNotifSaving(false);
     }
+  };
+
+  const saveEmailSettings = async () => {
+    setEmailSaving(true);
+    try {
+      const api = createApiClient(getToken);
+      const data = await api.put<{ settings: NotificationSettings }>('/api/notifications/settings', {
+        primaryEmail: notifSettings.primaryEmail,
+        additionalEmail: notifSettings.additionalEmail,
+      });
+      setNotifSettings(prev => ({
+        ...prev,
+        primaryEmail: data.settings.primaryEmail,
+        additionalEmail: data.settings.additionalEmail,
+      }));
+      toast.success(language === 'en' ? 'Email settings saved' : 'メール設定を保存しました');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to save email settings' : 'メール設定の保存に失敗しました');
+    } finally {
+      setEmailSaving(false);
+    }
+  };
+
+  const updateAdditionalEmail = (email: string) => {
+    setNotifSettings(prev => ({ ...prev, additionalEmail: email }));
   };
 
   const toggleEmailEnabled = () => {
@@ -402,6 +445,40 @@ export default function SettingsPage() {
       const api = createApiClient(getToken);
       await api.post('/api/notifications/test-email', { email: testEmailAddress });
       toast.success(language === 'en' ? 'Test email sent successfully!' : 'テストメールを送信しました！');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to send test email' : 'テストメールの送信に失敗しました');
+    } finally {
+      setTestEmailSending(false);
+    }
+  };
+
+  const sendTestEmailToPrimary = async () => {
+    if (!notifSettings.primaryEmail) {
+      toast.error(language === 'en' ? 'No primary email set' : 'プライマリメールが設定されていません');
+      return;
+    }
+    setTestEmailSending(true);
+    try {
+      const api = createApiClient(getToken);
+      await api.post('/api/notifications/test-email', { email: notifSettings.primaryEmail });
+      toast.success(language === 'en' ? 'Test email sent to primary email!' : 'プライマリメールにテストメールを送信しました！');
+    } catch {
+      toast.error(language === 'en' ? 'Failed to send test email' : 'テストメールの送信に失敗しました');
+    } finally {
+      setTestEmailSending(false);
+    }
+  };
+
+  const sendTestEmailToAdditional = async () => {
+    if (!notifSettings.additionalEmail) {
+      toast.error(language === 'en' ? 'Please enter an additional email' : '追加メールアドレスを入力してください');
+      return;
+    }
+    setTestEmailSending(true);
+    try {
+      const api = createApiClient(getToken);
+      await api.post('/api/notifications/test-email', { email: notifSettings.additionalEmail });
+      toast.success(language === 'en' ? 'Test email sent to additional email!' : '追加メールアドレスにテストメールを送信しました！');
     } catch {
       toast.error(language === 'en' ? 'Failed to send test email' : 'テストメールの送信に失敗しました');
     } finally {
@@ -988,6 +1065,99 @@ export default function SettingsPage() {
                             notifSettings.emailEnabled ? 'translate-x-6' : 'translate-x-1'
                           }`}
                         />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Email Recipients */}
+                  <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10">
+                        <Mail className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-rakubun-text">
+                          {language === 'en' ? 'Email Recipients' : 'メール受信者'}
+                        </h4>
+                        <p className="text-xs text-rakubun-text-secondary mt-0.5">
+                          {language === 'en'
+                            ? 'Manage where notification emails are sent'
+                            : '通知メールの送信先を管理'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Primary Email */}
+                    <div className="space-y-3 mb-5">
+                      <label className="block text-sm font-medium text-rakubun-text">
+                        {language === 'en' ? 'Primary Email (Your Account)' : 'プライマリメール（あなたのアカウント）'}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="email"
+                          value={notifSettings.primaryEmail}
+                          disabled
+                          className="rakubun-input flex-1 bg-rakubun-bg-secondary/50 cursor-not-allowed"
+                        />
+                        <button
+                          onClick={sendTestEmailToPrimary}
+                          disabled={testEmailSending || !notifSettings.primaryEmail}
+                          className="btn-secondary text-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {testEmailSending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-rakubun-text-secondary">
+                        {language === 'en'
+                          ? 'This is your Clerk account email. Notifications will always be sent here.'
+                          : 'これはClerkアカウントのメールです。通知は常にここに送信されます。'}
+                      </p>
+                    </div>
+
+                    {/* Additional Email */}
+                    <div className="space-y-3 pt-4 border-t border-rakubun-border">
+                      <label className="block text-sm font-medium text-rakubun-text">
+                        {language === 'en' ? 'Additional Email (Optional)' : '追加メール（オプション）'}
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="email"
+                          value={notifSettings.additionalEmail}
+                          onChange={(e) => updateAdditionalEmail(e.target.value)}
+                          placeholder={language === 'en' ? 'e.g., team@example.com' : '例: team@example.com'}
+                          className="rakubun-input flex-1"
+                        />
+                        <button
+                          onClick={sendTestEmailToAdditional}
+                          disabled={testEmailSending || !notifSettings.additionalEmail}
+                          className="btn-secondary text-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {testEmailSending ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-xs text-rakubun-text-secondary">
+                        {language === 'en'
+                          ? 'Add another email address to also receive notifications. Useful for team members or alternative inboxes.'
+                          : '通知を受け取る別のメールアドレスを追加。チームメンバーや代替の受信箱に便利です。'}
+                      </p>
+                      <button
+                        onClick={saveEmailSettings}
+                        disabled={emailSaving}
+                        className="btn-primary text-sm mt-2"
+                      >
+                        {emailSaving ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'en' ? 'Saving...' : '保存中...'}</>
+                        ) : (
+                          <>{language === 'en' ? 'Save Email Settings' : 'メール設定を保存'}</>
+                        )}
                       </button>
                     </div>
                   </div>
