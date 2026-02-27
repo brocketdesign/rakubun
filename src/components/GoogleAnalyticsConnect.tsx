@@ -7,7 +7,6 @@ import {
   ChevronDown, 
   Check, 
   Loader2, 
-  ExternalLink,
   AlertCircle,
   RefreshCw,
 } from 'lucide-react';

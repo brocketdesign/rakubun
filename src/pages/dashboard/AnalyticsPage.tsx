@@ -161,16 +161,16 @@ export default function AnalyticsPage() {
 
   const analyticsData = useAnalyticsData(selectedSiteId);
   const dataLoading = useAnalyticsDataLoading(selectedSiteId);
-  const connectionStatus = useAnalyticsConnectionStatus(selectedSiteId);
+  useAnalyticsConnectionStatus(selectedSiteId);
 
   // Calculate stats from real data
   const stats = useMemo(() => {
     if (!analyticsData?.overview) {
       return {
-        pageViews: { value: '0', change: undefined, trend: undefined as const },
-        totalUsers: { value: '0', change: undefined, trend: undefined as const },
-        avgEngagementTime: { value: '0:00', change: undefined, trend: undefined as const },
-        bounceRate: { value: '0%', change: undefined, trend: undefined as const },
+        pageViews: { value: '0', change: undefined, trend: undefined },
+        totalUsers: { value: '0', change: undefined, trend: undefined },
+        avgEngagementTime: { value: '0:00', change: undefined, trend: undefined },
+        bounceRate: { value: '0%', change: undefined, trend: undefined },
       };
     }
 
