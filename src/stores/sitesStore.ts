@@ -14,6 +14,13 @@ export interface SiteSettings {
   timezone: string;
 }
 
+export interface SiteAnalytics {
+  connected: boolean;
+  propertyId?: string;
+  propertyName?: string;
+  connectedAt?: string;
+}
+
 export interface Site {
   id: string;
   name: string;
@@ -26,6 +33,7 @@ export interface Site {
   wpVersion: string;
   favicon: string;
   settings: SiteSettings;
+  analytics?: SiteAnalytics;
 }
 
 // ─── Default settings ─────────────────────────────────────────────────────────
@@ -90,6 +98,7 @@ function mapSiteFromApi(raw: Record<string, unknown>): Site {
     wpVersion: (raw.wpVersion as string) || '6.7',
     favicon: (raw.favicon as string) || '🌐',
     settings: { ...defaultSettings, ...(raw.settings as Partial<SiteSettings>) },
+    analytics: raw.analytics as SiteAnalytics | undefined,
   };
 }
 
@@ -193,6 +202,18 @@ export const sitesActions = {
     return !!(raw.success);
   },
 
+  /**
+   * Update site analytics connection status locally
+   */
+  updateSiteAnalytics(id: string, analytics: SiteAnalytics): void {
+    const idx = sites.findIndex((s) => s.id === id);
+    if (idx >= 0) {
+      sites = [...sites];
+      sites[idx] = { ...sites[idx], analytics };
+      emitChange();
+    }
+  },
+
   isLoaded(): boolean {
     return loaded;
   },
@@ -238,6 +259,11 @@ export function useTotalArticlesGenerated(): number {
 export function useConnectedSitesCount(): number {
   const all = useSites();
   return all.length;
+}
+
+export function useSitesWithAnalytics(): Site[] {
+  const all = useSites();
+  return all.filter((s) => s.analytics?.connected);
 }
 
 export { defaultSettings };

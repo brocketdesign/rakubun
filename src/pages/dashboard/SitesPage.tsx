@@ -22,6 +22,7 @@ import {
   Tag,
   Image,
   Sparkles,
+  BarChart3,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
@@ -47,6 +48,7 @@ import {
   TooltipTrigger,
 } from '../../components/ui/tooltip';
 import { useSchedules, schedulesActions } from '../../stores/schedulesStore';
+import GoogleAnalyticsConnect from '../../components/GoogleAnalyticsConnect';
 import { useCronJobs, cronJobsActions } from '../../stores/cronJobsStore';
 import { usePlanLimits, useUsage } from '../../stores/subscriptionStore';
 import { UsageMeter } from '../../components/UpgradePrompt';
@@ -680,6 +682,19 @@ function SettingsModal({
             </div>
           </div>
 
+          {/* ─── Google Analytics ──────────────────────────────── */}
+          <div className="pt-2 border-t border-rakubun-border/40">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3 flex items-center gap-1.5">
+              <BarChart3 className="w-3 h-3" />
+              {language === 'en' ? 'Analytics' : 'アナリティクス'}
+            </h4>
+            <GoogleAnalyticsConnect 
+              siteId={site.id} 
+              siteName={site.name}
+              variant="card"
+            />
+          </div>
+
           {/* ─── WordPress Credentials ─────────────────────────── */}
           <div className="pt-2 border-t border-rakubun-border/40">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3 flex items-center gap-1.5">
@@ -1125,6 +1140,15 @@ export default function SitesPage() {
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
+              </div>
+
+              {/* Google Analytics Connection */}
+              <div className="mt-4 pt-4 border-t border-rakubun-border/40">
+                <GoogleAnalyticsConnect 
+                  siteId={site.id} 
+                  siteName={site.name}
+                  variant="compact"
+                />
               </div>
             </div>
           );
