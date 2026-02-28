@@ -102,7 +102,6 @@ async function handleOAuthInit(req: VercelRequest, res: VercelResponse) {
       access_type: 'offline',
       scope: [
         'https://www.googleapis.com/auth/analytics.readonly',
-        'https://www.googleapis.com/auth/analytics.manage.readonly',
       ],
       prompt: 'consent', // Always show consent to get refresh token
       state,
