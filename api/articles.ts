@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { waitUntil } from '@vercel/functions';
 import OpenAI from 'openai';
 import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
@@ -460,204 +461,29 @@ async function handleGenerate(req: VercelRequest, res: VercelResponse) {
       userId: undefined,
     };
 
-    try {
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // Return the placeholder immediately so the client doesn't time out.
+    // The heavy generation work continues in the background via waitUntil.
+    res.status(202).json(placeholderResponse);
 
-      // @ts-ignore - responses API
-      const response = await client.responses.create({
-        model: 'gpt-5.2',
-        tools: useWebSearch ? [{ type: 'web_search' }] : undefined,
-        input: `Write a comprehensive, well-structured article about: ${prompt}.
-Format it in Markdown with:
-- A clear # title
-- Multiple ## sections with detailed content
-- **Bold** key terms
-- Bullet points where appropriate
-- A brief conclusion
-Make it at least 800 words.`,
-      });
+    // Schedule the heavy work to run after the response is sent
+    waitUntil(
+      generateArticleInBackground(
+        articleId,
+        userId,
+        prompt,
+        useWebSearch,
+        imageCount,
+        generateThumbnail,
+        site,
+        category,
+        siteDoc,
+        collection,
+        sitesCollection,
+        placeholderDoc.createdAt,
+      ),
+    );
 
-      // @ts-ignore
-      let content: string = response.output_text || '';
-
-      const imageUrls: string[] = [];
-      const imgCount = Math.min(imageCount || 0, 4);
-      if (imgCount > 0) {
-        try {
-          const grokClient = new OpenAI({
-            apiKey: process.env.GROK_API_KEY,
-            baseURL: 'https://api.x.ai/v1',
-          });
-
-          const imagePromises = Array.from({ length: imgCount }).map((_, i) =>
-            grokClient.images.generate({
-              model: 'grok-imagine-image',
-              prompt: `Professional illustration for an article about: ${prompt}, part ${i + 1}`,
-            }),
-          );
-
-          const imageResponses = await Promise.all(imagePromises);
-          for (const imgRes of imageResponses) {
-            if (imgRes.data?.[0]?.url) {
-              let finalUrl = imgRes.data[0].url;
-              if (siteDoc) {
-                const wpMedia = await uploadImageToWordPress(
-                  { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
-                  finalUrl,
-                );
-                if (wpMedia) {
-                  finalUrl = wpMedia.sourceUrl;
-                }
-              }
-              imageUrls.push(finalUrl);
-            }
-          }
-
-          if (imageUrls.length > 0) {
-            const sections = content.split(/\n(?=## )/);
-            const interval = Math.max(1, Math.floor(sections.length / (imageUrls.length + 1)));
-            let imgIdx = 0;
-            const newSections: string[] = [];
-            for (let i = 0; i < sections.length; i++) {
-              newSections.push(sections[i]);
-              if (imgIdx < imageUrls.length && (i + 1) % interval === 0) {
-                newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
-                imgIdx++;
-              }
-            }
-            while (imgIdx < imageUrls.length) {
-              newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
-              imgIdx++;
-            }
-            content = newSections.join('\n');
-          }
-        } catch (imgError) {
-          console.error('Error generating images:', imgError);
-        }
-      }
-
-      let thumbnailUrl = '';
-      if (generateThumbnail) {
-        try {
-          const grokClient = new OpenAI({
-            apiKey: process.env.GROK_API_KEY,
-            baseURL: 'https://api.x.ai/v1',
-          });
-          const thumbRes = await grokClient.images.generate({
-            model: 'grok-imagine-image',
-            prompt: `A professional blog post thumbnail image for: ${prompt}`,
-          });
-          if (thumbRes.data?.[0]?.url) {
-            let finalThumbUrl = thumbRes.data[0].url;
-            if (siteDoc) {
-              const wpMedia = await uploadImageToWordPress(
-                { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
-                finalThumbUrl,
-              );
-              if (wpMedia) {
-                finalThumbUrl = wpMedia.sourceUrl;
-              }
-            }
-            thumbnailUrl = finalThumbUrl;
-          }
-        } catch (thumbError) {
-          console.error('Error generating thumbnail:', thumbError);
-        }
-      }
-
-      const titleMatch = content.match(/^#\s+(.*)/m);
-      const title = titleMatch ? titleMatch[1] : prompt;
-      const excerpt = content
-        .replace(/^#.*\n?/m, '')
-        .replace(/[#*_~`>\-|![\]()]/g, '')
-        .trim()
-        .substring(0, 160);
-
-      const wordCount = content
-        .replace(/[#*_~`>\-|]/g, '')
-        .split(/\s+/)
-        .filter((w) => w.length > 0).length;
-
-      const seoScore = calculateSeoScore(title, content, excerpt);
-
-      await collection.updateOne(
-        { _id: articleId },
-        {
-          $set: {
-            title,
-            excerpt,
-            content,
-            status: 'draft',
-            wordCount,
-            seoScore,
-            thumbnailUrl,
-            imageUrls,
-            updatedAt: new Date().toISOString(),
-          },
-        },
-      );
-
-      if (site) {
-        try {
-          await sitesCollection.updateOne(
-            { _id: new ObjectId(site), userId },
-            { $inc: { articlesGenerated: 1 } },
-          );
-        } catch (e) {
-          console.error('Failed to increment articlesGenerated:', e);
-        }
-      }
-
-      // Increment subscription article usage counter
-      await incrementArticleUsage(userId);
-
-      // Notify: AI generation complete
-      createNotification(userId, 'ai', {
-        en: 'AI Generation Complete',
-        ja: 'AI生成完了',
-      }, {
-        en: `Your article "${title}" has been generated and is ready for review.`,
-        ja: `記事「${title}」が生成され、レビュー準備が整いました。`,
-      }, { actionUrl: `/dashboard/articles` }).catch(() => {});
-
-      return res.status(200).json({
-        id: articleId.toString(),
-        title,
-        excerpt,
-        content,
-        site: site || '',
-        category: category || 'Uncategorized',
-        status: 'draft',
-        wordCount,
-        seoScore,
-        views: 0,
-        thumbnailUrl,
-        imageUrls,
-        scheduledAt: null,
-        publishedAt: null,
-        createdAt: placeholderDoc.createdAt,
-        updatedAt: new Date().toISOString(),
-      });
-    } catch (genError) {
-      console.error('Error during generation:', genError);
-      await collection.updateOne(
-        { _id: articleId },
-        {
-          $set: {
-            title: `Failed: ${prompt.substring(0, 60)}`,
-            status: 'draft',
-            excerpt: 'Article generation failed. Please try again.',
-            updatedAt: new Date().toISOString(),
-          },
-        },
-      );
-      return res.status(500).json({
-        ...placeholderResponse,
-        title: `Failed: ${prompt.substring(0, 60)}`,
-        status: 'draft',
-        excerpt: 'Article generation failed. Please try again.',
-      });
-    }
+    return;
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
@@ -667,6 +493,208 @@ Make it at least 800 words.`,
     }
     console.error(err);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+/**
+ * Background article generation — runs via waitUntil() after the HTTP response
+ * has already been sent back to the client.
+ */
+async function generateArticleInBackground(
+  articleId: ObjectId,
+  userId: string,
+  prompt: string,
+  useWebSearch: boolean,
+  imageCount: number,
+  generateThumbnail: boolean,
+  site: string,
+  category: string,
+  siteDoc: any,
+  collection: any,
+  sitesCollection: any,
+  createdAt: string,
+) {
+  try {
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    // @ts-ignore - responses API
+    const response = await client.responses.create({
+      model: 'gpt-5.2',
+      tools: useWebSearch ? [{ type: 'web_search' }] : undefined,
+      input: `Write a comprehensive, well-structured article about: ${prompt}.
+Format it in Markdown with:
+- A clear # title
+- Multiple ## sections with detailed content
+- **Bold** key terms
+- Bullet points where appropriate
+- A brief conclusion
+Make it at least 800 words.`,
+    });
+
+    // @ts-ignore
+    let content: string = response.output_text || '';
+
+    const imageUrls: string[] = [];
+    const imgCount = Math.min(imageCount || 0, 4);
+    if (imgCount > 0) {
+      try {
+        const grokClient = new OpenAI({
+          apiKey: process.env.GROK_API_KEY,
+          baseURL: 'https://api.x.ai/v1',
+        });
+
+        const imagePromises = Array.from({ length: imgCount }).map((_, i) =>
+          grokClient.images.generate({
+            model: 'grok-imagine-image',
+            prompt: `Professional illustration for an article about: ${prompt}, part ${i + 1}`,
+          }),
+        );
+
+        const imageResponses = await Promise.all(imagePromises);
+        for (const imgRes of imageResponses) {
+          if (imgRes.data?.[0]?.url) {
+            let finalUrl = imgRes.data[0].url;
+            if (siteDoc) {
+              const wpMedia = await uploadImageToWordPress(
+                { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+                finalUrl,
+              );
+              if (wpMedia) {
+                finalUrl = wpMedia.sourceUrl;
+              }
+            }
+            imageUrls.push(finalUrl);
+          }
+        }
+
+        if (imageUrls.length > 0) {
+          const sections = content.split(/\n(?=## )/);
+          const interval = Math.max(1, Math.floor(sections.length / (imageUrls.length + 1)));
+          let imgIdx = 0;
+          const newSections: string[] = [];
+          for (let i = 0; i < sections.length; i++) {
+            newSections.push(sections[i]);
+            if (imgIdx < imageUrls.length && (i + 1) % interval === 0) {
+              newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
+              imgIdx++;
+            }
+          }
+          while (imgIdx < imageUrls.length) {
+            newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
+            imgIdx++;
+          }
+          content = newSections.join('\n');
+        }
+      } catch (imgError) {
+        console.error('Error generating images:', imgError);
+      }
+    }
+
+    let thumbnailUrl = '';
+    if (generateThumbnail) {
+      try {
+        const grokClient = new OpenAI({
+          apiKey: process.env.GROK_API_KEY,
+          baseURL: 'https://api.x.ai/v1',
+        });
+        const thumbRes = await grokClient.images.generate({
+          model: 'grok-imagine-image',
+          prompt: `A professional blog post thumbnail image for: ${prompt}`,
+        });
+        if (thumbRes.data?.[0]?.url) {
+          let finalThumbUrl = thumbRes.data[0].url;
+          if (siteDoc) {
+            const wpMedia = await uploadImageToWordPress(
+              { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+              finalThumbUrl,
+            );
+            if (wpMedia) {
+              finalThumbUrl = wpMedia.sourceUrl;
+            }
+          }
+          thumbnailUrl = finalThumbUrl;
+        }
+      } catch (thumbError) {
+        console.error('Error generating thumbnail:', thumbError);
+      }
+    }
+
+    const titleMatch = content.match(/^#\s+(.*)/m);
+    const title = titleMatch ? titleMatch[1] : prompt;
+    const excerpt = content
+      .replace(/^#.*\n?/m, '')
+      .replace(/[#*_~`>\-|![\]()]/g, '')
+      .trim()
+      .substring(0, 160);
+
+    const wordCount = content
+      .replace(/[#*_~`>\-|]/g, '')
+      .split(/\s+/)
+      .filter((w) => w.length > 0).length;
+
+    const seoScore = calculateSeoScore(title, content, excerpt);
+
+    await collection.updateOne(
+      { _id: articleId },
+      {
+        $set: {
+          title,
+          excerpt,
+          content,
+          status: 'draft',
+          wordCount,
+          seoScore,
+          thumbnailUrl,
+          imageUrls,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+
+    if (site) {
+      try {
+        await sitesCollection.updateOne(
+          { _id: new ObjectId(site), userId },
+          { $inc: { articlesGenerated: 1 } },
+        );
+      } catch (e) {
+        console.error('Failed to increment articlesGenerated:', e);
+      }
+    }
+
+    // Increment subscription article usage counter
+    await incrementArticleUsage(userId);
+
+    // Notify: AI generation complete
+    createNotification(userId, 'ai', {
+      en: 'AI Generation Complete',
+      ja: 'AI生成完了',
+    }, {
+      en: `Your article "${title}" has been generated and is ready for review.`,
+      ja: `記事「${title}」が生成され、レビュー準備が整いました。`,
+    }, { actionUrl: `/dashboard/articles` }).catch(() => {});
+  } catch (genError) {
+    console.error('Error during background generation:', genError);
+    await collection.updateOne(
+      { _id: articleId },
+      {
+        $set: {
+          title: `Failed: ${prompt.substring(0, 60)}`,
+          status: 'failed',
+          excerpt: 'Article generation failed. Please try again.',
+          updatedAt: new Date().toISOString(),
+        },
+      },
+    );
+
+    // Notify: generation failed
+    createNotification(userId, 'ai', {
+      en: 'AI Generation Failed',
+      ja: 'AI生成失敗',
+    }, {
+      en: `Article generation for "${prompt.substring(0, 40)}" failed. Please try again.`,
+      ja: `「${prompt.substring(0, 40)}」の記事生成に失敗しました。もう一度お試しください。`,
+    }, { actionUrl: `/dashboard/articles` }).catch(() => {});
   }
 }
 

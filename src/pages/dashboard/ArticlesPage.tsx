@@ -76,6 +76,11 @@ const statusConfig: Record<
     class: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10',
     icon: Loader2,
   },
+  failed: {
+    label: { en: 'Failed', ja: '失敗' },
+    class: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10',
+    icon: AlertTriangle,
+  },
 };
 
 const statusFilters = ['all', 'published', 'scheduled', 'draft', 'generating'] as const;
@@ -415,11 +420,15 @@ export default function ArticlesPage() {
         category: editorCategory,
       });
       if (article) {
-        setEditorTitle(article.title);
-        setEditorContent(article.content);
-        setEditorThumbnailUrl(article.thumbnailUrl);
-        setEditingArticle(article);
-        setShowGeneratePanel(false);
+        if (article.status === 'failed') {
+          setGenerateError(language === 'en' ? 'Article generation failed. Please try again.' : '記事の生成に失敗しました。もう一度お試しください。');
+        } else {
+          setEditorTitle(article.title);
+          setEditorContent(article.content);
+          setEditorThumbnailUrl(article.thumbnailUrl);
+          setEditingArticle(article);
+          setShowGeneratePanel(false);
+        }
       }
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {

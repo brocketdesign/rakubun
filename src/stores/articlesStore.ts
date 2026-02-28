@@ -3,7 +3,7 @@ import { createApiClient } from '../lib/api';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-export type ArticleStatus = 'published' | 'scheduled' | 'draft' | 'generating';
+export type ArticleStatus = 'published' | 'scheduled' | 'draft' | 'generating' | 'failed';
 
 export interface Article {
   id: string;
@@ -122,18 +122,36 @@ export const articlesActions = {
     try {
       const api = createApiClient(getToken);
       const raw = await api.post<Record<string, unknown>>('/api/articles/generate', data);
-      const article = mapArticleFromApi(raw);
+      const placeholder = mapArticleFromApi(raw);
 
-      // Replace any existing generating placeholder or add new
-      const existingIdx = articles.findIndex((a) => a.id === article.id);
+      // Add the placeholder into the list immediately
+      const existingIdx = articles.findIndex((a) => a.id === placeholder.id);
       if (existingIdx >= 0) {
         articles = [...articles];
-        articles[existingIdx] = article;
+        articles[existingIdx] = placeholder;
       } else {
-        articles = [article, ...articles];
+        articles = [placeholder, ...articles];
       }
       emitChange();
-      return article;
+
+      // The API now returns a 202 with status "generating".
+      // Poll until the background job finishes (status changes from "generating").
+      if (placeholder.status === 'generating') {
+        const completed = await this._pollForCompletion(getToken, placeholder.id);
+        if (completed) {
+          const idx = articles.findIndex((a) => a.id === completed.id);
+          if (idx >= 0) {
+            articles = [...articles];
+            articles[idx] = completed;
+          }
+          emitChange();
+          return completed;
+        }
+        // If polling failed/timed out, return the placeholder as-is
+        return placeholder;
+      }
+
+      return placeholder;
     } catch (err) {
       console.error('Failed to generate article:', err);
       // Re-throw 403 (feature gate) errors so pages can handle them
@@ -143,6 +161,29 @@ export const articlesActions = {
       generating = false;
       emitChange();
     }
+  },
+
+  /** Poll GET /api/articles/:id until status is no longer "generating". */
+  async _pollForCompletion(
+    getToken: GetToken,
+    articleId: string,
+    intervalMs = 3000,
+    maxAttempts = 120, // ~6 minutes
+  ): Promise<Article | null> {
+    const api = createApiClient(getToken);
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+      try {
+        const raw = await api.get<Record<string, unknown>>(`/api/articles/${articleId}`);
+        const article = mapArticleFromApi(raw);
+        if (article.status !== 'generating') {
+          return article;
+        }
+      } catch {
+        // If the fetch fails, keep trying
+      }
+    }
+    return null;
   },
 
   async updateArticle(

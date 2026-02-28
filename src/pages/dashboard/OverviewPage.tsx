@@ -7,7 +7,7 @@ import {
   ArrowDownRight,
   Clock,
   CheckCircle2,
-
+  AlertTriangle,
   Loader2,
   ChevronRight,
   Plus,
@@ -61,6 +61,7 @@ const statusConfig = {
   scheduled: { label: { en: 'Scheduled', ja: '予約済み' }, class: 'status-badge-warning', icon: Clock },
   draft: { label: { en: 'Draft', ja: '下書き' }, class: 'text-gray-700 bg-gray-50 dark:text-gray-300 dark:bg-gray-500/10', icon: FileText },
   generating: { label: { en: 'Generating', ja: '生成中' }, class: 'text-blue-700 bg-blue-50 dark:text-blue-300 dark:bg-blue-500/10', icon: Loader2 },
+  failed: { label: { en: 'Failed', ja: '失敗' }, class: 'text-red-700 bg-red-50 dark:text-red-300 dark:bg-red-500/10', icon: AlertTriangle },
 };
 
 export default function OverviewPage() {
