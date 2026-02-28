@@ -132,3 +132,6 @@ public/downloads/
 public/uploads/
 public/output/
 .vercel
+
+# Debug/utility scripts with credentials
+check-db.cjs
