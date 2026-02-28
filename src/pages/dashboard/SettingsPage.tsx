@@ -345,7 +345,6 @@ export default function SettingsPage() {
   const [notifSaving, setNotifSaving] = useState(false);
   const [notifDirty, setNotifDirty] = useState(false);
   const [testEmailSending, setTestEmailSending] = useState(false);
-  const [testEmailAddress, setTestEmailAddress] = useState('');
   const [emailSaving, setEmailSaving] = useState(false);
 
   // Get primary email from Clerk user
@@ -433,23 +432,6 @@ export default function SettingsPage() {
       },
     }));
     setNotifDirty(true);
-  };
-
-  const sendTestEmail = async () => {
-    if (!testEmailAddress) {
-      toast.error(language === 'en' ? 'Please enter an email address' : 'メールアドレスを入力してください');
-      return;
-    }
-    setTestEmailSending(true);
-    try {
-      const api = createApiClient(getToken);
-      await api.post('/api/notifications/test-email', { email: testEmailAddress });
-      toast.success(language === 'en' ? 'Test email sent successfully!' : 'テストメールを送信しました！');
-    } catch {
-      toast.error(language === 'en' ? 'Failed to send test email' : 'テストメールの送信に失敗しました');
-    } finally {
-      setTestEmailSending(false);
-    }
   };
 
   const sendTestEmailToPrimary = async () => {
@@ -1239,44 +1221,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
 
-                  {/* Send Test Email */}
-                  <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-500/10">
-                        <Mail className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-rakubun-text">
-                          {language === 'en' ? 'Send Test Email' : 'テストメール送信'}
-                        </h4>
-                        <p className="text-xs text-rakubun-text-secondary mt-0.5">
-                          {language === 'en'
-                            ? 'Verify that email notifications are working correctly'
-                            : 'メール通知が正しく動作しているか確認する'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="email"
-                        value={testEmailAddress}
-                        onChange={(e) => setTestEmailAddress(e.target.value)}
-                        placeholder={language === 'en' ? 'Enter your email address' : 'メールアドレスを入力'}
-                        className="rakubun-input flex-1"
-                      />
-                      <button
-                        onClick={sendTestEmail}
-                        disabled={testEmailSending || !testEmailAddress}
-                        className="btn-primary text-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {testEmailSending ? (
-                          <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'en' ? 'Sending...' : '送信中...'}</>
-                        ) : (
-                          <><Send className="w-4 h-4" /> {language === 'en' ? 'Send Test' : 'テスト送信'}</>
-                        )}
-                      </button>
-                    </div>
-                  </div>
+
                 </>
               )}
             </div>
