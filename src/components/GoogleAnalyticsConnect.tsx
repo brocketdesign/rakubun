@@ -85,10 +85,26 @@ export default function GoogleAnalyticsConnect({
     await analyticsActions.loadProperties(getToken, siteId);
   }, [getToken, siteId]);
 
-  const handleInitiateOAuth = () => {
-    // Redirect to OAuth endpoint
-    const oauthUrl = `/api/analytics/oauth?siteId=${siteId}`;
-    window.location.href = oauthUrl;
+  const handleInitiateOAuth = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`/api/analytics/oauth-init?siteId=${siteId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to get OAuth URL');
+      }
+      
+      const { url } = await response.json();
+      window.location.href = url;
+    } catch (err) {
+      toast.error(language === 'en' 
+        ? `Failed to connect: ${err instanceof Error ? err.message : 'Unknown error'}` 
+        : `接続に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`
+      );
+    }
   };
 
   const handleConnectProperty = async () => {

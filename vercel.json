@@ -16,6 +16,7 @@
     { "source": "/api/sites/:id/:subaction", "destination": "/api/sites?_id=:id&_subaction=:subaction" },
     { "source": "/api/sites/:action", "destination": "/api/sites?_action=:action" },
     { "source": "/api/analytics/oauth/callback", "destination": "/api/analytics?_action=oauth/callback" },
+    { "source": "/api/analytics/oauth-init", "destination": "/api/analytics?_action=oauth-init" },
     { "source": "/api/analytics/oauth", "destination": "/api/analytics?_action=oauth" },
     { "source": "/api/analytics/:action", "destination": "/api/analytics?_action=:action" },
     { "source": "/(.*)", "destination": "/" }

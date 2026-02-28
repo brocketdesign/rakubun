@@ -200,8 +200,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
           }
 
-          // Send email notification if the article has a userId with an email preference
-          // (We don't have email on the article, so skip notification for now)
+          // Send notification for published scheduled article
+          if (article.userId) {
+            try {
+              await createNotification(article.userId, 'article', {
+                en: 'Scheduled Article Published',
+                ja: 'スケジュール記事が公開されました',
+              }, {
+                en: `"${article.title}" has been published.`,
+                ja: `「${article.title}」が公開されました。`,
+              }, { actionUrl: '/dashboard/articles' });
+            } catch (notifErr) {
+              console.error(`[Cron] Failed to send notification for scheduled article ${article._id}:`, notifErr);
+            }
+          }
         } catch (articleErr) {
           console.error(`[Cron] Error publishing scheduled article ${article._id}:`, articleErr);
           results.push({
@@ -380,6 +392,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               status: 'success',
               articleId: insertResult.insertedId.toString(),
             });
+
+            // Send notification for generated schedule plan article
+            if (schedule.userId) {
+              try {
+                await createNotification(schedule.userId, 'article', {
+                  en: 'Schedule: Article Published',
+                  ja: 'スケジュール: 記事が公開されました',
+                }, {
+                  en: `"${articleResult.title}" was generated and published from your content schedule.`,
+                  ja: `「${articleResult.title}」がコンテンツスケジュールから生成・公開されました。`,
+                }, { actionUrl: '/dashboard/articles' });
+              } catch (notifErr) {
+                console.error(`[Cron] Failed to send notification for plan topic "${topic.title}":`, notifErr);
+              }
+            }
           } catch (topicErr) {
             console.error(`[Cron] Error generating plan topic "${topic.title}":`, topicErr);
             results.push({
@@ -655,24 +682,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           console.log(`[Cron] Article saved: ${articleId} — "${articleResult.title}"`);
 
-          // ── Step 5: Send email notification ─────────────────────────
-          if (cronJob.emailNotification) {
-            await sendNotificationEmail(
-              cronJob.emailNotification,
-              articleResult.title,
-              wpUrl || '',
-              cronJob.siteName || siteDoc.name || '',
-            );
-          }
+          // ── Step 5: Send notification (in-app + email) ─────────────
+          {
+            // Collect any explicit email recipients from cron job config
+            const recipientEmails: string[] = [];
+            if (cronJob.emailNotification) recipientEmails.push(cronJob.emailNotification);
 
-          // ── Step 6: Create in-app notification ──────────────────────
-          createNotification(cronJob.userId, 'article', {
-            en: 'Cron: Article Published',
-            ja: 'Cron: 記事が公開されました',
-          }, {
-            en: `"${articleResult.title}" was automatically published to ${cronJob.siteName || siteDoc.name || 'your site'}.`,
-            ja: `「${articleResult.title}」が${cronJob.siteName || siteDoc.name || 'サイト'}に自動公開されました。`,
-          }, { actionUrl: '/dashboard/articles' }).catch(() => {});
+            try {
+              await createNotification(cronJob.userId, 'article', {
+                en: 'Cron: Article Published',
+                ja: 'Cron: 記事が公開されました',
+              }, {
+                en: `"${articleResult.title}" was automatically published to ${cronJob.siteName || siteDoc.name || 'your site'}.`,
+                ja: `「${articleResult.title}」が${cronJob.siteName || siteDoc.name || 'サイト'}に自動公開されました。`,
+              }, {
+                actionUrl: '/dashboard/articles',
+                recipientEmails: recipientEmails.length > 0 ? recipientEmails : undefined,
+              });
+            } catch (notifErr) {
+              console.error(`[Cron] Failed to send notification for article "${articleResult.title}":`, notifErr);
+            }
+          }
 
           results.push({
             cronJobId: cronJob._id.toHexString(),
@@ -774,55 +804,6 @@ Return ONLY the article content in Markdown format.`,
     .substring(0, 160);
 
   return { title, content, excerpt };
-}
-
-// ─── Email notification ─────────────────────────────────────────────────────
-
-async function sendNotificationEmail(
-  email: string,
-  articleTitle: string,
-  wpUrl: string,
-  siteName: string,
-): Promise<void> {
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('[Cron] RESEND_API_KEY not set, skipping email notification');
-    return;
-  }
-
-  try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    await resend.emails.send({
-      from: 'RakuBun <notifications@rakubun.com>',
-      to: email,
-      subject: `✅ New article published: ${articleTitle}`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 500px; margin: 0 auto; padding: 40px 20px;">
-          <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 0;">RakuBun</h1>
-          </div>
-          <div style="background: #f8fafc; border-radius: 16px; padding: 32px;">
-            <h2 style="font-size: 18px; font-weight: 600; color: #1a1a1a; margin: 0 0 12px;">Article Published</h2>
-            <p style="font-size: 14px; color: #334155; margin: 0 0 8px; line-height: 1.6;">
-              <strong>${articleTitle}</strong>
-            </p>
-            <p style="font-size: 14px; color: #64748b; margin: 0 0 16px; line-height: 1.6;">
-              Published to <strong>${siteName}</strong> via your scheduled cron job.
-            </p>
-            ${wpUrl ? `<a href="${wpUrl}" style="display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 500;">View Article →</a>` : ''}
-          </div>
-          <p style="font-size: 12px; color: #94a3b8; text-align: center; margin-top: 24px;">
-            This is an automated notification from RakuBun scheduled publishing.
-          </p>
-        </div>
-      `,
-    });
-
-    console.log(`[Cron] Notification email sent to ${email}`);
-  } catch (emailErr) {
-    console.error('[Cron] Failed to send notification email:', emailErr);
-  }
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

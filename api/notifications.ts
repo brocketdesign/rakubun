@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Resend } from 'resend';
 import { ObjectId } from 'mongodb';
+import { createClerkClient } from '@clerk/backend';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 
@@ -432,6 +433,22 @@ async function sendEmailToRecipients(
   }
 }
 
+// ─── Helper: resolve the user's primary email from Clerk ────────────────────
+
+async function resolveUserEmailFromClerk(userId: string): Promise<string | null> {
+  try {
+    const secretKey = process.env.CLERK_SECRET_KEY;
+    if (!secretKey) return null;
+    const clerk = createClerkClient({ secretKey });
+    const user = await clerk.users.getUser(userId);
+    const primary = user.emailAddresses?.find(e => e.id === user.primaryEmailAddressId);
+    return primary?.emailAddress || user.emailAddresses?.[0]?.emailAddress || null;
+  } catch (err) {
+    console.error('resolveUserEmailFromClerk error:', err);
+    return null;
+  }
+}
+
 // ─── Helper: create notification from other API endpoints ───────────────────
 
 export async function createNotification(
@@ -453,12 +470,12 @@ export async function createNotification(
           additionalEmail: settingsDoc.additionalEmail || '',
           preferences: { ...DEFAULT_SETTINGS.preferences, ...settingsDoc.preferences },
         }
-      : DEFAULT_SETTINGS;
+      : { ...DEFAULT_SETTINGS };
 
     const prefKey = TYPE_TO_PREF[type] || 'systemUpdates';
     const pref = settings.preferences[prefKey];
 
-    // Create in-app notification if enabled
+    // Create in-app notification (always, unless explicitly disabled)
     if (pref.inApp) {
       const doc: InAppNotification = {
         userId,
@@ -470,6 +487,7 @@ export async function createNotification(
         createdAt: Date.now(),
       };
       await db.collection('notifications').insertOne(doc);
+      console.log(`[Notification] In-app notification created for user ${userId}: ${title.en}`);
     }
 
     // Send email if enabled
@@ -484,8 +502,35 @@ export async function createNotification(
         }
       }
 
+      // Fallback: if no emails found, try resolving from Clerk
+      if (emails.length === 0) {
+        console.log(`[Notification] No email addresses in settings for user ${userId}, resolving from Clerk...`);
+        const clerkEmail = await resolveUserEmailFromClerk(userId);
+        if (clerkEmail) {
+          emails.push(clerkEmail);
+          console.log(`[Notification] Resolved Clerk email for user ${userId}: ${clerkEmail}`);
+          // Persist it so future notifications don't need to call Clerk
+          await db.collection('notification_settings').updateOne(
+            { userId },
+            { $set: { userId, primaryEmail: clerkEmail, emailEnabled: true, updatedAt: Date.now() } },
+            { upsert: true },
+          );
+        } else {
+          console.warn(`[Notification] No email found for user ${userId} — cannot send email notification`);
+        }
+      }
+
       if (emails.length > 0) {
+        console.log(`[Notification] Sending email to: ${emails.join(', ')}`);
         await sendEmailToRecipients(emails, title.en, message.en, options?.actionUrl);
+      }
+    } else {
+      // Even if email is disabled in preferences, still send to explicitly provided recipientEmails
+      // (e.g. the email set directly on a cron job)
+      const overrideEmails = (options?.recipientEmails || []).filter(e => e && e.includes('@'));
+      if (overrideEmails.length > 0) {
+        console.log(`[Notification] Email prefs disabled but sending to explicit recipients: ${overrideEmails.join(', ')}`);
+        await sendEmailToRecipients(overrideEmails, title.en, message.en, options?.actionUrl);
       }
     }
   } catch (err) {

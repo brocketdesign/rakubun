@@ -44,9 +44,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = (req.query._action as string) || '';
   const siteId = (req.query._siteId as string) || '';
 
-  // OAuth routes (don't require auth header, use state param)
+  // OAuth routes
+  if (action === 'oauth-init') {
+    return handleOAuthInit(req, res); // Returns OAuth URL (requires auth header)
+  }
   if (action === 'oauth') {
-    return handleOAuthInit(req, res);
+    return handleOAuthRedirect(req, res); // Legacy redirect endpoint
   }
   if (action === 'oauth/callback') {
     return handleOAuthCallback(req, res);
@@ -80,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 // ─── OAuth Flow ────────────────────────────────────────────────────────────────
 
 /**
- * Step 1: Initialize OAuth flow - redirect to Google
+ * Step 1a: Initialize OAuth flow - returns OAuth URL for frontend to redirect
  */
 async function handleOAuthInit(req: VercelRequest, res: VercelResponse) {
   try {
@@ -104,14 +107,25 @@ async function handleOAuthInit(req: VercelRequest, res: VercelResponse) {
       state,
     });
 
-    res.redirect(url);
+    return res.status(200).json({ url });
   } catch (err) {
     if (err instanceof AuthError) {
       return res.status(err.status).json({ error: err.message });
     }
-    console.error('[Analytics OAuth]', err);
+    console.error('[Analytics OAuth Init]', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
+}
+
+/**
+ * Step 1b: Legacy OAuth redirect endpoint (redirects to Google directly)
+ * Note: This requires session-based auth since browser redirects don't include Authorization header
+ */
+async function handleOAuthRedirect(req: VercelRequest, res: VercelResponse) {
+  // Redirect to the new flow - this endpoint is deprecated
+  return res.status(400).json({ 
+    error: 'This endpoint requires browser session auth. Use /api/analytics/oauth-init instead.' 
+  });
 }
 
 /**
