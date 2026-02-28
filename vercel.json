@@ -11,6 +11,7 @@
     { "source": "/api/articles/:action", "destination": "/api/articles?_action=:action" },
     { "source": "/api/cron-jobs/:action", "destination": "/api/cron-jobs?_action=:action" },
     { "source": "/api/notifications/:action", "destination": "/api/notifications?_action=:action" },
+    { "source": "/api/analysis/:action", "destination": "/api/analysis?_action=:action" },
     { "source": "/api/research/:action", "destination": "/api/research?_action=:action" },
     { "source": "/api/schedules/:action", "destination": "/api/schedules?_action=:action" },
     { "source": "/api/sites/:id/:subaction", "destination": "/api/sites?_id=:id&_subaction=:subaction" },

@@ -8,10 +8,10 @@ import { authenticateRequest, AuthError } from './lib/auth.js';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID!;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET!;
-const APP_URL = process.env.APP_URL 
+const APP_URL = (process.env.APP_URL 
   || (process.env.VERCEL_PROJECT_PRODUCTION_URL 
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` 
-    : 'http://localhost:3000');
+    : 'http://localhost:3000')).replace(/\/+$/, '');
 
 const REDIRECT_URI = `${APP_URL}/api/analytics/oauth/callback`;
 
