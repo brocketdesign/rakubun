@@ -20,21 +20,99 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
  * Get the current day name and hour in a given IANA timezone.
  * Falls back to UTC if the timezone is invalid.
  */
-function getNowInTimezone(now: Date, timezone: string): { day: string; hour: number } {
+function getNowInTimezone(now: Date, timezone: string): { day: string; hour: number; minute: number } {
   try {
     const dayFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'long' });
     const hourFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', hour12: false });
+    const minuteFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, minute: 'numeric' });
 
     const day = dayFormatter.format(now); // e.g. "Wednesday"
     const hourStr = hourFormatter.format(now); // e.g. "14" or "24" (midnight as 24 in some locales)
     let hour = parseInt(hourStr, 10);
     if (hour === 24) hour = 0;
+    const minute = parseInt(minuteFormatter.format(now), 10) || 0;
 
-    return { day, hour };
+    return { day, hour, minute };
   } catch {
     // Invalid timezone — fall back to UTC
-    return { day: DAY_NAMES[now.getUTCDay()], hour: now.getUTCHours() };
+    return { day: DAY_NAMES[now.getUTCDay()], hour: now.getUTCHours(), minute: now.getUTCMinutes() };
   }
+}
+
+/**
+ * Convert a local date + time string to a UTC Date, given an IANA timezone.
+ * E.g. localToUtc('2026-02-28', '15:00', 'Asia/Tokyo') → Date at 06:00 UTC.
+ */
+function localToUtc(dateStr: string, timeStr: string, timezone: string): Date {
+  // Build a reference date in UTC and use Intl to find the offset
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = (timeStr || '09:00').split(':').map(Number);
+
+  // Start with a rough UTC guess
+  const guess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
+
+  try {
+    // Get the local time at our guess in the target timezone
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false,
+    }).formatToParts(guess);
+
+    const p: Record<string, number> = {};
+    for (const { type, value } of parts) {
+      if (['year', 'month', 'day', 'hour', 'minute', 'second'].includes(type)) {
+        p[type] = parseInt(value, 10);
+      }
+    }
+
+    // Offset = (what we wanted in local) - (what the guess produced in local)
+    const wantedLocalMs = Date.UTC(year, month - 1, day, hour, minute, 0);
+    const guessLocalMs = Date.UTC(p.year, p.month - 1, p.day, p.hour === 24 ? 0 : p.hour, p.minute, p.second);
+    const offsetMs = wantedLocalMs - guessLocalMs;
+
+    return new Date(guess.getTime() + offsetMs);
+  } catch {
+    // If timezone is invalid, treat as UTC
+    return guess;
+  }
+}
+
+/**
+ * Get the UTC start and end of a "local day" in the given timezone.
+ * E.g. for 2026-02-28 in Asia/Tokyo: start = 2026-02-27T15:00:00Z, end = 2026-02-28T14:59:59.999Z
+ */
+function getLocalDayBoundsUtc(now: Date, timezone: string): { start: Date; end: Date } {
+  const localDateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(now); // YYYY-MM-DD
+
+  const start = localToUtc(localDateStr, '00:00', timezone);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1); // 23:59:59.999 local
+  return { start, end };
+}
+
+/**
+ * Resolve timezone for a schedule plan using the associated site.
+ * Falls back to inferring from site language or defaults to UTC.
+ */
+function resolveScheduleTimezone(siteDoc: Record<string, any> | null): string {
+  if (!siteDoc) return 'UTC';
+
+  // 1. Use site's timezone setting
+  const siteTz = siteDoc.settings?.timezone;
+  if (siteTz && siteTz !== 'UTC' && siteTz !== 'utc') {
+    return siteTz;
+  }
+
+  // 2. Infer from site language
+  const lang = (siteDoc.language || '').toLowerCase();
+  if (lang.includes('ja') || lang === 'japanese') {
+    return 'Asia/Tokyo';
+  }
+
+  return 'UTC';
 }
 
 /**
@@ -91,19 +169,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const executionStart = Date.now();
+  const logEntries: string[] = [];
+
+  function log(message: string) {
+    console.log(message);
+    logEntries.push(`${new Date().toISOString()} ${message}`);
+  }
+
+  function logError(message: string, err?: unknown) {
+    const errStr = err instanceof Error ? `${err.message}\n${err.stack}` : String(err || '');
+    const full = errStr ? `${message} ${errStr}` : message;
+    console.error(full);
+    logEntries.push(`${new Date().toISOString()} ERROR: ${full}`);
+  }
+
   try {
     const db = await getDb();
     const cronJobsCol = db.collection('cronJobs');
     const articlesCol = db.collection('articles');
     const sitesCol = db.collection('sites');
     const schedulesCol = db.collection('schedules');
+    const cronLogsCol = db.collection('cronLogs');
 
     const now = new Date();
     const currentDay = DAY_NAMES[now.getUTCDay()];
     const currentHour = now.getUTCHours();
     const currentMinute = now.getUTCMinutes();
 
-    console.log(`[Cron] Running at ${now.toISOString()} — day=${currentDay}, hour=${currentHour}:${String(currentMinute).padStart(2, '0')} UTC`);
+    log(`[Cron] Running at ${now.toISOString()} — day=${currentDay}, hour=${currentHour}:${String(currentMinute).padStart(2, '0')} UTC`);
 
     const results: Array<{ cronJobId: string; topic: string; status: string; articleId?: string; error?: string }> = [];
 
@@ -118,9 +212,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })
         .toArray();
 
-      if (dueArticles.length > 0) {
-        console.log(`[Cron] Found ${dueArticles.length} due scheduled article(s) to publish`);
-      }
+      log(`[Cron] Part 1: Found ${dueArticles.length} due scheduled article(s) to publish`);
 
       for (const article of dueArticles) {
         try {
@@ -142,7 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 },
               },
             );
-            console.log(`[Cron] Marked article ${article._id} as published (already on WP as post ${article.wpPostId})`);
+            log(`[Cron] Marked article ${article._id} as published (already on WP as post ${article.wpPostId})`);
             results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
             continue;
           }
@@ -178,10 +270,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   },
                 },
               );
-              console.log(`[Cron] Published scheduled article ${article._id} to WP: ${wpResult.url}`);
+              log(`[Cron] Published scheduled article ${article._id} to WP: ${wpResult.url}`);
               results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
             } else {
-              console.error(`[Cron] Failed to publish scheduled article ${article._id} to WordPress`);
+              logError(`[Cron] Failed to publish scheduled article ${article._id} to WordPress`);
               results.push({ cronJobId: 'scheduled', topic: article.title, status: 'error', error: 'WordPress publish failed' });
             }
           } else {
@@ -196,7 +288,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 },
               },
             );
-            console.log(`[Cron] Marked article ${article._id} as published (no WP credentials)`);
+            log(`[Cron] Marked article ${article._id} as published (no WP credentials)`);
             results.push({ cronJobId: 'scheduled', topic: article.title, status: 'success', articleId: article._id.toHexString() });
           }
 
@@ -211,11 +303,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 ja: `「${article.title}」が公開されました。`,
               }, { actionUrl: '/dashboard/articles' });
             } catch (notifErr) {
-              console.error(`[Cron] Failed to send notification for scheduled article ${article._id}:`, notifErr);
+              logError(`[Cron] Failed to send notification for scheduled article ${article._id}:`, notifErr);
             }
           }
         } catch (articleErr) {
-          console.error(`[Cron] Error publishing scheduled article ${article._id}:`, articleErr);
+          logError(`[Cron] Error publishing scheduled article ${article._id}:`, articleErr);
           results.push({
             cronJobId: 'scheduled',
             topic: article.title || 'Unknown',
@@ -225,7 +317,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       }
     } catch (scheduledErr) {
-      console.error('[Cron] Error processing scheduled articles:', scheduledErr);
+      logError('[Cron] Error processing scheduled articles:', scheduledErr);
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -236,19 +328,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .find({ status: 'active' })
         .toArray();
 
+      log(`[Cron] Part 2: Found ${activeSchedules.length} active schedule plan(s)`);
+
       for (const schedule of activeSchedules) {
         const topics: Array<{ title: string; description: string; date: string; time: string; generated?: boolean }> = schedule.topics || [];
         let modified = false;
 
+        // Resolve timezone for this schedule's site
+        let scheduleSiteDoc: Record<string, any> | null = null;
+        if (schedule.siteId && ObjectId.isValid(schedule.siteId)) {
+          try {
+            scheduleSiteDoc = await sitesCol.findOne({ _id: new ObjectId(schedule.siteId) });
+          } catch {
+            logError(`[Cron] Invalid siteId ${schedule.siteId} on schedule ${schedule._id}`);
+          }
+        }
+        const scheduleTz = resolveScheduleTimezone(scheduleSiteDoc);
+        log(`[Cron] Schedule ${schedule._id}: ${topics.length} topic(s), tz=${scheduleTz}, site=${scheduleSiteDoc?.name || 'unknown'}`);
+
         for (const topic of topics) {
           if (!topic.date || topic.generated) continue;
 
-          // Build the topic's target datetime
-          const topicDateTime = new Date(`${topic.date}T${topic.time || '09:00'}:00Z`);
-          if (isNaN(topicDateTime.getTime())) continue;
+          // Build the topic's target datetime in the site's local timezone, converted to UTC
+          const topicDateTime = localToUtc(topic.date, topic.time || '09:00', scheduleTz);
+          if (isNaN(topicDateTime.getTime())) {
+            log(`[Cron] Skipping topic "${topic.title}": invalid date/time ${topic.date} ${topic.time}`);
+            continue;
+          }
 
-          // Only process if the topic's time is due (past or within current hour)
-          if (topicDateTime > now) continue;
+          // Only process if the topic's time is due (past or within current window)
+          if (topicDateTime > now) {
+            log(`[Cron] Topic "${topic.title}" not yet due: target=${topicDateTime.toISOString()} (${topic.date} ${topic.time} ${scheduleTz}), now=${now.toISOString()}`);
+            continue;
+          }
+
+          log(`[Cron] Topic "${topic.title}" IS due: target=${topicDateTime.toISOString()} (${topic.date} ${topic.time} ${scheduleTz}), now=${now.toISOString()}`);
 
           // Check dedup: don't generate if an article with this exact plan title already exists
           const existing = await articlesCol.findOne({
@@ -259,28 +373,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           if (existing) {
             topic.generated = true;
             modified = true;
-            console.log(`[Cron] Plan topic "${topic.title}" already generated, skipping`);
+            log(`[Cron] Plan topic "${topic.title}" already generated, skipping`);
             continue;
           }
 
-          // Load the site
-          let siteDoc = null;
-          if (schedule.siteId && ObjectId.isValid(schedule.siteId)) {
-            try {
-              siteDoc = await sitesCol.findOne({ _id: new ObjectId(schedule.siteId) });
-            } catch {
-              console.error(`[Cron] Invalid siteId ${schedule.siteId} on schedule ${schedule._id}`);
-            }
-          }
+          // Use the site doc we already loaded for timezone resolution
+          const siteDoc = scheduleSiteDoc;
 
           if (!siteDoc) {
-            console.error(`[Cron] Site not found for schedule ${schedule._id}, skipping topic "${topic.title}"`);
+            logError(`[Cron] Site not found for schedule ${schedule._id}, skipping topic "${topic.title}"`);            
             results.push({ cronJobId: `plan-${schedule._id}`, topic: topic.title, status: 'error', error: 'Site not found' });
             continue;
           }
 
           try {
-            console.log(`[Cron] Generating article for plan topic: "${topic.title}"`);
+            log(`[Cron] Generating article for plan topic: "${topic.title}"`);            
 
             // Generate article
             const articleResult = await generateArticle({
@@ -321,10 +428,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     thumbnailUrl = finalThumbUrl;
                   }
                 } catch (thumbErr) {
-                  console.error('[Cron] Plan topic thumbnail error:', thumbErr);
+                  logError('[Cron] Plan topic thumbnail error:', thumbErr);
                 }
               } catch (imgError) {
-                console.error('[Cron] Plan topic image generation error:', imgError);
+                logError('[Cron] Plan topic image generation error:', imgError);
               }
             }
 
@@ -385,7 +492,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             topic.generated = true;
             modified = true;
 
-            console.log(`[Cron] Plan topic article saved: ${insertResult.insertedId} — "${articleResult.title}"`);
+            log(`[Cron] Plan topic article saved: ${insertResult.insertedId} — "${articleResult.title}"`);            
             results.push({
               cronJobId: `plan-${schedule._id}`,
               topic: topic.title,
@@ -404,11 +511,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   ja: `「${articleResult.title}」がコンテンツスケジュールから生成・公開されました。`,
                 }, { actionUrl: '/dashboard/articles' });
               } catch (notifErr) {
-                console.error(`[Cron] Failed to send notification for plan topic "${topic.title}":`, notifErr);
+                logError(`[Cron] Failed to send notification for plan topic "${topic.title}":`, notifErr);
               }
             }
           } catch (topicErr) {
-            console.error(`[Cron] Error generating plan topic "${topic.title}":`, topicErr);
+            logError(`[Cron] Error generating plan topic "${topic.title}":`, topicErr);
             results.push({
               cronJobId: `plan-${schedule._id}`,
               topic: topic.title,
@@ -432,11 +539,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             { _id: schedule._id },
             { $set: { status: 'completed', updatedAt: now.toISOString() } },
           );
-          console.log(`[Cron] Schedule ${schedule._id} completed — all topics generated`);
+          log(`[Cron] Schedule ${schedule._id} completed — all topics generated`);
         }
       }
     } catch (planErr) {
-      console.error('[Cron] Error processing schedule plans:', planErr);
+      logError('[Cron] Error processing schedule plans:', planErr);
     }
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -449,9 +556,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .toArray();
 
     if (activeCronJobs.length === 0) {
-      console.log('[Cron] No active cron jobs found.');
+      log('[Cron] Part 3: No active cron jobs found.');
     } else {
-      console.log(`[Cron] Found ${activeCronJobs.length} active cron job(s)`);
+      log(`[Cron] Part 3: Found ${activeCronJobs.length} active cron job(s)`);
     }
 
     for (const cronJob of activeCronJobs) {
@@ -467,9 +574,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Resolve the timezone for this cron job (e.g. Asia/Tokyo for Japanese sites)
       const tz = resolveTimezone(cronJob, cronSiteDoc);
-      const { day: localDay, hour: localHour } = getNowInTimezone(now, tz);
+      const { day: localDay, hour: localHour, minute: localMinute } = getNowInTimezone(now, tz);
 
-      console.log(`[Cron] Job ${cronJob._id} (${cronJob.siteName}) — tz=${tz}, localDay=${localDay}, localHour=${localHour}`);
+      log(`[Cron] Job ${cronJob._id} (${cronJob.siteName}) — tz=${tz}, localDay=${localDay}, localTime=${localHour}:${String(localMinute).padStart(2, '0')}`);
 
       // Find slots that match today's day in the LOCAL timezone
       const todaySlots = schedule.filter(
@@ -488,9 +595,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Check if we already processed this slot today (dedup)
         // "Today" is based on the LOCAL timezone so we don't miss or double-process across date boundaries
-        const localDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now); // YYYY-MM-DD
-        const todayLocalStart = new Date(`${localDateStr}T00:00:00.000Z`);
-        const todayLocalEnd = new Date(`${localDateStr}T23:59:59.999Z`);
+        const { start: todayLocalStart, end: todayLocalEnd } = getLocalDayBoundsUtc(now, tz);
 
         const existing = await articlesCol.findOne({
           cronJobId: cronJob._id.toHexString(),
@@ -499,7 +604,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
 
         if (existing) {
-          console.log(`[Cron] Already processed slot ${slot.day} ${slot.time} for cron job ${cronJob._id}`);
+          log(`[Cron] Already processed slot ${slot.day} ${slot.time} for cron job ${cronJob._id}`);
           results.push({ cronJobId: cronJob._id.toHexString(), topic: slot.articleType, status: 'skipped-duplicate' });
           continue;
         }
@@ -508,7 +613,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const siteDoc = cronSiteDoc;
 
         if (!siteDoc) {
-          console.error(`[Cron] Site not found: ${cronJob.siteId}`);
+          logError(`[Cron] Site not found: ${cronJob.siteId}`);
           results.push({ cronJobId: cronJob._id.toHexString(), topic: slot.articleType, status: 'error', error: 'Site not found' });
           continue;
         }
@@ -555,7 +660,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   thumbnailUrl = finalThumbUrl;
                 }
               } catch (thumbErr) {
-                console.error('[Cron] Thumbnail generation error:', thumbErr);
+                logError('[Cron] Thumbnail generation error:', thumbErr);
               }
 
               // Generate in-article images
@@ -603,7 +708,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 articleResult.content = newSections.join('\n');
               }
             } catch (imgError) {
-              console.error('[Cron] Image generation error:', imgError);
+              logError('[Cron] Image generation error:', imgError);
             }
           }
 
@@ -630,9 +735,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             if (wpResult) {
               wpPostId = wpResult.wpPostId;
               wpUrl = wpResult.url;
-              console.log(`[Cron] Published to WP: ${wpUrl}`);
+              log(`[Cron] Published to WP: ${wpUrl}`);
             } else {
-              console.error('[Cron] Failed to publish to WordPress');
+              logError('[Cron] Failed to publish to WordPress');
             }
           }
 
@@ -677,10 +782,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               { $inc: { articlesGenerated: 1 } },
             );
           } catch (e) {
-            console.error('[Cron] Failed to increment articlesGenerated:', e);
+            logError('[Cron] Failed to increment articlesGenerated:', e);
           }
 
-          console.log(`[Cron] Article saved: ${articleId} — "${articleResult.title}"`);
+          log(`[Cron] Article saved: ${articleId} — "${articleResult.title}"`);            
 
           // ── Step 5: Send notification (in-app + email) ─────────────
           {
@@ -700,7 +805,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 recipientEmails: recipientEmails.length > 0 ? recipientEmails : undefined,
               });
             } catch (notifErr) {
-              console.error(`[Cron] Failed to send notification for article "${articleResult.title}":`, notifErr);
+              logError(`[Cron] Failed to send notification for article "${articleResult.title}":`, notifErr);
             }
           }
 
@@ -711,7 +816,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             articleId,
           });
         } catch (slotError) {
-          console.error(`[Cron] Error processing slot ${slot.day} ${slot.time}:`, slotError);
+          logError(`[Cron] Error processing slot ${slot.day} ${slot.time}:`, slotError);
           results.push({
             cronJobId: cronJob._id.toHexString(),
             topic: slot.articleType,
@@ -726,7 +831,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const failed = results.filter((r) => r.status === 'error').length;
     const skipped = results.filter((r) => r.status === 'skipped-duplicate').length;
 
-    console.log(`[Cron] Done. Succeeded: ${succeeded}, Failed: ${failed}, Skipped: ${skipped}`);
+    log(`[Cron] Done. Succeeded: ${succeeded}, Failed: ${failed}, Skipped: ${skipped}`);
+
+    // Persist execution log to MongoDB for debugging
+    const executionMs = Date.now() - executionStart;
+    try {
+      await cronLogsCol.insertOne({
+        executedAt: now.toISOString(),
+        durationMs: executionMs,
+        processed: results.length,
+        succeeded,
+        failed,
+        skipped,
+        results,
+        logs: logEntries,
+        createdAt: new Date().toISOString(),
+      });
+      // Keep only the last 200 log entries to prevent unbounded growth
+      const logCount = await cronLogsCol.countDocuments();
+      if (logCount > 200) {
+        const oldest = await cronLogsCol.find().sort({ createdAt: 1 }).limit(logCount - 200).toArray();
+        if (oldest.length > 0) {
+          await cronLogsCol.deleteMany({ _id: { $in: oldest.map(o => o._id) } });
+        }
+      }
+    } catch (logErr) {
+      console.error('[Cron] Failed to persist execution log:', logErr);
+    }
 
     return res.status(200).json({
       message: 'Cron execution complete',
@@ -737,7 +868,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       results,
     });
   } catch (err) {
-    console.error('[Cron] Fatal error:', err);
+    logError('[Cron] Fatal error:', err);
+
+    // Try to persist error log even on fatal failure
+    try {
+      const db = await getDb();
+      await db.collection('cronLogs').insertOne({
+        executedAt: new Date().toISOString(),
+        durationMs: Date.now() - executionStart,
+        processed: 0,
+        succeeded: 0,
+        failed: 1,
+        skipped: 0,
+        results: [],
+        logs: logEntries,
+        fatalError: err instanceof Error ? err.message : String(err),
+        createdAt: new Date().toISOString(),
+      });
+    } catch { /* ignore */ }
+
     return res.status(500).json({ error: 'Cron execution failed' });
   }
 }

@@ -36,6 +36,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return handleCronJobsIndex(req, res);
     case 'generate-schedule':
       return handleGenerateSchedule(req, res);
+    case 'logs':
+      return handleCronLogs(req, res);
     default:
       // Treat as cron job ID
       return handleCronJobById(req, res, action);
@@ -346,6 +348,49 @@ The "schedule" array must contain exactly ${articlesPerWeek} items:
       return res.status(err.status).json({ error: err.message });
     }
     console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// ─── cron execution logs ────────────────────────────────────────────────────
+
+async function handleCronLogs(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    await authenticateRequest(req);
+    const db = await getDb();
+    const cronLogsCol = db.collection('cronLogs');
+
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const logs = await cronLogsCol
+      .find({})
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .toArray();
+
+    const mapped = logs.map((l) => ({
+      id: l._id.toString(),
+      executedAt: l.executedAt,
+      durationMs: l.durationMs,
+      processed: l.processed,
+      succeeded: l.succeeded,
+      failed: l.failed,
+      skipped: l.skipped,
+      results: l.results || [],
+      logs: l.logs || [],
+      fatalError: l.fatalError || null,
+      createdAt: l.createdAt,
+    }));
+
+    return res.status(200).json({ logs: mapped });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    console.error('[CronLogs]', err);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

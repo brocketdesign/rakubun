@@ -6,7 +6,17 @@
     <title>RakuBun.com - AI Auto-Publishing Platform</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-React loading indicator — removed automatically once React mounts -->
+      <div id="initial-loader" style="display:flex;align-items:center;justify-content:center;height:100vh;background:#f3f4f7;">
+        <style>
+          @media(prefers-color-scheme:dark){#initial-loader{background:#181a20!important}}
+          @keyframes spin{to{transform:rotate(360deg)}}
+          #initial-loader svg{width:32px;height:32px;animation:spin .8s linear infinite;color:#2B6BFF}
+        </style>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 12a8 8 0 0 1 8-8" /></svg>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

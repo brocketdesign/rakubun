@@ -23,11 +23,13 @@ import {
   Save,
   Zap,
   FileEdit,
+  ScrollText,
 } from 'lucide-react';
 import { useAuth } from '@clerk/clerk-react';
 import { useLanguage } from '../../i18n';
 import { useSites, sitesActions } from '../../stores/sitesStore';
 import { SiteSelector } from '../../components/SiteSelector';
+import { createApiClient } from '../../lib/api';
 import {
   useCronJobs,
   useCronJobsLoading,
@@ -288,6 +290,12 @@ export default function CronSchedulerPage() {
   // Copied state for cron ID
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Cron execution logs
+  const [showLogs, setShowLogs] = useState(false);
+  const [cronLogs, setCronLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
+
   // ─── Load data on mount ─────────────────────────────────────────────
   useEffect(() => {
     if (!sitesActions.isLoaded() && !sitesActions.isLoading()) {
@@ -297,6 +305,20 @@ export default function CronSchedulerPage() {
       cronJobsActions.loadCronJobs(getToken);
     }
   }, [getToken]);
+
+  // ─── Fetch cron logs ────────────────────────────────────────────────
+  const fetchCronLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const api = createApiClient(getToken);
+      const data = await api.get<{ logs: any[] }>('/api/cron-jobs/logs?limit=20');
+      setCronLogs(data.logs || []);
+    } catch (err) {
+      console.error('Failed to load cron logs:', err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
 
   // ─── Site name lookup ───────────────────────────────────────────────
 
@@ -844,6 +866,140 @@ export default function CronSchedulerPage() {
             </div>
           )}
           {activeJobs.map((job) => renderJobCard(job))}
+        </div>
+      )}
+
+      {/* Execution Logs Section */}
+      {!cronJobsLoading && cronJobs.length > 0 && (
+        <div className="space-y-3">
+          <button
+            onClick={() => {
+              const next = !showLogs;
+              setShowLogs(next);
+              if (next && cronLogs.length === 0) fetchCronLogs();
+            }}
+            className="flex items-center gap-2 text-sm font-semibold text-rakubun-text hover:text-rakubun-accent transition-colors"
+          >
+            <ScrollText className="w-4 h-4" />
+            {language === 'en' ? 'Execution Logs' : '実行ログ'}
+            {showLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {showLogs && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-rakubun-text-secondary">
+                  {language === 'en' ? 'Recent cron executions (stored in database)' : '最近のcron実行ログ（データベースに保存）'}
+                </p>
+                <button
+                  onClick={fetchCronLogs}
+                  disabled={logsLoading}
+                  className="text-xs text-rakubun-accent hover:underline disabled:opacity-50"
+                >
+                  {logsLoading ? (language === 'en' ? 'Loading...' : '読み込み中...') : (language === 'en' ? 'Refresh' : '更新')}
+                </button>
+              </div>
+
+              {logsLoading && cronLogs.length === 0 && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-rakubun-accent" />
+                </div>
+              )}
+
+              {!logsLoading && cronLogs.length === 0 && (
+                <div className="bg-rakubun-surface border border-rakubun-border rounded-xl p-6 text-center">
+                  <p className="text-sm text-rakubun-text-secondary">
+                    {language === 'en' ? 'No execution logs yet. Logs will appear after the next cron run.' : 'まだ実行ログがありません。次のcron実行後に表示されます。'}
+                  </p>
+                </div>
+              )}
+
+              {cronLogs.map((entry) => {
+                const isExpanded = expandedLogId === entry.id;
+                const hasErrors = entry.failed > 0 || entry.fatalError;
+                const executedDate = new Date(entry.executedAt);
+
+                return (
+                  <div
+                    key={entry.id}
+                    className={`bg-rakubun-surface border rounded-xl overflow-hidden ${
+                      hasErrors ? 'border-red-300 dark:border-red-500/30' : 'border-rakubun-border'
+                    }`}
+                  >
+                    <button
+                      onClick={() => setExpandedLogId(isExpanded ? null : entry.id)}
+                      className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-rakubun-bg/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          entry.fatalError ? 'bg-red-500' :
+                          entry.failed > 0 ? 'bg-amber-500' :
+                          entry.succeeded > 0 ? 'bg-emerald-500' : 'bg-gray-400'
+                        }`} />
+                        <div>
+                          <p className="text-sm font-medium text-rakubun-text">
+                            {executedDate.toLocaleString(language === 'ja' ? 'ja-JP' : 'en-US', {
+                              month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short'
+                            })}
+                          </p>
+                          <p className="text-xs text-rakubun-text-secondary">
+                            {entry.durationMs ? `${(entry.durationMs / 1000).toFixed(1)}s` : '—'}
+                            {' · '}
+                            <span className="text-emerald-600 dark:text-emerald-400">{entry.succeeded} {language === 'en' ? 'ok' : '成功'}</span>
+                            {entry.failed > 0 && <>{' · '}<span className="text-red-600 dark:text-red-400">{entry.failed} {language === 'en' ? 'failed' : '失敗'}</span></>}
+                            {entry.skipped > 0 && <>{' · '}<span className="text-rakubun-text-secondary">{entry.skipped} {language === 'en' ? 'skipped' : 'スキップ'}</span></>}
+                          </p>
+                        </div>
+                      </div>
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-rakubun-text-secondary" /> : <ChevronDown className="w-4 h-4 text-rakubun-text-secondary" />}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="border-t border-rakubun-border px-4 py-3 space-y-3">
+                        {entry.fatalError && (
+                          <div className="flex items-start gap-2 p-2.5 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+                            <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-red-700 dark:text-red-300 font-mono break-all">{entry.fatalError}</p>
+                          </div>
+                        )}
+
+                        {entry.results?.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-rakubun-text-secondary mb-1.5">{language === 'en' ? 'Results' : '結果'}</p>
+                            <div className="space-y-1">
+                              {entry.results.map((r: any, i: number) => (
+                                <div key={i} className="flex items-center gap-2 text-xs">
+                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                    r.status === 'success' ? 'bg-emerald-500' :
+                                    r.status === 'error' ? 'bg-red-500' : 'bg-gray-400'
+                                  }`} />
+                                  <span className="text-rakubun-text truncate">{r.topic}</span>
+                                  <span className={`shrink-0 ${
+                                    r.status === 'success' ? 'text-emerald-600 dark:text-emerald-400' :
+                                    r.status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-rakubun-text-secondary'
+                                  }`}>{r.status}</span>
+                                  {r.error && <span className="text-red-500 truncate">({r.error})</span>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {entry.logs?.length > 0 && (
+                          <div>
+                            <p className="text-xs font-medium text-rakubun-text-secondary mb-1.5">{language === 'en' ? 'Detailed Log' : '詳細ログ'}</p>
+                            <pre className="text-[11px] leading-relaxed text-rakubun-text-secondary bg-rakubun-bg rounded-lg p-3 overflow-x-auto max-h-80 font-mono whitespace-pre-wrap break-all">
+                              {entry.logs.join('\n')}
+                            </pre>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

@@ -18,6 +18,12 @@ gsap.registerPlugin(ScrollTrigger);
 export default function LandingPage() {
   const mainRef = useRef<HTMLDivElement>(null);
 
+  // Reset scroll position to prevent GSAP scrub animations restoring mid-state
+  // (which can leave pinned-section elements at opacity: 0)
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       const pinned = ScrollTrigger.getAll()
