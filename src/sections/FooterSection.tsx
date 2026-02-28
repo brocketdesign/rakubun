@@ -2,6 +2,7 @@ import { useRef, useLayoutEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -33,11 +34,23 @@ const FooterSection = () => {
     return () => ctx.revert();
   }, []);
 
-  const footerLinks: Record<string, string[]> = {};
+  const footerLinks: Record<string, { label: string; href?: string }[]> = {};
   const categoryNames = Object.keys(t.footer.links);
   const categoryLabels = [t.footer.linkCategories.product, t.footer.linkCategories.company, t.footer.linkCategories.legal];
+
+  // Map for links that should route to internal pages
+  const linkRoutes: Record<string, string> = {
+    Privacy: '/privacy-policy',
+    'プライバシー': '/privacy-policy',
+    Terms: '/user-policy',
+    '利用規約': '/user-policy',
+  };
+
   categoryNames.forEach((key, i) => {
-    footerLinks[categoryLabels[i]] = t.footer.links[key];
+    footerLinks[categoryLabels[i]] = t.footer.links[key].map((label: string) => ({
+      label,
+      href: linkRoutes[label],
+    }));
   });
 
   return (
@@ -86,13 +99,22 @@ const FooterSection = () => {
               <h4 className="text-sm font-medium mb-4">{category}</h4>
               <ul className="space-y-2">
                 {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-sm text-[#A9B3C2] hover:text-white transition-colors"
-                    >
-                      {link}
-                    </a>
+                  <li key={link.label}>
+                    {link.href ? (
+                      <Link
+                        to={link.href}
+                        className="text-sm text-[#A9B3C2] hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href="#"
+                        className="text-sm text-[#A9B3C2] hover:text-white transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

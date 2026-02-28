@@ -16,6 +16,8 @@ import SettingsPage from './pages/dashboard/SettingsPage';
 import BillingPage from './pages/dashboard/BillingPage';
 import DocumentationPage from './pages/dashboard/DocumentationPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import UserPolicyPage from './pages/UserPolicyPage';
 import './App.css';
 
 function App() {
@@ -24,6 +26,10 @@ function App() {
       <Routes>
         {/* Landing Page */}
         <Route path="/" element={<LandingPage />} />
+
+        {/* Legal Pages */}
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+        <Route path="/user-policy" element={<UserPolicyPage />} />
 
         {/* Auth Pages */}
         <Route
