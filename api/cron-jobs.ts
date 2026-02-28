@@ -7,6 +7,23 @@ import { fetchWithRetry } from './lib/wordpress.js';
 import { randomUUID } from 'crypto';
 import { enforceCronJobAccess, FeatureGateError } from './lib/subscription.js';
 
+/** Snap a time string (HH:MM) to the nearest 30-minute mark */
+function snapTimeTo30Min(time: string): string {
+  const [h, m] = (time || '09:00').split(':').map(Number);
+  const snapped = m < 15 ? '00' : m < 45 ? '30' : '00';
+  const snappedH = m >= 45 ? (h + 1) % 24 : h;
+  return `${String(snappedH).padStart(2, '0')}:${snapped}`;
+}
+
+/** Validate and snap all schedule slot times to 30-minute intervals */
+function sanitizeScheduleSlots(schedule: any[]): any[] {
+  if (!Array.isArray(schedule)) return [];
+  return schedule.map(slot => ({
+    ...slot,
+    time: snapTimeTo30Min(slot.time),
+  }));
+}
+
 export const config = {
   maxDuration: 60,
 };
@@ -90,7 +107,7 @@ async function handleCronJobsIndex(req: VercelRequest, res: VercelResponse) {
         siteId,
         siteName: siteName || '',
         siteUrl: siteUrl || '',
-        schedule: schedule || [],
+        schedule: sanitizeScheduleSlots(schedule || []),
         language: language || 'ja',
         wordCountMin: wordCountMin || 1000,
         wordCountMax: wordCountMax || 1500,
@@ -156,7 +173,7 @@ async function handleCronJobById(req: VercelRequest, res: VercelResponse, id: st
       const $set: Record<string, unknown> = { updatedAt: new Date().toISOString() };
       for (const field of allowedFields) {
         if (updates[field] !== undefined) {
-          $set[field] = updates[field];
+          $set[field] = field === 'schedule' ? sanitizeScheduleSlots(updates[field]) : updates[field];
         }
       }
 

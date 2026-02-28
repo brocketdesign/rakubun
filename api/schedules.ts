@@ -4,6 +4,14 @@ import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 import { enforceScheduleLimit, FeatureGateError } from './lib/subscription.js';
 
+/** Snap a time string (HH:MM) to the nearest 30-minute mark */
+function snapTimeTo30Min(time: string): string {
+  const [h, m] = (time || '09:00').split(':').map(Number);
+  const snapped = m < 15 ? '00' : m < 45 ? '30' : '00';
+  const snappedH = m >= 45 ? (h + 1) % 24 : h;
+  return `${String(snappedH).padStart(2, '0')}:${snapped}`;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const action = (req.query._action as string) || '';
 
@@ -66,7 +74,7 @@ async function handleSchedulesIndex(req: VercelRequest, res: VercelResponse) {
           title: t.title || '',
           description: t.description || '',
           date: t.date || t.suggestedDate || '',
-          time: t.time || '09:00',
+          time: snapTimeTo30Min(t.time || '09:00'),
         })),
         status: 'active',
         createdAt: now,
@@ -116,7 +124,12 @@ async function handleScheduleById(req: VercelRequest, res: VercelResponse, id: s
       const { status, topics } = req.body || {};
       const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
       if (status) updates.status = status;
-      if (topics) updates.topics = topics;
+      if (topics && Array.isArray(topics)) {
+        updates.topics = topics.map((t: any) => ({
+          ...t,
+          time: snapTimeTo30Min(t.time || '09:00'),
+        }));
+      }
 
       const result = await collection.findOneAndUpdate(
         { _id: objectId, userId },

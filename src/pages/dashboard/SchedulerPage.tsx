@@ -453,9 +453,17 @@ export default function SchedulerPage() {
     }
   };
 
+  const snapTo30Min = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    const snapped = m < 15 ? '00' : m < 45 ? '30' : '00';
+    const snappedH = m >= 45 ? (h + 1) % 24 : h;
+    return `${String(snappedH).padStart(2, '0')}:${snapped}`;
+  };
+
   const updateTopic = (topicId: string, field: 'date' | 'time', value: string) => {
+    const finalValue = field === 'time' ? snapTo30Min(value) : value;
     setSuggestedTopics(prev =>
-      prev.map(t => t.id === topicId ? { ...t, [field]: value } : t)
+      prev.map(t => t.id === topicId ? { ...t, [field]: finalValue } : t)
     );
   };
 
@@ -1071,6 +1079,7 @@ export default function SchedulerPage() {
                             </label>
                             <input
                               type="time"
+                              step="1800"
                               value={topic.time}
                               onChange={(e) => updateTopic(topic.id, 'time', e.target.value)}
                               className="w-full px-2 py-1.5 bg-rakubun-surface rounded-lg text-xs text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20"
@@ -1243,6 +1252,7 @@ export default function SchedulerPage() {
                 </label>
                 <input
                   type="datetime-local"
+                  step="1800"
                   value={scheduleDate}
                   onChange={(e) => setScheduleDate(e.target.value)}
                   className="w-full px-4 py-2.5 bg-rakubun-bg rounded-xl text-sm text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 transition-all"
@@ -1317,6 +1327,7 @@ export default function SchedulerPage() {
                 </label>
                 <input
                   type="time"
+                  step="1800"
                   value={rescheduleTime}
                   onChange={(e) => setRescheduleTime(e.target.value)}
                   className="w-full px-4 py-2.5 bg-rakubun-bg rounded-xl text-sm text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 transition-all"

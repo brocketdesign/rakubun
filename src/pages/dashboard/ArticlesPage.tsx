@@ -1285,6 +1285,7 @@ export default function ArticlesPage() {
             </label>
             <input
               type="datetime-local"
+              step="1800"
               value={scheduleDate}
               onChange={(e) => setScheduleDate(e.target.value)}
               className="w-full px-4 py-2.5 bg-rakubun-bg rounded-xl text-sm text-rakubun-text border border-rakubun-border focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 mb-4"

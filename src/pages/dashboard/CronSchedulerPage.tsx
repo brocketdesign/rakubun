@@ -131,9 +131,18 @@ function ScheduleRow({
     setLocalType(item.articleType);
   }, [item.articleType]);
 
+  const snapTo30Min = (t: string) => {
+    const [h, m] = t.split(':').map(Number);
+    const snapped = m < 15 ? '00' : m < 45 ? '30' : '00';
+    const snappedH = m >= 45 ? (h + 1) % 24 : h;
+    return `${String(snappedH).padStart(2, '0')}:${snapped}`;
+  };
+
   const commitTime = () => {
-    if (localTime && localTime !== item.time) {
-      onUpdate(index, { time: localTime });
+    const snapped = snapTo30Min(localTime);
+    setLocalTime(snapped);
+    if (snapped !== item.time) {
+      onUpdate(index, { time: snapped });
     }
     setEditingTime(false);
   };
@@ -185,6 +194,7 @@ function ScheduleRow({
         {editable && editingTime ? (
           <input
             type="time"
+            step="1800"
             value={localTime}
             onChange={(e) => setLocalTime(e.target.value)}
             onBlur={commitTime}
