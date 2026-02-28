@@ -9,7 +9,7 @@ import { enforceArticleLimit, incrementArticleUsage, FeatureGateError } from './
 import { createNotification } from './notifications.js';
 
 export const config = {
-  maxDuration: 60,
+  maxDuration: 300, // Background work (AI + images + WP) runs via waitUntil after the 202 response
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

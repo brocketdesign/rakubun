@@ -595,10 +595,10 @@ export default function ArticlesPage() {
       </div>
 
       {/* Filters & Sort Bar */}
-      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-4">
-        <div className="flex items-center gap-4 flex-wrap">
+      <div className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-3 sm:p-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-0 w-full sm:min-w-[200px] sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-rakubun-text-secondary" />
             <input
               type="text"
@@ -610,12 +610,12 @@ export default function ArticlesPage() {
           </div>
 
           {/* Status Filters */}
-          <div className="flex items-center gap-1 bg-rakubun-bg rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-rakubun-bg rounded-xl p-1 overflow-x-auto max-w-full">
             {statusFilters.map((filter) => (
               <button
                 key={filter}
                 onClick={() => setActiveFilter(filter)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
                   activeFilter === filter
                     ? 'bg-rakubun-surface text-rakubun-text shadow-sm'
                     : 'text-rakubun-text-secondary hover:text-rakubun-text'
@@ -631,7 +631,7 @@ export default function ArticlesPage() {
           </div>
 
           {/* Sort */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 w-full sm:w-auto">
             {(
               [
                 { field: 'createdAt' as SortField, label: language === 'en' ? 'Date' : '日付' },
@@ -725,13 +725,13 @@ export default function ArticlesPage() {
           return (
             <div
               key={article.id}
-              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-5 hover:shadow-md transition-all duration-300 group cursor-pointer"
+              className="bg-rakubun-surface rounded-2xl border border-rakubun-border p-3 sm:p-5 hover:shadow-md transition-all duration-300 group cursor-pointer"
               onClick={() => openEditArticle(article)}
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-3 sm:gap-4">
                 {/* Thumbnail */}
                 {article.thumbnailUrl && (
-                  <div className="w-20 h-14 rounded-xl overflow-hidden shrink-0 bg-rakubun-bg">
+                  <div className="hidden sm:block w-20 h-14 rounded-xl overflow-hidden shrink-0 bg-rakubun-bg">
                     <img
                       src={article.thumbnailUrl}
                       alt=""
@@ -770,7 +770,7 @@ export default function ArticlesPage() {
                   <p className="text-sm text-rakubun-text-secondary mt-1 line-clamp-1">
                     {article.excerpt}
                   </p>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-rakubun-text-secondary">
+                  <div className="flex items-center flex-wrap gap-2 sm:gap-4 mt-3 text-xs text-rakubun-text-secondary">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {formatDate(article.createdAt, language)}
@@ -823,7 +823,7 @@ export default function ArticlesPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -901,13 +901,13 @@ export default function ArticlesPage() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
           <div className="bg-rakubun-surface rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-5xl max-h-[95vh] sm:max-h-[92vh] flex flex-col overflow-hidden">
             {/* Editor Header */}
-            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-rakubun-border shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-xl bg-rakubun-accent/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-rakubun-border shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 rounded-xl bg-rakubun-accent/10 shrink-0">
                   <FileText className="w-4 h-4 text-rakubun-accent" />
                 </div>
-                <div>
-                  <h3 className="font-heading font-semibold text-rakubun-text">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-semibold text-rakubun-text text-sm sm:text-base truncate">
                     {editingArticle
                       ? language === 'en'
                         ? 'Edit Article'
@@ -917,52 +917,52 @@ export default function ArticlesPage() {
                         : '新しい記事'}
                   </h3>
                   {editingArticle && (
-                    <p className="text-xs text-rakubun-text-secondary">
+                    <p className="text-[11px] sm:text-xs text-rakubun-text-secondary truncate">
                       {language === 'en' ? 'Last updated:' : '最終更新:'}{' '}
                       {formatDate(editingArticle.updatedAt, language)}
                     </p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 self-end sm:self-auto">
                 <button
                   onClick={() => setShowPreview(!showPreview)}
-                  className={`btn-secondary text-xs py-1.5 px-3 ${showPreview ? 'bg-rakubun-accent/10 text-rakubun-accent' : ''}`}
+                  className={`btn-secondary text-xs py-1.5 px-2 sm:px-3 ${showPreview ? 'bg-rakubun-accent/10 text-rakubun-accent' : ''}`}
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  {language === 'en' ? 'Preview' : 'プレビュー'}
+                  <span className="hidden sm:inline">{language === 'en' ? 'Preview' : 'プレビュー'}</span>
                 </button>
                 <button
                   onClick={handleSaveDraft}
                   disabled={isSavingDraft || isPublishing}
-                  className="btn-secondary text-xs py-1.5 px-3"
+                  className="btn-secondary text-xs py-1.5 px-2 sm:px-3"
                 >
                   {isSavingDraft ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <FileText className="w-3.5 h-3.5" />
                   )}
-                  {language === 'en' ? 'Save Draft' : '下書き保存'}
+                  <span className="hidden sm:inline">{language === 'en' ? 'Save Draft' : '下書き保存'}</span>
                 </button>
                 <button
                   onClick={() => setShowSchedule(true)}
-                  className="btn-secondary text-xs py-1.5 px-3"
+                  className="btn-secondary text-xs py-1.5 px-2 sm:px-3"
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  {language === 'en' ? 'Schedule' : '予約'}
+                  <span className="hidden sm:inline">{language === 'en' ? 'Schedule' : '予約'}</span>
                 </button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
                       disabled={isSavingDraft || isPublishing}
-                      className="btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5"
+                      className="btn-primary text-xs py-1.5 px-2 sm:px-3 flex items-center gap-1.5"
                     >
                       {isPublishing ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       ) : (
                         <Send className="w-3.5 h-3.5" />
                       )}
-                      {language === 'en' ? 'Send to Blog' : 'ブログへ送信'}
+                      <span className="hidden sm:inline">{language === 'en' ? 'Send to Blog' : 'ブログへ送信'}</span>
                       <ChevronDown className="w-3.5 h-3.5 opacity-70" />
                     </button>
                   </DropdownMenuTrigger>
@@ -987,7 +987,7 @@ export default function ArticlesPage() {
             </div>
 
             {/* Editor Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
               {/* AI Generate Panel (collapsible) */}
               <div className="rounded-2xl border border-purple-200 dark:border-purple-500/30 overflow-hidden">
                 <button
@@ -1010,7 +1010,7 @@ export default function ArticlesPage() {
                       <label className="block text-xs font-medium text-purple-700 dark:text-purple-300 mb-1.5">
                         {language === 'en' ? 'Article Topic' : '記事のトピック'}
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2">
                         <input
                           type="text"
                           value={prompt}
@@ -1026,7 +1026,7 @@ export default function ArticlesPage() {
                         <button
                           onClick={handleGenerate}
                           disabled={isGenerating || !prompt}
-                          className="px-5 py-2.5 rounded-xl text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                          className="w-full sm:w-auto px-5 py-2.5 rounded-xl text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                         >
                           {isGenerating ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -1137,7 +1137,7 @@ export default function ArticlesPage() {
               </div>
 
               {/* Site & Category Selectors */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-rakubun-text-secondary mb-1.5">
                     {language === 'en' ? 'Target Site' : '対象サイト'}
@@ -1206,11 +1206,11 @@ export default function ArticlesPage() {
                 value={editorTitle}
                 onChange={(e) => setEditorTitle(e.target.value)}
                 placeholder={language === 'en' ? 'Article Title' : '記事タイトル'}
-                className="w-full text-2xl font-heading font-bold text-rakubun-text placeholder:text-rakubun-text-secondary/40 outline-none border-0 bg-transparent"
+                className="w-full text-xl sm:text-2xl font-heading font-bold text-rakubun-text placeholder:text-rakubun-text-secondary/40 outline-none border-0 bg-transparent"
               />
 
               {/* Word count & SEO info bar */}
-              <div className="flex items-center gap-4 text-xs text-rakubun-text-secondary bg-rakubun-bg rounded-xl px-4 py-2.5">
+              <div className="flex items-center flex-wrap gap-2 sm:gap-4 text-xs text-rakubun-text-secondary bg-rakubun-bg rounded-xl px-3 sm:px-4 py-2.5">
                 <span>
                   {wordCount.toLocaleString()} {language === 'en' ? 'words' : '語'}
                 </span>

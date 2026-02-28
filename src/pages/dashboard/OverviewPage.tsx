@@ -136,7 +136,7 @@ export default function OverviewPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-[1400px]">
+    <div className="space-y-6 max-w-[1400px] mx-auto">
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-rakubun-accent to-blue-400 rounded-2xl p-4 sm:p-6 text-white">
         <h2 className="text-xl sm:text-2xl font-heading font-bold">
@@ -216,7 +216,7 @@ export default function OverviewPage() {
                   <div
                     key={article.id}
                     onClick={() => navigate('/dashboard/articles')}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-rakubun-bg/50 transition-colors cursor-pointer"
+                    className="flex items-center gap-3 sm:gap-4 px-3 sm:px-5 py-3.5 hover:bg-rakubun-bg/50 transition-colors cursor-pointer"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-rakubun-text truncate">{article.title}</p>
@@ -233,7 +233,7 @@ export default function OverviewPage() {
                       <span>{statusCfg.label[language]}</span>
                     </div>
                     {article.views > 0 && (
-                      <span className="text-xs text-rakubun-text-secondary tabular-nums shrink-0 w-12 text-right">
+                      <span className="text-xs text-rakubun-text-secondary tabular-nums shrink-0 w-12 text-right hidden sm:inline-flex items-center gap-0.5">
                         {formatViews(article.views)} <Eye className="w-3 h-3 inline" />
                       </span>
                     )}
@@ -257,7 +257,7 @@ export default function OverviewPage() {
                   key={action.label.en}
                   onClick={() => navigate(action.path)}
                   className={`
-                    flex flex-col items-center gap-2 p-3 rounded-xl text-xs font-medium
+                    flex flex-col items-center gap-2 p-3.5 sm:p-3 rounded-xl text-xs font-medium min-h-[48px] justify-center
                     ${action.color} hover:opacity-90 transition-all duration-200
                     hover:-translate-y-0.5 hover:shadow-md
                   `}

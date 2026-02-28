@@ -661,7 +661,7 @@ export default function SchedulerPage() {
           {/* Day Headers */}
           <div className="grid grid-cols-7 border-b border-rakubun-border">
             {daysOfWeek[language].map((day) => (
-              <div key={day} className="py-3 text-center text-xs font-medium text-rakubun-text-secondary">
+              <div key={day} className="py-2 sm:py-3 text-center text-[10px] sm:text-xs font-medium text-rakubun-text-secondary">
                 {day}
               </div>
             ))}
@@ -679,7 +679,7 @@ export default function SchedulerPage() {
                   key={i}
                   onClick={() => day && setSelectedDate(day)}
                   className={`
-                    min-h-[100px] p-2 border-b border-r border-rakubun-border cursor-pointer
+                    min-h-[60px] sm:min-h-[80px] lg:min-h-[100px] p-1 sm:p-2 border-b border-r border-rakubun-border cursor-pointer
                     transition-colors
                     ${!day ? 'bg-rakubun-bg/30' : 'hover:bg-rakubun-bg/50'}
                     ${isSelected ? 'bg-rakubun-accent/5' : ''}
@@ -689,7 +689,7 @@ export default function SchedulerPage() {
                   {day && (
                     <>
                       <span className={`
-                        inline-flex items-center justify-center w-7 h-7 rounded-full text-sm
+                        inline-flex items-center justify-center w-5 h-5 sm:w-7 sm:h-7 rounded-full text-xs sm:text-sm
                         ${todayFlag
                           ? 'bg-rakubun-accent text-white font-bold'
                           : isSelected
@@ -704,7 +704,8 @@ export default function SchedulerPage() {
                           <div
                             key={event.id}
                             className={`
-                              text-[10px] font-medium px-1.5 py-0.5 rounded-md truncate
+                              text-[10px] font-medium rounded-md truncate
+                              hidden sm:block px-1.5 py-0.5
                               ${event.status === 'ready'
                                 ? 'bg-rakubun-accent/10 text-rakubun-accent'
                                 : event.status === 'plan'
@@ -717,6 +718,26 @@ export default function SchedulerPage() {
                             {event.time ? `${event.time.split(' ')[0]} ` : ''}{event.title}
                           </div>
                         ))}
+                        {/* Mobile: show colored dots instead of text */}
+                        {events.length > 0 && (
+                          <div className="flex gap-0.5 sm:hidden flex-wrap">
+                            {events.slice(0, 3).map((event) => (
+                              <div
+                                key={event.id}
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  event.status === 'ready'
+                                    ? 'bg-rakubun-accent'
+                                    : event.status === 'plan'
+                                      ? 'bg-blue-500'
+                                      : 'bg-amber-500'
+                                }`}
+                              />
+                            ))}
+                            {events.length > 3 && (
+                              <span className="text-[8px] text-rakubun-text-secondary">+{events.length - 3}</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </>
                   )}

@@ -107,7 +107,7 @@ function SiteCardMenu({
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary opacity-0 group-hover:opacity-100 transition-all"
+        className="p-1.5 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary sm:opacity-0 sm:group-hover:opacity-100 transition-all"
       >
         <MoreVertical className="w-4 h-4" />
       </button>
@@ -370,7 +370,7 @@ function SettingsModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-rakubun-surface rounded-t-3xl px-8 pt-8 pb-4 border-b border-rakubun-border/40">
+        <div className="sticky top-0 z-10 bg-rakubun-surface rounded-t-3xl px-4 sm:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4 border-b border-rakubun-border/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-rakubun-accent/10">
@@ -392,7 +392,7 @@ function SettingsModal({
           </div>
         </div>
 
-        <div className="px-8 py-6 space-y-6">
+        <div className="px-4 sm:px-8 py-4 sm:py-6 space-y-6">
           {/* ─── Publishing Section ─────────────────────────────── */}
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wider text-rakubun-text-secondary mb-3">

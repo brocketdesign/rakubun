@@ -10,7 +10,7 @@ import {
 import { createNotification } from './notifications.js';
 
 export const config = {
-  maxDuration: 60, // Handler is now lightweight — heavy work runs via waitUntil
+  maxDuration: 300, // waitUntil background tasks need time to complete (AI + images + WP)
 };
 
 // ─── Day helpers ────────────────────────────────────────────────────────────

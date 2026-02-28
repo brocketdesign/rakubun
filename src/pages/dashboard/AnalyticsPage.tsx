@@ -258,11 +258,11 @@ export default function AnalyticsPage() {
                 : 'すべての接続サイトのコンテンツパフォーマンスを追跡。'}
             </p>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
             {/* Site Selector */}
             {hasConnectedSites && (
               <Select value={selectedSiteId} onValueChange={setSelectedSiteId}>
-                <SelectTrigger className="w-[180px] h-9 text-xs">
+                <SelectTrigger className="w-full sm:w-[180px] h-9 text-xs">
                   <SelectValue placeholder={language === 'en' ? 'Select site' : 'サイトを選択'} />
                 </SelectTrigger>
                 <SelectContent>
@@ -418,7 +418,8 @@ export default function AnalyticsPage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="flex items-end gap-3 h-48">
+                  <div className="overflow-x-auto -mx-2 px-2">
+                    <div className="flex items-end gap-2 sm:gap-3 h-48" style={{ minWidth: `${Math.max(chartData.length * 28, 200)}px` }}>
                     {chartData.map((d, i) => (
                       <div key={i} className="flex-1 flex flex-col items-center gap-2">
                         <span className="text-xs font-medium text-rakubun-text tabular-nums">
@@ -436,6 +437,7 @@ export default function AnalyticsPage() {
                         <span className="text-xs text-rakubun-text-secondary">{d.day}</span>
                       </div>
                     ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -501,16 +503,16 @@ export default function AnalyticsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-rakubun-border">
-                      <th className="px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
+                      <th className="px-3 sm:px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
                         {language === 'en' ? 'Site' : 'サイト'}
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
+                      <th className="px-3 sm:px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
                         {language === 'en' ? 'GA Property' : 'GAプロパティ'}
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
+                      <th className="px-3 sm:px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
                         {language === 'en' ? 'Status' : 'ステータス'}
                       </th>
-                      <th className="px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
+                      <th className="px-3 sm:px-5 py-3 text-left text-xs font-medium text-rakubun-text-secondary">
                         {language === 'en' ? 'Connected' : '接続日'}
                       </th>
                     </tr>
@@ -524,24 +526,24 @@ export default function AnalyticsPage() {
                         }`}
                         onClick={() => setSelectedSiteId(site.id)}
                       >
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 sm:px-5 py-3.5">
                           <div className="flex items-center gap-2">
                             <Globe className="w-4 h-4 text-rakubun-text-secondary" />
                             <span className="text-sm font-medium text-rakubun-text">{site.name}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 sm:px-5 py-3.5">
                           <span className="text-sm text-rakubun-text">
                             {site.analytics?.propertyName || site.analytics?.propertyId || '-'}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5">
+                        <td className="px-3 sm:px-5 py-3.5">
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
                             <TrendingUp className="w-3 h-3" />
                             {language === 'en' ? 'Active' : 'アクティブ'}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-sm text-rakubun-text-secondary">
+                        <td className="px-3 sm:px-5 py-3.5 text-sm text-rakubun-text-secondary">
                           {site.analytics?.connectedAt
                             ? new Date(site.analytics.connectedAt).toLocaleDateString(
                                 language === 'ja' ? 'ja-JP' : 'en-US'

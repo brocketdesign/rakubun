@@ -512,7 +512,7 @@ export default function SettingsPage() {
   const docCategories = ['all', ...Array.from(new Set(apiEndpoints.map(e => e.category)))];
 
   return (
-    <div className="space-y-6 max-w-[1100px]">
+    <div className="space-y-6 max-w-[1100px] mx-auto">
       {/* Header */}
       <div>
         <h2 className="text-lg sm:text-xl font-heading font-bold text-rakubun-text">
@@ -528,7 +528,7 @@ export default function SettingsPage() {
       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
         {/* Settings Tabs */}
         <div className="md:w-[200px] shrink-0">
-          <div className="flex md:flex-col gap-1 overflow-x-auto pb-2 md:pb-0 -mx-1 px-1 md:mx-0 md:px-0">
+          <div className="flex md:flex-col gap-1 overflow-x-auto pb-2 md:pb-0 -mx-1 px-1 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {settingsTabs.map((tab) => (
               <button
                 key={tab.id}
@@ -1150,11 +1150,11 @@ export default function SettingsPage() {
                       <h4 className="text-sm font-semibold text-rakubun-text">
                         {language === 'en' ? 'Notification Channels' : '通知チャンネル'}
                       </h4>
-                      <div className="flex items-center gap-8 pr-1">
-                        <span className="text-[11px] font-medium text-rakubun-text-secondary uppercase tracking-wider w-12 text-center">
+                      <div className="flex items-center gap-4 sm:gap-8 pr-1">
+                        <span className="text-[11px] font-medium text-rakubun-text-secondary uppercase tracking-wider w-10 sm:w-12 text-center">
                           {language === 'en' ? 'Email' : 'メール'}
                         </span>
-                        <span className="text-[11px] font-medium text-rakubun-text-secondary uppercase tracking-wider w-12 text-center">
+                        <span className="text-[11px] font-medium text-rakubun-text-secondary uppercase tracking-wider w-10 sm:w-12 text-center">
                           {language === 'en' ? 'In-App' : 'アプリ内'}
                         </span>
                       </div>
@@ -1168,8 +1168,8 @@ export default function SettingsPage() {
                             <span className="text-sm font-medium text-rakubun-text">{item.label[language]}</span>
                             <p className="text-xs text-rakubun-text-secondary mt-0.5">{item.description[language]}</p>
                           </div>
-                          <div className="flex items-center gap-8 shrink-0">
-                            <div className="w-12 flex justify-center">
+                          <div className="flex items-center gap-4 sm:gap-8 shrink-0">
+                            <div className="w-10 sm:w-12 flex justify-center">
                               <button
                                 onClick={() => toggleNotifPref(item.key, 'email')}
                                 disabled={emailDisabled}
@@ -1188,7 +1188,7 @@ export default function SettingsPage() {
                                 />
                               </button>
                             </div>
-                            <div className="w-12 flex justify-center">
+                            <div className="w-10 sm:w-12 flex justify-center">
                               <button
                                 onClick={() => toggleNotifPref(item.key, 'inApp')}
                                 className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-rakubun-accent/20 ${

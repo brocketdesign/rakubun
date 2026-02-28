@@ -323,7 +323,7 @@ export default function DashboardLayout() {
             <div className="flex items-center gap-3">
               {/* Mobile hamburger */}
               <button
-                className="md:hidden p-1.5 -ml-1 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
+                className="md:hidden p-2.5 -ml-2 rounded-lg hover:bg-rakubun-bg-secondary text-rakubun-text-secondary hover:text-rakubun-text transition-colors"
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="w-5 h-5" />
@@ -371,7 +371,7 @@ export default function DashboardLayout() {
           </header>
 
           {/* Page Content */}
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1rem,env(safe-area-inset-bottom))] md:pb-[max(1.5rem,env(safe-area-inset-bottom))]">
             <Outlet />
           </main>
         </div>
