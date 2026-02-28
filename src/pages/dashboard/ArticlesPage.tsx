@@ -722,6 +722,7 @@ export default function ArticlesPage() {
       <div className="space-y-3">
         {filteredArticles.map((article) => {
           const statusCfg = statusConfig[article.status];
+          const siteName = sites.find(s => s.id === article.site)?.name || '';
           return (
             <div
               key={article.id}
@@ -741,9 +742,10 @@ export default function ArticlesPage() {
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  {/* Status + Blog name */}
+                  <div className="flex items-center gap-2 mb-1.5">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusCfg.class}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${statusCfg.class}`}
                     >
                       {article.status === 'generating' ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -752,25 +754,33 @@ export default function ArticlesPage() {
                       )}
                       <span>{statusCfg.label[language]}</span>
                     </span>
-                    {article.site && (
-                      <span className="text-xs text-rakubun-text-secondary flex items-center gap-1">
-                        <Globe className="w-3 h-3" />
-                        {article.site}
-                      </span>
-                    )}
-                    {article.category && article.category !== 'Uncategorized' && (
-                      <span className="text-xs text-rakubun-accent bg-rakubun-accent/10 px-1.5 py-0.5 rounded">
-                        {article.category}
+                    {siteName && (
+                      <span className="text-xs text-rakubun-text-secondary flex items-center gap-1 min-w-0">
+                        <Globe className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{siteName}</span>
                       </span>
                     )}
                   </div>
-                  <h3 className="text-base font-semibold text-rakubun-text group-hover:text-rakubun-accent transition-colors">
+
+                  {/* Title — max 2 lines */}
+                  <h3 className="text-base font-semibold text-rakubun-text group-hover:text-rakubun-accent transition-colors line-clamp-2">
                     {article.title}
                   </h3>
                   <p className="text-sm text-rakubun-text-secondary mt-1 line-clamp-1">
                     {article.excerpt}
                   </p>
-                  <div className="flex items-center flex-wrap gap-2 sm:gap-4 mt-3 text-xs text-rakubun-text-secondary">
+
+                  {/* Tags row */}
+                  {article.category && article.category !== 'Uncategorized' && (
+                    <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                      <span className="text-xs text-rakubun-accent bg-rakubun-accent/10 px-2 py-0.5 rounded-full">
+                        {article.category}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Meta row */}
+                  <div className="flex items-center flex-wrap gap-2 sm:gap-4 mt-2.5 text-xs text-rakubun-text-secondary">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {formatDate(article.createdAt, language)}
