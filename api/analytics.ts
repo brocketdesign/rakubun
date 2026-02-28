@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { ObjectId } from 'mongodb';
-import { google } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
+import { analyticsadmin } from '@googleapis/analyticsadmin';
+import { analyticsdata } from '@googleapis/analyticsdata';
 import { getDb } from './lib/mongodb.js';
 import { authenticateRequest, AuthError } from './lib/auth.js';
 
@@ -15,7 +17,7 @@ const APP_URL = (process.env.APP_URL
 
 const REDIRECT_URI = `${APP_URL}/api/analytics/oauth/callback`;
 
-const oauth2Client = new google.auth.OAuth2(
+const oauth2Client = new OAuth2Client(
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   REDIRECT_URI
@@ -225,7 +227,7 @@ async function handleListProperties(req: VercelRequest, res: VercelResponse) {
     }
 
     // List GA4 properties using Analytics Admin API
-    const analyticsAdmin = google.analyticsadmin({ version: 'v1beta', auth: oauth2Client });
+    const analyticsAdmin = analyticsadmin({ version: 'v1beta', auth: oauth2Client });
     const accountSummaries = await analyticsAdmin.accountSummaries.list();
 
     const properties: GA4Property[] = [];
@@ -386,7 +388,7 @@ async function handleGetConnectionStatus(req: VercelRequest, res: VercelResponse
   if (connection.propertyId && connection.googleRefreshToken) {
     try {
       oauth2Client.setCredentials({ refresh_token: connection.googleRefreshToken });
-      const analyticsAdmin = google.analyticsadmin({ version: 'v1beta', auth: oauth2Client });
+      const analyticsAdmin = analyticsadmin({ version: 'v1beta', auth: oauth2Client });
       const property = await analyticsAdmin.properties.get({
         name: connection.propertyId,
       });
@@ -439,7 +441,7 @@ async function handleFetchAnalyticsData(req: VercelRequest, res: VercelResponse)
     oauth2Client.setCredentials({ refresh_token: connection.googleRefreshToken });
 
     // Fetch analytics data
-    const analyticsData = google.analyticsdata({ version: 'v1beta', auth: oauth2Client });
+    const analyticsData = analyticsdata({ version: 'v1beta', auth: oauth2Client });
 
     const [overviewResponse, pagesResponse] = await Promise.all([
       // Overview metrics
