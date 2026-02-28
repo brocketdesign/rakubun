@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { waitUntil } from '@vercel/functions';
 import OpenAI from 'openai';
 import { ObjectId } from 'mongodb';
 import { getDb } from './lib/mongodb.js';
@@ -9,7 +10,7 @@ import {
 import { createNotification } from './notifications.js';
 
 export const config = {
-  maxDuration: 300, // 5 minute max for cron
+  maxDuration: 60, // Handler is now lightweight — heavy work runs via waitUntil
 };
 
 // ─── Day helpers ────────────────────────────────────────────────────────────
@@ -322,6 +323,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PART 2: Process due SCHEDULE PLAN topics (generate + publish)
+    //   Heavy work (AI + images + WP) is dispatched via waitUntil so each
+    //   article generates independently in its own background task.
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     try {
       const activeSchedules = await schedulesCol
@@ -377,7 +380,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             continue;
           }
 
-          // Use the site doc we already loaded for timezone resolution
           const siteDoc = scheduleSiteDoc;
 
           if (!siteDoc) {
@@ -386,143 +388,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             continue;
           }
 
-          try {
-            log(`[Cron] Generating article for plan topic: "${topic.title}"`);            
+          // Insert a "generating" placeholder article immediately (for dedup + UI)
+          const placeholderDoc = {
+            userId: schedule.userId,
+            title: topic.title,
+            excerpt: '',
+            content: '',
+            site: schedule.siteId,
+            category: topic.title,
+            status: 'generating',
+            wordCount: 0,
+            seoScore: 0,
+            views: 0,
+            thumbnailUrl: '',
+            imageUrls: [] as string[],
+            scheduledAt: null,
+            publishedAt: null,
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+            schedulePlanGenerated: true,
+          };
+          const insertResult = await articlesCol.insertOne(placeholderDoc);
+          const articleId = insertResult.insertedId;
 
-            // Generate article
-            const articleResult = await generateArticle({
-              articleType: topic.title,
-              siteUrl: siteDoc.url || '',
-              siteName: siteDoc.name || '',
-              language: siteDoc.language || 'ja',
-              wordCountMin: 1000,
-              wordCountMax: 1500,
-              style: '',
-            });
+          // Mark topic as generated so the schedule gets updated
+          topic.generated = true;
+          modified = true;
 
-            // Generate images
-            const imageUrls: string[] = [];
-            let thumbnailUrl = '';
-            if (process.env.GROK_API_KEY) {
-              try {
-                const grokClient = new OpenAI({
-                  apiKey: process.env.GROK_API_KEY,
-                  baseURL: 'https://api.x.ai/v1',
-                });
+          log(`[Cron] Dispatching background generation for plan topic: "${topic.title}" (article ${articleId})`);
+          results.push({ cronJobId: `plan-${schedule._id}`, topic: topic.title, status: 'dispatched', articleId: articleId.toString() });
 
-                // Thumbnail
-                try {
-                  const thumbRes = await grokClient.images.generate({
-                    model: 'grok-imagine-image',
-                    prompt: `A professional blog post thumbnail image for: ${articleResult.title}`,
-                  });
-                  if (thumbRes.data?.[0]?.url) {
-                    let finalThumbUrl = thumbRes.data[0].url;
-                    if (siteDoc.username && siteDoc.applicationPassword) {
-                      const wpMedia = await uploadImageToWordPress(
-                        { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
-                        finalThumbUrl,
-                      );
-                      if (wpMedia) finalThumbUrl = wpMedia.sourceUrl;
-                    }
-                    thumbnailUrl = finalThumbUrl;
-                  }
-                } catch (thumbErr) {
-                  logError('[Cron] Plan topic thumbnail error:', thumbErr);
-                }
-              } catch (imgError) {
-                logError('[Cron] Plan topic image generation error:', imgError);
-              }
-            }
-
-            // Publish to WordPress
-            let wpPostId: number | undefined;
-            let wpUrl: string | undefined;
-            if (siteDoc.username && siteDoc.applicationPassword) {
-              const wpResult = await publishToWordPress(
-                {
-                  url: siteDoc.url,
-                  username: siteDoc.username,
-                  applicationPassword: siteDoc.applicationPassword,
-                },
-                {
-                  title: articleResult.title,
-                  content: articleResult.content,
-                  excerpt: articleResult.excerpt,
-                  status: 'publish',
-                  date: now.toISOString(),
-                  thumbnailUrl: thumbnailUrl || undefined,
-                },
-              );
-              if (wpResult) {
-                wpPostId = wpResult.wpPostId;
-                wpUrl = wpResult.url;
-              }
-            }
-
-            // Save article to DB
-            const wordCount = articleResult.content
-              .replace(/[#*_~`>\-|]/g, '')
-              .split(/\s+/)
-              .filter((w: string) => w.length > 0).length;
-
-            const articleDoc = {
-              userId: schedule.userId,
-              title: articleResult.title,
-              excerpt: articleResult.excerpt,
-              content: articleResult.content,
-              site: schedule.siteId,
-              category: topic.title,
-              status: wpPostId ? 'published' : 'draft',
-              wordCount,
-              seoScore: 0,
-              views: 0,
-              thumbnailUrl,
-              imageUrls,
-              scheduledAt: null,
-              publishedAt: wpPostId ? now.toISOString() : null,
-              createdAt: now.toISOString(),
-              updatedAt: now.toISOString(),
-              wpPostId: wpPostId || null,
-              wpUrl: wpUrl || null,
-              schedulePlanGenerated: true,
-            };
-
-            const insertResult = await articlesCol.insertOne(articleDoc);
-            topic.generated = true;
-            modified = true;
-
-            log(`[Cron] Plan topic article saved: ${insertResult.insertedId} — "${articleResult.title}"`);            
-            results.push({
-              cronJobId: `plan-${schedule._id}`,
-              topic: topic.title,
-              status: 'success',
-              articleId: insertResult.insertedId.toString(),
-            });
-
-            // Send notification for generated schedule plan article
-            if (schedule.userId) {
-              try {
-                await createNotification(schedule.userId, 'article', {
-                  en: 'Schedule: Article Published',
-                  ja: 'スケジュール: 記事が公開されました',
-                }, {
-                  en: `"${articleResult.title}" was generated and published from your content schedule.`,
-                  ja: `「${articleResult.title}」がコンテンツスケジュールから生成・公開されました。`,
-                }, { actionUrl: '/dashboard/articles' });
-              } catch (notifErr) {
-                logError(`[Cron] Failed to send notification for plan topic "${topic.title}":`, notifErr);
-              }
-            }
-          } catch (topicErr) {
-            logError(`[Cron] Error generating plan topic "${topic.title}":`, topicErr);
-            results.push({
-              cronJobId: `plan-${schedule._id}`,
-              topic: topic.title,
-              status: 'error',
-              error: topicErr instanceof Error ? topicErr.message : 'Unknown error',
-            });
-          }
+          // Fire off the heavy work in the background
+          waitUntil(
+            processSchedulePlanArticle(articleId, schedule.userId, topic.title, siteDoc, now),
+          );
         }
 
         // Persist the generated flag updates back to the schedule
@@ -548,6 +447,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // PART 3: Process recurring CRON JOBS
+    //   Heavy work (AI + images + WP) is dispatched via waitUntil so each
+    //   article generates independently in its own background task.
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
     // Find all active cron jobs
@@ -609,7 +510,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        // Use the site doc we already loaded for timezone resolution
         const siteDoc = cronSiteDoc;
 
         if (!siteDoc) {
@@ -618,216 +518,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           continue;
         }
 
-        try {
-          // ── Step 1: Generate article content via OpenAI ───────────────
-          const articleResult = await generateArticle({
-            articleType: slot.articleType,
-            siteUrl: cronJob.siteUrl || siteDoc.url,
-            siteName: cronJob.siteName || siteDoc.name,
-            language: cronJob.language || 'ja',
-            wordCountMin: cronJob.wordCountMin || 1000,
-            wordCountMax: cronJob.wordCountMax || 1500,
-            style: cronJob.style || '',
-          });
+        // Insert a "generating" placeholder article immediately (for dedup + UI visibility)
+        const placeholderDoc = {
+          userId: cronJob.userId,
+          title: slot.articleType,
+          excerpt: '',
+          content: '',
+          site: cronJob.siteId,
+          category: slot.articleType,
+          status: 'generating',
+          wordCount: 0,
+          seoScore: 0,
+          views: 0,
+          thumbnailUrl: '',
+          imageUrls: [] as string[],
+          scheduledAt: null,
+          publishedAt: null,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          // Dedup tracking metadata — written now so the next cron run won't re-dispatch
+          cronJobId: cronJob._id.toHexString(),
+          cronSlotDay: slot.day,
+          cronGenerated: true,
+        };
 
-          // ── Step 2: Generate images via Grok ─────────────────────────
-          const imageUrls: string[] = [];
-          const imgCount = Math.min(cronJob.imagesPerArticle || 4, 4);
-          let thumbnailUrl = '';
+        const insertResult = await articlesCol.insertOne(placeholderDoc);
+        const articleId = insertResult.insertedId;
 
-          if (imgCount > 0 && process.env.GROK_API_KEY) {
-            try {
-              const grokClient = new OpenAI({
-                apiKey: process.env.GROK_API_KEY,
-                baseURL: 'https://api.x.ai/v1',
-              });
+        log(`[Cron] Dispatching background generation for slot ${slot.day} ${slot.time}: "${slot.articleType}" (article ${articleId})`);
+        results.push({ cronJobId: cronJob._id.toHexString(), topic: slot.articleType, status: 'dispatched', articleId: articleId.toString() });
 
-              // Generate thumbnail
-              try {
-                const thumbRes = await grokClient.images.generate({
-                  model: 'grok-imagine-image',
-                  prompt: `A professional blog post thumbnail image for: ${articleResult.title}`,
-                });
-                if (thumbRes.data?.[0]?.url) {
-                  let finalThumbUrl = thumbRes.data[0].url;
-                  if (siteDoc.username && siteDoc.applicationPassword) {
-                    const wpMedia = await uploadImageToWordPress(
-                      { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
-                      finalThumbUrl,
-                    );
-                    if (wpMedia) finalThumbUrl = wpMedia.sourceUrl;
-                  }
-                  thumbnailUrl = finalThumbUrl;
-                }
-              } catch (thumbErr) {
-                logError('[Cron] Thumbnail generation error:', thumbErr);
-              }
-
-              // Generate in-article images
-              const inArticleCount = Math.max(imgCount - 1, 0);
-              if (inArticleCount > 0) {
-                const imagePromises = Array.from({ length: inArticleCount }).map((_, i) =>
-                  grokClient.images.generate({
-                    model: 'grok-imagine-image',
-                    prompt: `Professional illustration for an article about: ${articleResult.title}, part ${i + 1}`,
-                  }),
-                );
-                const imageResponses = await Promise.all(imagePromises);
-                for (const imgRes of imageResponses) {
-                  if (imgRes.data?.[0]?.url) {
-                    let finalUrl = imgRes.data[0].url;
-                    if (siteDoc.username && siteDoc.applicationPassword) {
-                      const wpMedia = await uploadImageToWordPress(
-                        { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
-                        finalUrl,
-                      );
-                      if (wpMedia) finalUrl = wpMedia.sourceUrl;
-                    }
-                    imageUrls.push(finalUrl);
-                  }
-                }
-              }
-
-              // Insert images into content
-              if (imageUrls.length > 0) {
-                const sections = articleResult.content.split(/\n(?=## )/);
-                const interval = Math.max(1, Math.floor(sections.length / (imageUrls.length + 1)));
-                let imgIdx = 0;
-                const newSections: string[] = [];
-                for (let i = 0; i < sections.length; i++) {
-                  newSections.push(sections[i]);
-                  if (imgIdx < imageUrls.length && (i + 1) % interval === 0) {
-                    newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
-                    imgIdx++;
-                  }
-                }
-                while (imgIdx < imageUrls.length) {
-                  newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
-                  imgIdx++;
-                }
-                articleResult.content = newSections.join('\n');
-              }
-            } catch (imgError) {
-              logError('[Cron] Image generation error:', imgError);
-            }
-          }
-
-          // ── Step 3: Publish to WordPress ─────────────────────────────
-          let wpPostId: number | undefined;
-          let wpUrl: string | undefined;
-
-          if (siteDoc.username && siteDoc.applicationPassword) {
-            const wpResult = await publishToWordPress(
-              {
-                url: siteDoc.url,
-                username: siteDoc.username,
-                applicationPassword: siteDoc.applicationPassword,
-              },
-              {
-                title: articleResult.title,
-                content: articleResult.content,
-                excerpt: articleResult.excerpt,
-                status: 'publish',
-                date: now.toISOString(),
-                thumbnailUrl: thumbnailUrl || undefined,
-              },
-            );
-            if (wpResult) {
-              wpPostId = wpResult.wpPostId;
-              wpUrl = wpResult.url;
-              log(`[Cron] Published to WP: ${wpUrl}`);
-            } else {
-              logError('[Cron] Failed to publish to WordPress');
-            }
-          }
-
-          // ── Step 4: Save article to DB ───────────────────────────────
-          const wordCount = articleResult.content
-            .replace(/[#*_~`>\-|]/g, '')
-            .split(/\s+/)
-            .filter((w: string) => w.length > 0).length;
-
-          const articleDoc = {
-            userId: cronJob.userId,
-            title: articleResult.title,
-            excerpt: articleResult.excerpt,
-            content: articleResult.content,
-            site: cronJob.siteId,
-            category: slot.articleType,
-            status: wpPostId ? 'published' : 'draft',
-            wordCount,
-            seoScore: calculateSeoScore(articleResult.title, articleResult.content, articleResult.excerpt),
-            views: 0,
-            thumbnailUrl,
-            imageUrls,
-            scheduledAt: null,
-            publishedAt: wpPostId ? now.toISOString() : null,
-            createdAt: now.toISOString(),
-            updatedAt: now.toISOString(),
-            wpPostId: wpPostId || null,
-            wpUrl: wpUrl || null,
-            // Dedup tracking metadata
-            cronJobId: cronJob._id.toHexString(),
-            cronSlotDay: slot.day,
-            cronGenerated: true,
-          };
-
-          const insertResult = await articlesCol.insertOne(articleDoc);
-          const articleId = insertResult.insertedId.toString();
-
-          // Increment site article counter
-          try {
-            await sitesCol.updateOne(
-              { _id: new ObjectId(cronJob.siteId) },
-              { $inc: { articlesGenerated: 1 } },
-            );
-          } catch (e) {
-            logError('[Cron] Failed to increment articlesGenerated:', e);
-          }
-
-          log(`[Cron] Article saved: ${articleId} — "${articleResult.title}"`);            
-
-          // ── Step 5: Send notification (in-app + email) ─────────────
-          {
-            // Collect any explicit email recipients from cron job config
-            const recipientEmails: string[] = [];
-            if (cronJob.emailNotification) recipientEmails.push(cronJob.emailNotification);
-
-            try {
-              await createNotification(cronJob.userId, 'article', {
-                en: 'Cron: Article Published',
-                ja: 'Cron: 記事が公開されました',
-              }, {
-                en: `"${articleResult.title}" was automatically published to ${cronJob.siteName || siteDoc.name || 'your site'}.`,
-                ja: `「${articleResult.title}」が${cronJob.siteName || siteDoc.name || 'サイト'}に自動公開されました。`,
-              }, {
-                actionUrl: '/dashboard/articles',
-                recipientEmails: recipientEmails.length > 0 ? recipientEmails : undefined,
-              });
-            } catch (notifErr) {
-              logError(`[Cron] Failed to send notification for article "${articleResult.title}":`, notifErr);
-            }
-          }
-
-          results.push({
-            cronJobId: cronJob._id.toHexString(),
-            topic: slot.articleType,
-            status: 'success',
+        // Fire off the heavy work in the background
+        waitUntil(
+          processCronJobArticle(
             articleId,
-          });
-        } catch (slotError) {
-          logError(`[Cron] Error processing slot ${slot.day} ${slot.time}:`, slotError);
-          results.push({
-            cronJobId: cronJob._id.toHexString(),
-            topic: slot.articleType,
-            status: 'error',
-            error: slotError instanceof Error ? slotError.message : 'Unknown error',
-          });
-        }
+            cronJob,
+            slot,
+            siteDoc,
+            now,
+          ),
+        );
       }
     }
 
-    const succeeded = results.filter((r) => r.status === 'success').length;
+    const succeeded = results.filter((r) => r.status === 'success' || r.status === 'dispatched').length;
     const failed = results.filter((r) => r.status === 'error').length;
     const skipped = results.filter((r) => r.status === 'skipped-duplicate').length;
 
@@ -888,6 +622,357 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch { /* ignore */ }
 
     return res.status(500).json({ error: 'Cron execution failed' });
+  }
+}
+
+// ─── Background worker: Schedule Plan article ───────────────────────────────
+
+/**
+ * Runs in the background via waitUntil(). Generates content, images, publishes
+ * to WordPress, and updates the placeholder article in the DB.
+ */
+async function processSchedulePlanArticle(
+  articleId: ObjectId,
+  userId: string,
+  topicTitle: string,
+  siteDoc: Record<string, any>,
+  now: Date,
+) {
+  try {
+    const db = await getDb();
+    const articlesCol = db.collection('articles');
+
+    // Generate article content
+    const articleResult = await generateArticle({
+      articleType: topicTitle,
+      siteUrl: siteDoc.url || '',
+      siteName: siteDoc.name || '',
+      language: siteDoc.language || 'ja',
+      wordCountMin: 1000,
+      wordCountMax: 1500,
+      style: '',
+    });
+
+    // Generate thumbnail
+    let thumbnailUrl = '';
+    if (process.env.GROK_API_KEY) {
+      try {
+        const grokClient = new OpenAI({
+          apiKey: process.env.GROK_API_KEY,
+          baseURL: 'https://api.x.ai/v1',
+        });
+        const thumbRes = await grokClient.images.generate({
+          model: 'grok-imagine-image',
+          prompt: `A professional blog post thumbnail image for: ${articleResult.title}`,
+        });
+        if (thumbRes.data?.[0]?.url) {
+          let finalThumbUrl = thumbRes.data[0].url;
+          if (siteDoc.username && siteDoc.applicationPassword) {
+            const wpMedia = await uploadImageToWordPress(
+              { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+              finalThumbUrl,
+            );
+            if (wpMedia) finalThumbUrl = wpMedia.sourceUrl;
+          }
+          thumbnailUrl = finalThumbUrl;
+        }
+      } catch (thumbErr) {
+        console.error('[Cron BG] Plan topic thumbnail error:', thumbErr);
+      }
+    }
+
+    // Publish to WordPress
+    let wpPostId: number | undefined;
+    let wpUrl: string | undefined;
+    if (siteDoc.username && siteDoc.applicationPassword) {
+      const wpResult = await publishToWordPress(
+        { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+        {
+          title: articleResult.title,
+          content: articleResult.content,
+          excerpt: articleResult.excerpt,
+          status: 'publish',
+          date: now.toISOString(),
+          thumbnailUrl: thumbnailUrl || undefined,
+        },
+      );
+      if (wpResult) {
+        wpPostId = wpResult.wpPostId;
+        wpUrl = wpResult.url;
+      }
+    }
+
+    // Update the placeholder article with the generated content
+    const wordCount = articleResult.content
+      .replace(/[#*_~`>\-|]/g, '')
+      .split(/\s+/)
+      .filter((w: string) => w.length > 0).length;
+
+    await articlesCol.updateOne(
+      { _id: articleId },
+      {
+        $set: {
+          title: articleResult.title,
+          excerpt: articleResult.excerpt,
+          content: articleResult.content,
+          status: wpPostId ? 'published' : 'draft',
+          wordCount,
+          seoScore: 0,
+          thumbnailUrl,
+          publishedAt: wpPostId ? now.toISOString() : null,
+          updatedAt: new Date().toISOString(),
+          wpPostId: wpPostId || null,
+          wpUrl: wpUrl || null,
+        },
+      },
+    );
+
+    // Notify
+    createNotification(userId, 'article', {
+      en: 'Schedule: Article Published',
+      ja: 'スケジュール: 記事が公開されました',
+    }, {
+      en: `"${articleResult.title}" was generated and published from your content schedule.`,
+      ja: `「${articleResult.title}」がコンテンツスケジュールから生成・公開されました。`,
+    }, { actionUrl: '/dashboard/articles' }).catch(() => {});
+
+    console.log(`[Cron BG] Plan topic article complete: ${articleId} — "${articleResult.title}"`);
+  } catch (err) {
+    console.error(`[Cron BG] Failed to generate plan topic article ${articleId}:`, err);
+    // Mark the placeholder as failed so the UI can show it
+    try {
+      const db = await getDb();
+      await db.collection('articles').updateOne(
+        { _id: articleId },
+        {
+          $set: {
+            title: `Failed: ${topicTitle.substring(0, 60)}`,
+            status: 'failed',
+            excerpt: 'Article generation failed. Please try again.',
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      );
+    } catch { /* ignore */ }
+
+    createNotification(userId, 'ai', {
+      en: 'Schedule: Generation Failed',
+      ja: 'スケジュール: 生成失敗',
+    }, {
+      en: `Article generation for "${topicTitle.substring(0, 40)}" failed.`,
+      ja: `「${topicTitle.substring(0, 40)}」の記事生成に失敗しました。`,
+    }, { actionUrl: '/dashboard/articles' }).catch(() => {});
+  }
+}
+
+// ─── Background worker: Cron Job article ────────────────────────────────────
+
+/**
+ * Runs in the background via waitUntil(). Generates content, images, publishes
+ * to WordPress, and updates the placeholder article in the DB.
+ */
+async function processCronJobArticle(
+  articleId: ObjectId,
+  cronJob: Record<string, any>,
+  slot: { day: string; time: string; articleType: string },
+  siteDoc: Record<string, any>,
+  now: Date,
+) {
+  try {
+    const db = await getDb();
+    const articlesCol = db.collection('articles');
+    const sitesCol = db.collection('sites');
+
+    // Step 1: Generate article content via OpenAI
+    const articleResult = await generateArticle({
+      articleType: slot.articleType,
+      siteUrl: cronJob.siteUrl || siteDoc.url,
+      siteName: cronJob.siteName || siteDoc.name,
+      language: cronJob.language || 'ja',
+      wordCountMin: cronJob.wordCountMin || 1000,
+      wordCountMax: cronJob.wordCountMax || 1500,
+      style: cronJob.style || '',
+    });
+
+    // Step 2: Generate images via Grok
+    const imageUrls: string[] = [];
+    const imgCount = Math.min(cronJob.imagesPerArticle || 4, 4);
+    let thumbnailUrl = '';
+
+    if (imgCount > 0 && process.env.GROK_API_KEY) {
+      try {
+        const grokClient = new OpenAI({
+          apiKey: process.env.GROK_API_KEY,
+          baseURL: 'https://api.x.ai/v1',
+        });
+
+        // Generate thumbnail
+        try {
+          const thumbRes = await grokClient.images.generate({
+            model: 'grok-imagine-image',
+            prompt: `A professional blog post thumbnail image for: ${articleResult.title}`,
+          });
+          if (thumbRes.data?.[0]?.url) {
+            let finalThumbUrl = thumbRes.data[0].url;
+            if (siteDoc.username && siteDoc.applicationPassword) {
+              const wpMedia = await uploadImageToWordPress(
+                { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+                finalThumbUrl,
+              );
+              if (wpMedia) finalThumbUrl = wpMedia.sourceUrl;
+            }
+            thumbnailUrl = finalThumbUrl;
+          }
+        } catch (thumbErr) {
+          console.error('[Cron BG] Thumbnail generation error:', thumbErr);
+        }
+
+        // Generate in-article images
+        const inArticleCount = Math.max(imgCount - 1, 0);
+        if (inArticleCount > 0) {
+          const imagePromises = Array.from({ length: inArticleCount }).map((_, i) =>
+            grokClient.images.generate({
+              model: 'grok-imagine-image',
+              prompt: `Professional illustration for an article about: ${articleResult.title}, part ${i + 1}`,
+            }),
+          );
+          const imageResponses = await Promise.all(imagePromises);
+          for (const imgRes of imageResponses) {
+            if (imgRes.data?.[0]?.url) {
+              let finalUrl = imgRes.data[0].url;
+              if (siteDoc.username && siteDoc.applicationPassword) {
+                const wpMedia = await uploadImageToWordPress(
+                  { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+                  finalUrl,
+                );
+                if (wpMedia) finalUrl = wpMedia.sourceUrl;
+              }
+              imageUrls.push(finalUrl);
+            }
+          }
+        }
+
+        // Insert images into content
+        if (imageUrls.length > 0) {
+          const sections = articleResult.content.split(/\n(?=## )/);
+          const interval = Math.max(1, Math.floor(sections.length / (imageUrls.length + 1)));
+          let imgIdx = 0;
+          const newSections: string[] = [];
+          for (let i = 0; i < sections.length; i++) {
+            newSections.push(sections[i]);
+            if (imgIdx < imageUrls.length && (i + 1) % interval === 0) {
+              newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
+              imgIdx++;
+            }
+          }
+          while (imgIdx < imageUrls.length) {
+            newSections.push(`\n![Illustration](${imageUrls[imgIdx]})\n`);
+            imgIdx++;
+          }
+          articleResult.content = newSections.join('\n');
+        }
+      } catch (imgError) {
+        console.error('[Cron BG] Image generation error:', imgError);
+      }
+    }
+
+    // Step 3: Publish to WordPress
+    let wpPostId: number | undefined;
+    let wpUrl: string | undefined;
+
+    if (siteDoc.username && siteDoc.applicationPassword) {
+      const wpResult = await publishToWordPress(
+        { url: siteDoc.url, username: siteDoc.username, applicationPassword: siteDoc.applicationPassword },
+        {
+          title: articleResult.title,
+          content: articleResult.content,
+          excerpt: articleResult.excerpt,
+          status: 'publish',
+          date: now.toISOString(),
+          thumbnailUrl: thumbnailUrl || undefined,
+        },
+      );
+      if (wpResult) {
+        wpPostId = wpResult.wpPostId;
+        wpUrl = wpResult.url;
+      }
+    }
+
+    // Step 4: Update the placeholder article with generated content
+    const wordCount = articleResult.content
+      .replace(/[#*_~`>\-|]/g, '')
+      .split(/\s+/)
+      .filter((w: string) => w.length > 0).length;
+
+    await articlesCol.updateOne(
+      { _id: articleId },
+      {
+        $set: {
+          title: articleResult.title,
+          excerpt: articleResult.excerpt,
+          content: articleResult.content,
+          status: wpPostId ? 'published' : 'draft',
+          wordCount,
+          seoScore: calculateSeoScore(articleResult.title, articleResult.content, articleResult.excerpt),
+          thumbnailUrl,
+          imageUrls,
+          publishedAt: wpPostId ? now.toISOString() : null,
+          updatedAt: new Date().toISOString(),
+          wpPostId: wpPostId || null,
+          wpUrl: wpUrl || null,
+        },
+      },
+    );
+
+    // Increment site article counter
+    try {
+      await sitesCol.updateOne(
+        { _id: new ObjectId(cronJob.siteId) },
+        { $inc: { articlesGenerated: 1 } },
+      );
+    } catch { /* ignore */ }
+
+    // Step 5: Send notification (in-app + email)
+    const recipientEmails: string[] = [];
+    if (cronJob.emailNotification) recipientEmails.push(cronJob.emailNotification);
+
+    createNotification(cronJob.userId, 'article', {
+      en: 'Cron: Article Published',
+      ja: 'Cron: 記事が公開されました',
+    }, {
+      en: `"${articleResult.title}" was automatically published to ${cronJob.siteName || siteDoc.name || 'your site'}.`,
+      ja: `「${articleResult.title}」が${cronJob.siteName || siteDoc.name || 'サイト'}に自動公開されました。`,
+    }, {
+      actionUrl: '/dashboard/articles',
+      recipientEmails: recipientEmails.length > 0 ? recipientEmails : undefined,
+    }).catch(() => {});
+
+    console.log(`[Cron BG] Cron job article complete: ${articleId} — "${articleResult.title}"`);
+  } catch (err) {
+    console.error(`[Cron BG] Failed to generate cron job article ${articleId}:`, err);
+    // Mark the placeholder as failed
+    try {
+      const db = await getDb();
+      await db.collection('articles').updateOne(
+        { _id: articleId },
+        {
+          $set: {
+            title: `Failed: ${slot.articleType.substring(0, 60)}`,
+            status: 'failed',
+            excerpt: 'Article generation failed. Will be retried on next cron run.',
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      );
+    } catch { /* ignore */ }
+
+    createNotification(cronJob.userId, 'ai', {
+      en: 'Cron: Generation Failed',
+      ja: 'Cron: 生成失敗',
+    }, {
+      en: `Article generation for "${slot.articleType.substring(0, 40)}" failed.`,
+      ja: `「${slot.articleType.substring(0, 40)}」の記事生成に失敗しました。`,
+    }, { actionUrl: '/dashboard/articles' }).catch(() => {});
   }
 }
 
