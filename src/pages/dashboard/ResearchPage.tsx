@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Search,
   TrendingUp,
@@ -45,6 +46,7 @@ const quickTopics = [
 export default function ResearchPage() {
   const { language } = useLanguage();
   const { getToken } = useAuth();
+  const navigate = useNavigate();
   const sites = useSites();
   const results = useResearchResults();
   const isLoading = useResearchLoading();
@@ -470,7 +472,20 @@ export default function ResearchPage() {
                         <Zap className="w-3 h-3" />
                         {result.relevance}% {language === 'en' ? 'relevant' : '関連'}
                       </span>
-                      <button className="text-xs text-rakubun-accent font-medium hover:underline flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const params = new URLSearchParams({
+                            fromResearch: '1',
+                            title: result.title,
+                            url: result.url,
+                            summary: result.summary,
+                            source: result.source,
+                          });
+                          navigate(`/dashboard/articles?${params.toString()}`);
+                        }}
+                        className="text-xs text-rakubun-accent font-medium hover:underline flex items-center gap-1"
+                      >
                         {language === 'en' ? 'Generate Article' : '記事を生成'}
                         <ArrowUpRight className="w-3 h-3" />
                       </button>

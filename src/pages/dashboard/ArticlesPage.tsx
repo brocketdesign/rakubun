@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useSearchParams } from 'react-router-dom';
 import {
   FileText,
   Plus,
@@ -163,6 +164,40 @@ export default function ArticlesPage() {
 
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // ─── Handle research params ("Generate Article" from Research page) ────────
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('fromResearch') === '1') {
+      const researchTitle = searchParams.get('title') || '';
+      const researchUrl = searchParams.get('url') || '';
+      const researchSummary = searchParams.get('summary') || '';
+      const researchSource = searchParams.get('source') || '';
+
+      // Build a prompt that references the research article as inspiration
+      const inspirationPrompt = language === 'en'
+        ? `Write an original article inspired by the following source.\n\nSource: "${researchTitle}" (${researchSource})\nURL: ${researchUrl}\n${researchSummary ? `Summary: ${researchSummary}\n` : ''}\nUse this article as inspiration — do not copy it. Create original, high-quality content on the same topic with your own unique angle and insights.`
+        : `以下のソース記事からインスピレーションを得て、オリジナルの記事を作成してください。\n\nソース: 「${researchTitle}」（${researchSource}）\nURL: ${researchUrl}\n${researchSummary ? `概要: ${researchSummary}\n` : ''}\nこの記事を参考にしつつ、コピーせずに独自の視点と洞察を持ったオリジナルのコンテンツを作成してください。`;
+
+      // Open editor with pre-filled prompt
+      setEditingArticle(null);
+      setEditorTitle('');
+      setEditorContent('');
+      const defaultSite = sites[0];
+      setEditorSite(defaultSite?.id || '');
+      setEditorCategory(defaultSite?.settings?.defaultCategory || 'Uncategorized');
+      setEditorThumbnailUrl('');
+      setShowPreview(false);
+      setShowGeneratePanel(true);
+      setPrompt(inspirationPrompt);
+      setUseWebSearch(true);
+      setShowEditor(true);
+
+      // Clear the search params so refreshing doesn't re-trigger
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Load articles on mount (always re-fetch to reflect scheduler changes) ──
   useEffect(() => {
